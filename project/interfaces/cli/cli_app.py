@@ -1,5 +1,7 @@
 from config.match_parameters import MatchParameters
+from config.rule_set_config import RuleSetConfig
 from controllers.game_controller import GameController
+from core.exceptions import InvalidActionError
 from core.types import Phase, DefenseResolutionStatus
 
 
@@ -7,18 +9,26 @@ class CLIApp:
     def run(self) -> None:
         print("=== SkateGame Engine Prototype CLI ===")
 
-        player_1 = input("Nom / ID du joueur 1 : ").strip()
-        player_2 = input("Nom / ID du joueur 2 : ").strip()
+        player_1 = self._ask_non_empty_input("Player 1 name: ")
+        player_2 = self._ask_non_empty_input("Player 2 name: ")
+        letters_word = self._ask_letters_word()
+        defense_attempts = self._ask_defense_attempts()
+
+        rule_set = RuleSetConfig(
+            letters_word=letters_word,
+            defense_attempts=defense_attempts,
+        )
 
         match_parameters = MatchParameters(
             player_ids=[player_1, player_2],
             mode_name="one_vs_one",
+            rule_set=rule_set,
         )
 
         controller = GameController(match_parameters)
         controller.start_game()
 
-        print("\nPartie démarrée.\n")
+        print()
 
         while True:
             state = controller.get_state()
@@ -29,10 +39,16 @@ class CLIApp:
 
             self._display_state(state)
 
-            trick = self._ask_non_empty_input("\nTrick imposé par l'attaquant : ")
-            controller.start_turn(trick)
+            trick = self._ask_validated_trick_input(controller)
 
-            self._display_turn_start(controller)
+            if trick is None:
+                continue
+
+            try:
+                controller.start_turn(trick)
+            except InvalidActionError as error:
+                print(f"\nAction invalide: {error}\n")
+                continue
 
             while True:
                 state = controller.get_state()
@@ -40,19 +56,15 @@ class CLIApp:
                 if state.current_defender_position >= len(state.defender_indices):
                     break
 
-                attacker = state.players[state.attacker_index]
                 defender_index = state.defender_indices[state.current_defender_position]
                 defender = state.players[defender_index]
 
                 print(
-                    f"\nDéfenseur : {defender.name}"
-                    f" | Trick à reproduire : {state.current_trick}"
-                    f" | Essais restants : {state.defense_attempts_left}"
+                    f"{defender.name} tries '{state.current_trick}' "
+                    f"({state.defense_attempts_left} attempt(s) left)"
                 )
 
-                success = self._ask_yes_no(
-                    f"{defender.name} réussit-il le trick imposé par {attacker.name} ? (y/n) : "
-                )
+                success = self._ask_yes_no(f"Success for {defender.name}? (y/n): ")
 
                 events_before = len(state.history.events)
                 resolution_status = controller.resolve_defense(success)
@@ -62,120 +74,130 @@ class CLIApp:
                     continue
 
                 if resolution_status == DefenseResolutionStatus.TURN_FINISHED:
-                    print("\nTour terminé.\n")
+                    print()
                     break
 
                 if resolution_status == DefenseResolutionStatus.GAME_FINISHED:
-                    print("\nPartie terminée.\n")
+                    print()
                     break
 
     def _display_state(self, state) -> None:
-        attacker = state.players[state.attacker_index]
-
-        print("\n--- État de la partie ---")
-        print(f"Attaquant : {attacker.name}")
-        print("Scores :")
-
+        print("Score:")
         for player in state.players:
-            penalty = state.rule_set.letters_word[:player.score]
-            status = "actif" if player.is_active else "éliminé"
-            print(f"- {player.name} : {penalty or '-'} ({status})")
+            penalty = self._format_penalty_slots(state.rule_set.letters_word, player.score)
+            print(f"{player.name:<10} {penalty}")
 
-    def _display_turn_start(self, controller: GameController) -> None:
-        state = controller.get_state()
         attacker = state.players[state.attacker_index]
+        print(f"\n{attacker.name} sets the next trick: ", end="")
 
-        defender_names = [
-            state.players[index].name for index in state.defender_indices
-        ]
-
-        print("\n--- Nouveau tour ---")
-        print(f"Attaquant : {attacker.name}")
-        print(f"Trick imposé : {state.current_trick}")
-        print(f"Défenseurs : {', '.join(defender_names)}")
-
-    def _display_new_events(
-        self, controller: GameController, events_before: int
-    ) -> None:
+    def _display_new_events(self, controller: GameController, events_before: int) -> None:
         state = controller.get_state()
         new_events = state.history.events[events_before:]
 
         for event in new_events:
-            print(self._format_event(event))
+            message = self._format_event(event)
+            if message:
+                print(message)
 
     def _format_event(self, event) -> str:
         name = event.name
         payload = event.payload
 
-        if name == "game_started":
-            return "\n[Événement] Partie démarrée."
-
-        if name == "turn_started":
-            return (
-                f"[Événement] Nouveau tour : trick '{payload['trick']}' "
-                f"imposé par {payload['attacker_id']}."
-            )
-
         if name == "defense_succeeded":
-            return (
-                f"[Événement] Le défenseur {payload['player_id']} a réussi "
-                f"le trick '{payload['trick']}'."
-            )
+            return f"{payload['player_id']} landed '{payload['trick']}'."
 
         if name == "defense_failed_attempt":
             return (
-                f"[Événement] Le défenseur {payload['player_id']} a raté "
-                f"le trick '{payload['trick']}'. "
-                f"Essais restants : {payload['attempts_left']}."
+                f"{payload['player_id']} missed '{payload['trick']}' "
+                f"({payload['attempts_left']} left)."
             )
 
         if name == "letter_received":
-            return (
-                f"[Événement] Le joueur {payload['player_id']} reçoit une lettre. "
-                f"Score actuel : {payload['penalty_display']}."
-            )
+            return f"{payload['player_id']} gets a letter: {payload['penalty_display']}"
 
         if name == "player_eliminated":
-            return f"[Événement] Le joueur {payload['player_id']} est éliminé."
+            return f"{payload['player_id']} is eliminated."
 
         if name == "turn_ended":
-            return (
-                f"[Événement] Tour terminé. "
-                f"Prochain attaquant : {payload['next_attacker_id']}."
-            )
+            return f"Next attacker: {payload['next_attacker_id']}"
 
         if name == "game_finished":
             winner_id = payload["winner_id"]
             if winner_id is None:
-                return "[Événement] Partie terminée sans gagnant."
-            return f"[Événement] Partie terminée. Gagnant : {winner_id}."
+                return "Game finished."
+            return f"Game finished. Winner: {winner_id}"
 
-        return f"[Événement] {name} | {payload}"
+        return ""
 
     def _display_winner(self, state) -> None:
         active_players = [player for player in state.players if player.is_active]
 
-        print("\n=== Fin de partie ===")
+        print("Final score:")
+        for player in state.players:
+            penalty = self._format_penalty_slots(state.rule_set.letters_word, player.score)
+            print(f"{player.name:<10} {penalty}")
+
+        print()
         if len(active_players) == 1:
-            print(f"Gagnant : {active_players[0].name}")
+            print(f"Winner: {active_players[0].name}")
         else:
-            print("Aucun gagnant déterminé.")
+            print("No winner determined.")
+
+    def _ask_validated_trick_input(self, controller: GameController) -> str:
+        while True:
+            trick = self._ask_non_empty_input("")
+            state = controller.get_state()
+            normalized_trick = trick.strip().lower()
+
+            if normalized_trick in state.validated_tricks:
+                print("This trick has already been validated in this game.")
+                self._display_state(state)
+                continue
+
+            confirm = self._ask_yes_no(f"Confirm trick '{trick}'? (y/n): ")
+            if confirm:
+                return trick
+
+            print("Trick cancelled. Next player.\n")
+            controller.cancel_turn()
+            return None
+
+    def _format_penalty_slots(self, word: str, score: int) -> str:
+        letters = list(word[:score])
+        missing = ["_"] * (len(word) - score)
+        return " ".join(letters + missing)
 
     def _ask_non_empty_input(self, prompt: str) -> str:
         while True:
             value = input(prompt).strip()
             if value:
                 return value
-            print("Entrée invalide. Merci de saisir une valeur non vide.")
+            print("Invalid input.")
+
+    def _ask_letters_word(self) -> str:
+        while True:
+            value = input("Word: ").strip().upper()
+            if 1 <= len(value) <= 10:
+                return value
+            print("Word must contain between 1 and 10 characters.")
+
+    def _ask_defense_attempts(self) -> int:
+        while True:
+            value = input("Defense attempts (1-3): ").strip()
+            if value.isdigit():
+                attempts = int(value)
+                if 1 <= attempts <= 3:
+                    return attempts
+            print("Defense attempts must be between 1 and 3.")
 
     def _ask_yes_no(self, prompt: str) -> bool:
         while True:
             value = input(prompt).strip().lower()
-            if value in {"y", "yes", "o", "oui"}:
+            if value in {"y", "yes"}:
                 return True
-            if value in {"n", "no", "non"}:
+            if value in {"n", "no"}:
                 return False
-            print("Réponse invalide. Tape y ou n.")
+            print("Type y or n.")
 
 
 if __name__ == "__main__":

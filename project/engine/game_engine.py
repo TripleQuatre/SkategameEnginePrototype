@@ -53,3 +53,7 @@ class GameEngine:
             return OneVsOneMode()
 
         raise ValueError(f"Unknown mode: {self.match_parameters.mode_name}")
+    
+    def cancel_turn(self) -> None:
+        self.state_validator.validate(self.state)
+        self.game_flow.cancel_turn(self.state)

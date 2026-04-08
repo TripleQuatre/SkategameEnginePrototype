@@ -130,3 +130,18 @@ class GameFlow:
                 },
             )
         )
+
+    def cancel_turn(self, state: GameState) -> None:
+        if state.phase != Phase.TURN:
+            return
+
+        self._advance_to_next_attacker(state)
+
+        state.history.add_event(
+            Event(
+                name="turn_cancelled",
+                payload={
+                    "next_attacker_id": state.players[state.attacker_index].id,
+                },
+            )
+        )
