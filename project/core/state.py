@@ -17,3 +17,4 @@ class GameState:
     current_trick: Optional[str] = None
     history: History = field(default_factory=History)
     rule_set: RuleSetConfig = field(default_factory=RuleSetConfig)
+    validated_tricks: list[str] = field(default_factory=list)

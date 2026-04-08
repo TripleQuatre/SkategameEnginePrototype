@@ -12,7 +12,7 @@ class GameFlow:
         self.rules_registry = RulesRegistry()
         self.turn_resolver = TurnResolver(self.rules_registry)
         self.end_conditions = EndConditions()
-        self.action_validator = ActionValidator()
+        self.action_validator = ActionValidator(self.rules_registry)
 
     def start_game(self, state: GameState) -> None:
         state.phase = Phase.TURN
@@ -21,6 +21,7 @@ class GameFlow:
         state.defender_indices = []
         state.current_defender_position = 0
         state.defense_attempts_left = 0
+        state.validated_tricks = []
 
         state.history.add_event(
             Event(
@@ -35,8 +36,10 @@ class GameFlow:
         self.action_validator.validate_start_turn(state, trick)
 
         attacker = state.players[state.attacker_index]
+        normalized_trick = self.rules_registry.special.normalize_trick(trick)
 
         state.current_trick = trick
+        state.validated_tricks.append(normalized_trick)
         state.defender_indices = [
             index
             for index, player in enumerate(state.players)

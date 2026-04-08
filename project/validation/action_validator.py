@@ -1,9 +1,13 @@
 from core.exceptions import InvalidActionError
 from core.state import GameState
 from core.types import Phase
+from rules.rules_registry import RulesRegistry
 
 
 class ActionValidator:
+    def __init__(self, rules_registry: RulesRegistry) -> None:
+        self.rules_registry = rules_registry
+
     def validate_start_turn(self, state: GameState, trick: str) -> None:
         if state.phase != Phase.TURN:
             raise InvalidActionError("Cannot start a turn outside TURN phase.")
@@ -13,6 +17,9 @@ class ActionValidator:
 
         if not state.players[state.attacker_index].is_active:
             raise InvalidActionError("Current attacker is not active.")
+
+        if self.rules_registry.special.is_trick_already_validated(state, trick):
+            raise InvalidActionError("This trick has already been validated in this game.")
 
     def validate_resolve_defense(self, state: GameState) -> None:
         if state.phase != Phase.TURN:
