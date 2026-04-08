@@ -18,8 +18,8 @@ class GameEngine:
         self.state = self._create_initial_state()
         self.config_validator.validate_rule_set(self.state.rule_set)
         self.state_validator.validate(self.state)
-        self.mode.validate(self.state)
         self.mode = self._load_mode()
+        self.mode.validate(self.state)
 
     def _create_initial_state(self) -> GameState:
         players = [
