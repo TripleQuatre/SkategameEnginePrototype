@@ -13,7 +13,10 @@ class ConfigValidator:
 
     def validate_rule_set(self, rule_set: RuleSetConfig) -> None:
         if not rule_set.letters_word:
-            raise InvalidStateError("letters_word cannot be empty.")
+            raise ValueError("letters_word cannot be empty")
 
-        if rule_set.defense_attempts < 1:
-            raise InvalidStateError("defense_attempts must be at least 1.")
+        if len(rule_set.letters_word) > 10:
+            raise ValueError("letters_word cannot exceed 10 characters")
+
+        if not (1 <= rule_set.defense_attempts <= 3):
+            raise ValueError("defense_attempts must be between 1 and 3")

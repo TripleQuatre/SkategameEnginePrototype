@@ -13,6 +13,9 @@ class GameEngine:
         self.config_validator = ConfigValidator()
         self.state_validator = StateValidator()
         self.game_flow = GameFlow()
+
+        if hasattr(self.match_parameters, "rule_set"):
+            self.state.rule_set = self.match_parameters.rule_set
         
         self.config_validator.validate_match_parameters(self.match_parameters)
         self.state = self._create_initial_state()
@@ -20,6 +23,7 @@ class GameEngine:
         self.state_validator.validate(self.state)
         self.mode = self._load_mode()
         self.mode.validate(self.state)
+        self.config_validator.validate_rule_set(self.state.rule_set)
 
     def _create_initial_state(self) -> GameState:
         players = [
