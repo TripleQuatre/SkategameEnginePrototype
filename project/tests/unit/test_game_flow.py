@@ -4,7 +4,7 @@ from core.player import Player
 from core.state import GameState
 from core.types import Phase, DefenseResolutionStatus
 from engine.game_flow import GameFlow
-
+from core.exceptions import InvalidActionError
 
 @pytest.fixture
 def game_flow() -> GameFlow:
@@ -88,3 +88,41 @@ def test_resolve_defense_returns_game_finished_on_final_elimination(
     assert state.phase == Phase.END
     assert state.players[1].is_active is False
     assert state.history.events[-1].name == "game_finished"
+
+
+def test_cancel_turn_adds_only_turn_cancelled_event(
+    game_flow: GameFlow, state: GameState
+) -> None:
+    game_flow.start_game(state)
+
+    events_before = len(state.history.events)
+    game_flow.cancel_turn(state, "Soul")
+    new_events = state.history.events[events_before:]
+
+    assert len(new_events) == 1
+    assert new_events[0].name == "turn_cancelled"
+    assert new_events[0].payload["attacker_id"] == "p1"
+    assert new_events[0].payload["trick"] == "Soul"
+    assert new_events[0].payload["next_attacker_id"] == "p2"
+    assert state.attacker_index == 1
+    assert state.current_trick is None
+    assert state.defender_indices == []
+
+
+def test_start_turn_adds_trick_to_validated_tricks(
+    game_flow: GameFlow, state: GameState
+) -> None:
+    game_flow.start_game(state)
+    game_flow.start_turn(state, "Soul")
+
+    assert "soul" in state.validated_tricks
+
+
+def test_start_turn_rejects_already_validated_trick(
+    game_flow: GameFlow, state: GameState
+) -> None:
+    game_flow.start_game(state)
+    game_flow.start_turn(state, "Soul")
+
+    with pytest.raises(InvalidActionError):
+        game_flow.start_turn(state, "soul")

@@ -94,12 +94,14 @@ class GameFlow:
             return DefenseResolutionStatus.GAME_FINISHED
 
         if turn_finished:
-            self._advance_to_next_attacker(state)
+            self._advance_to_next_attacker(state, log_turn_end=True)
             return DefenseResolutionStatus.TURN_FINISHED
 
         return DefenseResolutionStatus.DEFENSE_CONTINUES
 
-    def _advance_to_next_attacker(self, state: GameState) -> None:
+    def _advance_to_next_attacker(
+        self, state: GameState, log_turn_end: bool = True
+    ) -> None:
         active_player_indices = [
             index for index, player in enumerate(state.players) if player.is_active
         ]
@@ -122,25 +124,30 @@ class GameFlow:
         state.current_defender_position = 0
         state.defense_attempts_left = 0
 
-        state.history.add_event(
-            Event(
-                name="turn_ended",
-                payload={
-                    "next_attacker_id": state.players[state.attacker_index].id,
-                },
+        if log_turn_end:
+            state.history.add_event(
+                Event(
+                    name="turn_ended",
+                    payload={
+                        "next_attacker_id": state.players[state.attacker_index].id,
+                    },
+                )
             )
-        )
 
-    def cancel_turn(self, state: GameState) -> None:
+    def cancel_turn(self, state: GameState, trick: str) -> None:
         if state.phase != Phase.TURN:
             return
 
-        self._advance_to_next_attacker(state)
+        attacker = state.players[state.attacker_index]
+
+        self._advance_to_next_attacker(state, log_turn_end=False)
 
         state.history.add_event(
             Event(
                 name="turn_cancelled",
                 payload={
+                    "attacker_id": attacker.id,
+                    "trick": trick,
                     "next_attacker_id": state.players[state.attacker_index].id,
                 },
             )

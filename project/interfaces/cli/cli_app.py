@@ -159,7 +159,7 @@ class CLIApp:
                 return trick
 
             print("Trick cancelled. Next player.\n")
-            controller.cancel_turn()
+            controller.cancel_turn(trick)
             return None
 
     def _format_penalty_slots(self, word: str, score: int) -> str:
