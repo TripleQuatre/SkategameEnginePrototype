@@ -220,7 +220,7 @@ class CLIApp:
             print("-" * 74)
 
             for row in rows:
-                letters = row.letters or "-"
+                letters = self._format_letters(row.letters, state.rule_set.letters_word)
                 print(
                     f"{row.turn_number:<6}"
                     f"{row.attacker_name:<12}"

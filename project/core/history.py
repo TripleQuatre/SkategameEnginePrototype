@@ -74,4 +74,7 @@ class History:
                     )
                 )
 
+        if current_row is not None:
+            rows.append(current_row)
+            
         return rows

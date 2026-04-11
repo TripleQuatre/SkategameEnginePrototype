@@ -9,6 +9,7 @@ from core.exceptions import InvalidActionError, InvalidStateError
 from validation.action_validator import ActionValidator
 from validation.config_validator import ConfigValidator
 from validation.state_validator import StateValidator
+from rules.rules_registry import RulesRegistry
 
 
 def test_config_validator_rejects_less_than_two_players() -> None:
@@ -31,7 +32,7 @@ def test_config_validator_rejects_empty_letters_word() -> None:
     validator = ConfigValidator()
     rule_set = RuleSetConfig(letters_word="")
 
-    with pytest.raises(InvalidStateError):
+    with pytest.raises(ValueError):
         validator.validate_rule_set(rule_set)
 
 
@@ -39,7 +40,7 @@ def test_config_validator_rejects_invalid_defense_attempts() -> None:
     validator = ConfigValidator()
     rule_set = RuleSetConfig(defense_attempts=0)
 
-    with pytest.raises(InvalidStateError):
+    with pytest.raises(ValueError):
         validator.validate_rule_set(rule_set)
 
 
@@ -72,7 +73,7 @@ def test_state_validator_rejects_negative_defense_attempts_left() -> None:
 
 
 def test_action_validator_rejects_start_turn_outside_turn_phase() -> None:
-    validator = ActionValidator()
+    validator = ActionValidator(RulesRegistry())
     state = GameState(
         players=[
             Player(id="p1", name="Player 1"),
@@ -86,7 +87,7 @@ def test_action_validator_rejects_start_turn_outside_turn_phase() -> None:
 
 
 def test_action_validator_rejects_empty_trick() -> None:
-    validator = ActionValidator()
+    validator = ActionValidator(RulesRegistry())
     state = GameState(
         players=[
             Player(id="p1", name="Player 1"),
@@ -100,7 +101,7 @@ def test_action_validator_rejects_empty_trick() -> None:
 
 
 def test_action_validator_rejects_resolve_defense_without_current_trick() -> None:
-    validator = ActionValidator()
+    validator = ActionValidator(RulesRegistry())
     state = GameState(
         players=[
             Player(id="p1", name="Player 1"),
