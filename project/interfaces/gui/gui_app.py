@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
+from tkinter import font as tkfont
 
 from config.match_parameters import MatchParameters
 from config.rule_set_config import RuleSetConfig
@@ -14,183 +15,302 @@ from core.exceptions import InvalidActionError
 class GUIApp:
     def __init__(self) -> None:
         self.root = tk.Tk()
-        self.root.title("SkateGame Engine Prototype")
-        self.root.geometry("760x520")
+        self.root.title("SkateGame Prototype")
+        self.root.geometry("720x540")
+        self.root.minsize(680, 500)
 
         self.controller: GameController | None = None
-        self.setup_frame: ttk.Frame | None = None
-        self.game_frame: ttk.Frame | None = None
 
         self.player_1_var = tk.StringVar()
         self.player_2_var = tk.StringVar()
         self.word_var = tk.StringVar(value="SKATE")
-        self.defense_attempts_var = tk.StringVar(value="1")
-
+        self.defense_attempts_var = tk.IntVar(value=1)
         self.trick_var = tk.StringVar()
-        self.status_var = tk.StringVar(value="Configure the game and click Start Game.")
+        self.status_var = tk.StringVar(value="Configure the game to begin.")
 
-        self.score_text: tk.Text | None = None
-        self.attacker_label: ttk.Label | None = None
-        self.phase_label: ttk.Label | None = None
-        self.defender_label: ttk.Label | None = None
-        self.current_trick_label: ttk.Label | None = None
+        self.title_font = tkfont.Font(size=18, weight="bold")
+        self.subtitle_font = tkfont.Font(size=10)
+        self.section_font = tkfont.Font(size=12, weight="bold")
+        self.score_name_font = tkfont.Font(size=12, weight="bold")
+        self.score_active_font = tkfont.Font(size=18, weight="bold")
+        self.score_inactive_font = tkfont.Font(size=18)
+        self.body_font = tkfont.Font(size=11)
+        self.small_font = tkfont.Font(size=10)
+
+        self.current_view = "setup"
+
+        self.container = ttk.Frame(self.root, padding=16)
+        self.container.pack(fill="both", expand=True)
+
+        self.setup_frame = ttk.Frame(self.container)
+        self.game_frame = ttk.Frame(self.container)
+        self.history_frame = ttk.Frame(self.container)
+
+        self.matchup_label: ttk.Label | None = None
+        self.phase_title_label: ttk.Label | None = None
+        self.trick_label: ttk.Label | None = None
+        self.phase_description_label: ttk.Label | None = None
+        self.attempts_label: ttk.Label | None = None
         self.status_label: ttk.Label | None = None
 
+        self.score_text: tk.Text | None = None
         self.trick_entry: ttk.Entry | None = None
+
         self.confirm_trick_button: ttk.Button | None = None
         self.cancel_trick_button: ttk.Button | None = None
         self.success_button: ttk.Button | None = None
-        self.fail_button: ttk.Button | None = None
+        self.failure_button: ttk.Button | None = None
         self.history_button: ttk.Button | None = None
+        self.back_to_game_button: ttk.Button | None = None
 
-        self._build_setup_frame()
-        self._build_game_frame()
-        self._show_setup()
+        self.history_tree: ttk.Treeview | None = None
+
+        self._build_setup_view()
+        self._build_game_view()
+        self._build_history_view()
+        self._show_view("setup")
 
     def run(self) -> None:
         self.root.mainloop()
 
-    def _build_setup_frame(self) -> None:
-        self.setup_frame = ttk.Frame(self.root, padding=16)
+    # =========================
+    # View management
+    # =========================
 
-        ttk.Label(self.setup_frame, text="Player 1 name").grid(row=0, column=0, sticky="w", pady=4)
-        ttk.Entry(self.setup_frame, textvariable=self.player_1_var, width=30).grid(row=0, column=1, sticky="ew", pady=4)
+    def _show_view(self, view_name: str) -> None:
+        self.setup_frame.pack_forget()
+        self.game_frame.pack_forget()
+        self.history_frame.pack_forget()
 
-        ttk.Label(self.setup_frame, text="Player 2 name").grid(row=1, column=0, sticky="w", pady=4)
-        ttk.Entry(self.setup_frame, textvariable=self.player_2_var, width=30).grid(row=1, column=1, sticky="ew", pady=4)
+        if view_name == "setup":
+            self.setup_frame.pack(fill="both", expand=True)
+        elif view_name == "game":
+            self.game_frame.pack(fill="both", expand=True)
+        elif view_name == "history":
+            self.history_frame.pack(fill="both", expand=True)
 
-        ttk.Label(self.setup_frame, text="Word").grid(row=2, column=0, sticky="w", pady=4)
-        ttk.Entry(self.setup_frame, textvariable=self.word_var, width=30).grid(row=2, column=1, sticky="ew", pady=4)
+        self.current_view = view_name
 
-        ttk.Label(self.setup_frame, text="Defense attempts (1-3)").grid(row=3, column=0, sticky="w", pady=4)
-        ttk.Entry(self.setup_frame, textvariable=self.defense_attempts_var, width=30).grid(row=3, column=1, sticky="ew", pady=4)
+    # =========================
+    # Setup view
+    # =========================
+
+    def _build_setup_view(self) -> None:
+        frame = self.setup_frame
+
+        frame.columnconfigure(0, weight=1)
+
+        title = ttk.Label(frame, text="SkateGame Setup", font=self.title_font)
+        title.grid(row=0, column=0, pady=(10, 28))
+
+        form = ttk.Frame(frame)
+        form.grid(row=1, column=0, sticky="n")
+
+        form.columnconfigure(1, weight=1)
+
+        ttk.Label(form, text="Player 1 name:", font=self.body_font).grid(
+            row=0, column=0, sticky="w", pady=(0, 6)
+        )
+        ttk.Entry(form, textvariable=self.player_1_var, width=36).grid(
+            row=1, column=0, columnspan=2, sticky="ew", pady=(0, 18)
+        )
+
+        ttk.Label(form, text="Player 2 name:", font=self.body_font).grid(
+            row=2, column=0, sticky="w", pady=(0, 6)
+        )
+        ttk.Entry(form, textvariable=self.player_2_var, width=36).grid(
+            row=3, column=0, columnspan=2, sticky="ew", pady=(0, 18)
+        )
+
+        ttk.Label(form, text="Word:", font=self.body_font).grid(
+            row=4, column=0, sticky="w", pady=(0, 6)
+        )
+        ttk.Entry(form, textvariable=self.word_var, width=36).grid(
+            row=5, column=0, columnspan=2, sticky="ew", pady=(0, 18)
+        )
+
+        ttk.Label(form, text="Defense attempts:", font=self.body_font).grid(
+            row=6, column=0, sticky="w", pady=(0, 6)
+        )
+
+        attempts_frame = ttk.Frame(form)
+        attempts_frame.grid(row=7, column=0, columnspan=2, sticky="w", pady=(0, 24))
+
+        ttk.Radiobutton(
+            attempts_frame, text="1", variable=self.defense_attempts_var, value=1
+        ).pack(side="left", padx=(0, 12))
+        ttk.Radiobutton(
+            attempts_frame, text="2", variable=self.defense_attempts_var, value=2
+        ).pack(side="left", padx=(0, 12))
+        ttk.Radiobutton(
+            attempts_frame, text="3", variable=self.defense_attempts_var, value=3
+        ).pack(side="left")
 
         ttk.Button(
-            self.setup_frame,
-            text="Start Game",
+            form,
+            text="Start game",
             command=self._start_game,
-        ).grid(row=4, column=0, columnspan=2, pady=(12, 0), sticky="ew")
+            width=18,
+        ).grid(row=8, column=0, columnspan=2, pady=(6, 0))
 
-        self.setup_frame.columnconfigure(1, weight=1)
+    # =========================
+    # Game view
+    # =========================
 
-    def _build_game_frame(self) -> None:
-        self.game_frame = ttk.Frame(self.root, padding=16)
+    def _build_game_view(self) -> None:
+        frame = self.game_frame
+        frame.columnconfigure(0, weight=1)
+
+        self.matchup_label = ttk.Label(frame, text="", font=self.title_font)
+        self.matchup_label.grid(row=0, column=0, pady=(6, 10))
 
         self.score_text = tk.Text(
-            self.game_frame,
-            height=4,
-            width=50,
+            frame,
+            height=3,
+            width=32,
             relief="flat",
             bd=0,
             highlightthickness=0,
             wrap="none",
+            background=self.root.cget("bg"),
         )
-        self.score_text.grid(row=0, column=0, columnspan=3, sticky="w", pady=(0, 12))
+        self.score_text.grid(row=1, column=0, pady=(0, 24))
         self.score_text.config(state="disabled")
 
-        self.score_text.tag_configure("player_name", font=("TkDefaultFont", 10, "normal"))
-        self.score_text.tag_configure("word_inactive", foreground="gray")
-        self.score_text.tag_configure("word_active", foreground="black", font=("TkDefaultFont", 10, "bold"))
+        self.score_text.tag_configure("score_name", font=self.score_name_font)
+        self.score_text.tag_configure("score_separator", font=self.score_active_font)
+        self.score_text.tag_configure("score_active", font=self.score_active_font, foreground="black")
+        self.score_text.tag_configure("score_inactive", font=self.score_inactive_font, foreground="gray")
 
-        self.attacker_label = ttk.Label(self.game_frame, text="")
-        self.attacker_label.grid(row=1, column=0, columnspan=3, sticky="w", pady=2)
+        self.phase_title_label = ttk.Label(frame, text="", font=self.section_font)
+        self.phase_title_label.grid(row=2, column=0, pady=(0, 14))
 
-        self.phase_label = ttk.Label(self.game_frame, text="")
-        self.phase_label.grid(row=2, column=0, columnspan=3, sticky="w", pady=2)
+        self.trick_label = ttk.Label(frame, text="", font=self.section_font)
+        self.trick_label.grid(row=3, column=0, pady=(0, 10))
 
-        self.current_trick_label = ttk.Label(self.game_frame, text="")
-        self.current_trick_label.grid(row=3, column=0, columnspan=3, sticky="w", pady=2)
+        self.phase_description_label = ttk.Label(frame, text="", font=self.body_font)
+        self.phase_description_label.grid(row=4, column=0, pady=(0, 8))
 
-        self.defender_label = ttk.Label(self.game_frame, text="")
-        self.defender_label.grid(row=4, column=0, columnspan=3, sticky="w", pady=(2, 12))
+        self.attempts_label = ttk.Label(frame, text="", font=self.body_font)
+        self.attempts_label.grid(row=5, column=0, pady=(0, 18))
 
-        ttk.Label(self.game_frame, text="Next trick").grid(row=5, column=0, sticky="w")
-        self.trick_entry = ttk.Entry(self.game_frame, textvariable=self.trick_var, width=36)
-        self.trick_entry.grid(row=5, column=1, columnspan=2, sticky="ew", pady=4)
-
-        self.confirm_trick_button = ttk.Button(
-            self.game_frame,
-            text="Confirm Trick",
-            command=self._confirm_trick,
-        )
-        self.confirm_trick_button.grid(row=6, column=0, sticky="ew", pady=4)
-
-        self.cancel_trick_button = ttk.Button(
-            self.game_frame,
-            text="Cancel Trick",
-            command=self._cancel_trick,
-        )
-        self.cancel_trick_button.grid(row=6, column=1, sticky="ew", pady=4)
-
-        self.history_button = ttk.Button(
-            self.game_frame,
-            text="History",
-            command=self._open_history_window,
-        )
-        self.history_button.grid(row=6, column=2, sticky="ew", pady=4)
+        action_buttons = ttk.Frame(frame)
+        action_buttons.grid(row=6, column=0, pady=(0, 14))
 
         self.success_button = ttk.Button(
-            self.game_frame,
-            text="Defense Success",
+            action_buttons,
+            text="Success",
             command=lambda: self._resolve_defense(True),
+            width=14,
         )
-        self.success_button.grid(row=7, column=0, sticky="ew", pady=4)
+        self.success_button.pack(side="left", padx=8)
 
-        self.fail_button = ttk.Button(
-            self.game_frame,
-            text="Defense Fail",
+        self.failure_button = ttk.Button(
+            action_buttons,
+            text="Failure",
             command=lambda: self._resolve_defense(False),
+            width=14,
         )
-        self.fail_button.grid(row=7, column=1, sticky="ew", pady=4)
+        self.failure_button.pack(side="left", padx=8)
+
+        self.history_button = ttk.Button(
+            frame,
+            text="History",
+            command=self._show_history_view,
+            width=10,
+        )
+        self.history_button.grid(row=7, column=0, pady=(0, 20))
 
         self.status_label = ttk.Label(
-            self.game_frame,
+            frame,
             textvariable=self.status_var,
-            wraplength=700,
-            justify="left",
+            font=self.small_font,
+            justify="center",
         )
-        self.status_label.grid(row=8, column=0, columnspan=3, sticky="w", pady=(12, 0))
+        self.status_label.grid(row=8, column=0, pady=(0, 14))
 
-        self.game_frame.columnconfigure(1, weight=1)
-        self.game_frame.columnconfigure(2, weight=1)
+        trick_zone = ttk.Frame(frame)
+        trick_zone.grid(row=9, column=0)
 
-    def _show_setup(self) -> None:
-        assert self.setup_frame is not None
-        assert self.game_frame is not None
-        self.game_frame.pack_forget()
-        self.setup_frame.pack(fill="both", expand=True)
+        self.trick_entry = ttk.Entry(trick_zone, textvariable=self.trick_var, width=26)
+        self.trick_entry.grid(row=0, column=0, pady=(0, 10))
 
-    def _show_game(self) -> None:
-        assert self.setup_frame is not None
-        assert self.game_frame is not None
-        self.setup_frame.pack_forget()
-        self.game_frame.pack(fill="both", expand=True)
+        buttons_row = ttk.Frame(trick_zone)
+        buttons_row.grid(row=1, column=0)
 
-    def _get_player_name(self, state: GameState, player_id: str) -> str:
-        for player in state.players:
-            if player.id == player_id:
-                return player.name
-        return player_id
+        self.confirm_trick_button = ttk.Button(
+            buttons_row,
+            text="Confirm trick",
+            command=self._confirm_trick,
+            width=14,
+        )
+        self.confirm_trick_button.pack(side="left", padx=6)
+
+        self.cancel_trick_button = ttk.Button(
+            buttons_row,
+            text="Cancel trick",
+            command=self._cancel_trick,
+            width=14,
+        )
+        self.cancel_trick_button.pack(side="left", padx=6)
+
+    # =========================
+    # History view
+    # =========================
+
+    def _build_history_view(self) -> None:
+        frame = self.history_frame
+        frame.columnconfigure(0, weight=1)
+        frame.rowconfigure(1, weight=1)
+
+        title = ttk.Label(frame, text="Match history", font=self.title_font)
+        title.grid(row=0, column=0, pady=(6, 14))
+
+        columns = ("turn", "attacker", "trick", "valid", "defender", "defense", "letters")
+        self.history_tree = ttk.Treeview(frame, columns=columns, show="headings", height=14)
+
+        self.history_tree.heading("turn", text="Turn")
+        self.history_tree.heading("attacker", text="Attacker")
+        self.history_tree.heading("trick", text="Trick")
+        self.history_tree.heading("valid", text="Valid")
+        self.history_tree.heading("defender", text="Defender")
+        self.history_tree.heading("defense", text="Defense")
+        self.history_tree.heading("letters", text="Letters")
+
+        self.history_tree.column("turn", width=55, anchor="center")
+        self.history_tree.column("attacker", width=120, anchor="w")
+        self.history_tree.column("trick", width=180, anchor="w")
+        self.history_tree.column("valid", width=60, anchor="center")
+        self.history_tree.column("defender", width=120, anchor="w")
+        self.history_tree.column("defense", width=90, anchor="center")
+        self.history_tree.column("letters", width=90, anchor="center")
+
+        self.history_tree.grid(row=1, column=0, sticky="nsew")
+
+        controls = ttk.Frame(frame)
+        controls.grid(row=2, column=0, pady=(14, 0))
+
+        self.back_to_game_button = ttk.Button(
+            controls,
+            text="Back to game",
+            command=self._show_game_view,
+            width=16,
+        )
+        self.back_to_game_button.pack()
+
+    # =========================
+    # Game actions
+    # =========================
 
     def _start_game(self) -> None:
         player_1 = self.player_1_var.get().strip()
         player_2 = self.player_2_var.get().strip()
         word = self.word_var.get().strip().upper()
-        attempts_text = self.defense_attempts_var.get().strip()
+        attempts = self.defense_attempts_var.get()
 
         if not player_1 or not player_2:
             messagebox.showerror("Invalid input", "Both player names are required.")
             return
-
-        if not word:
-            messagebox.showerror("Invalid input", "The word is required.")
-            return
-
-        if not attempts_text.isdigit():
-            messagebox.showerror("Invalid input", "Defense attempts must be a number.")
-            return
-
-        attempts = int(attempts_text)
 
         try:
             rule_set = RuleSetConfig(
@@ -204,13 +324,16 @@ class GUIApp:
             )
             self.controller = GameController(match_parameters)
             self.controller.start_game()
-        except (ValueError, InvalidActionError) as error:
+        except ValueError as error:
+            messagebox.showerror("Invalid setup", str(error))
+            return
+        except InvalidActionError as error:
             messagebox.showerror("Cannot start game", str(error))
             return
 
-        self.status_var.set("Game started.")
         self.trick_var.set("")
-        self._show_game()
+        self.status_var.set("Game started.")
+        self._show_view("game")
         self._refresh_game_view()
 
     def _confirm_trick(self) -> None:
@@ -224,12 +347,10 @@ class GUIApp:
 
         try:
             self.controller.start_turn(trick)
+            self.status_var.set(f"Trick '{trick}' confirmed.")
         except InvalidActionError as error:
             self.status_var.set(f"Invalid action: {error}")
-            self._refresh_game_view()
-            return
 
-        self.status_var.set(f"Trick '{trick}' started.")
         self._refresh_game_view()
 
     def _cancel_trick(self) -> None:
@@ -242,8 +363,8 @@ class GUIApp:
             return
 
         self.controller.cancel_turn(trick)
-        self.status_var.set("Trick cancelled. Next player.")
         self.trick_var.set("")
+        self.status_var.set("Trick cancelled. Next player.")
         self._refresh_game_view()
 
     def _resolve_defense(self, success: bool) -> None:
@@ -251,9 +372,12 @@ class GUIApp:
             return
 
         try:
-            events_before = len(self.controller.get_state().history.events)
+            state_before = self.controller.get_state()
+            events_before = len(state_before.history.events)
+
             resolution_status = self.controller.resolve_defense(success)
-            message = self._format_new_events(self.controller.get_state(), events_before)
+            state_after = self.controller.get_state()
+            message = self._format_new_events(state_after, events_before)
 
             if resolution_status == DefenseResolutionStatus.DEFENSE_CONTINUES:
                 self.status_var.set(message or "Defense continues.")
@@ -272,59 +396,99 @@ class GUIApp:
         if state.phase == Phase.END:
             self._show_game_over_message(state)
 
+    # =========================
+    # View refresh
+    # =========================
+
     def _refresh_game_view(self) -> None:
         if self.controller is None:
             return
 
         state = self.controller.get_state()
 
+        assert self.matchup_label is not None
         assert self.score_text is not None
-        assert self.attacker_label is not None
-        assert self.phase_label is not None
-        assert self.current_trick_label is not None
-        assert self.defender_label is not None
-        assert self.trick_entry is not None
-        assert self.confirm_trick_button is not None
-        assert self.cancel_trick_button is not None
-        assert self.success_button is not None
-        assert self.fail_button is not None
+        assert self.phase_title_label is not None
+        assert self.trick_label is not None
+        assert self.phase_description_label is not None
+        assert self.attempts_label is not None
+
+        self.matchup_label.config(
+            text=f"{state.players[0].name.upper()} - {state.players[1].name.upper()}"
+        )
 
         self._render_score_text(state)
-        self.phase_label.config(text=f"Phase: {state.phase.value}")
 
         if state.phase == Phase.END:
-            self.attacker_label.config(text="Attacker: -")
-            self.current_trick_label.config(text="Current trick: -")
-            self.defender_label.config(text="Defender: -")
+            self.phase_title_label.config(text="Game over")
+            self.trick_label.config(text="")
+            self.phase_description_label.config(text="The match is finished.")
+            self.attempts_label.config(text="")
             self._set_trick_controls_enabled(False)
             self._set_defense_controls_enabled(False)
             return
 
         attacker = state.players[state.attacker_index]
-        self.attacker_label.config(text=f"Attacker: {attacker.name}")
 
         if state.current_trick is None:
-            self.current_trick_label.config(text="Current trick: -")
-            self.defender_label.config(text="Defender: -")
+            defender_name = self._get_next_defender_name(state)
+            self.phase_title_label.config(
+                text=f"{attacker.name} sets the next trick"
+            )
+            self.trick_label.config(text="")
+            self.phase_description_label.config(
+                text=f"{attacker.name} attacks / {defender_name} defends"
+            )
+            self.attempts_label.config(text="")
             self._set_trick_controls_enabled(True)
             self._set_defense_controls_enabled(False)
         else:
-            self.current_trick_label.config(text=f"Current trick: {state.current_trick}")
+            defender = self._get_current_defender(state)
+            defender_name = defender.name if defender is not None else "-"
 
-            if state.current_defender_position < len(state.defender_indices):
-                defender_index = state.defender_indices[state.current_defender_position]
-                defender = state.players[defender_index]
-                self.defender_label.config(
-                    text=(
-                        f"Defender: {defender.name} "
-                        f"({state.defense_attempts_left} attempt(s) left)"
-                    )
-                )
-            else:
-                self.defender_label.config(text="Defender: -")
-
+            self.phase_title_label.config(
+                text=f"{attacker.name} attacks / {defender_name} defends"
+            )
+            self.trick_label.config(text=f"Trick: {state.current_trick}")
+            self.phase_description_label.config(
+                text=f"Defense phase: {defender_name} tries to reproduce the trick"
+            )
+            self.attempts_label.config(
+                text=f"{defender_name} has {state.defense_attempts_left} defense attempt(s) left"
+            )
             self._set_trick_controls_enabled(False)
             self._set_defense_controls_enabled(True)
+
+    def _render_score_text(self, state: GameState) -> None:
+        assert self.score_text is not None
+
+        self.score_text.config(state="normal")
+        self.score_text.delete("1.0", tk.END)
+
+        if len(state.players) < 2:
+            self.score_text.config(state="disabled")
+            return
+
+        word = state.rule_set.letters_word
+        player_1 = state.players[0]
+        player_2 = state.players[1]
+
+        self._insert_score_word(word, player_1.score)
+        self.score_text.insert(tk.END, "  -  ", "score_separator")
+        self._insert_score_word(word, player_2.score)
+
+        self.score_text.config(state="disabled")
+
+    def _insert_score_word(self, word: str, score: int) -> None:
+        assert self.score_text is not None
+
+        active_part = word[:score]
+        inactive_part = word[score:]
+
+        if active_part:
+            self.score_text.insert(tk.END, active_part, "score_active")
+        if inactive_part:
+            self.score_text.insert(tk.END, inactive_part, "score_inactive")
 
     def _set_trick_controls_enabled(self, enabled: bool) -> None:
         assert self.trick_entry is not None
@@ -338,11 +502,65 @@ class GUIApp:
 
     def _set_defense_controls_enabled(self, enabled: bool) -> None:
         assert self.success_button is not None
-        assert self.fail_button is not None
+        assert self.failure_button is not None
 
         state = "normal" if enabled else "disabled"
         self.success_button.config(state=state)
-        self.fail_button.config(state=state)
+        self.failure_button.config(state=state)
+
+    def _show_history_view(self) -> None:
+        if self.controller is None:
+            return
+
+        self._refresh_history_view()
+        self._show_view("history")
+
+    def _show_game_view(self) -> None:
+        self._refresh_game_view()
+        self._show_view("game")
+
+    def _refresh_history_view(self) -> None:
+        if self.controller is None or self.history_tree is None:
+            return
+
+        state = self.controller.get_state()
+        rows: list[HistoryRow] = state.history.build_rows()
+
+        for item in self.history_tree.get_children():
+            self.history_tree.delete(item)
+
+        for row in rows:
+            letters = self._format_letters(row.letters, state.rule_set.letters_word)
+            self.history_tree.insert(
+                "",
+                "end",
+                values=(
+                    row.turn_number,
+                    row.attacker_name,
+                    row.trick_name,
+                    row.trick_validated,
+                    row.defender_name or "-",
+                    row.defense_result or "-",
+                    letters,
+                ),
+            )
+
+    # =========================
+    # Helpers
+    # =========================
+
+    def _get_current_defender(self, state: GameState):
+        if state.current_defender_position >= len(state.defender_indices):
+            return None
+
+        defender_index = state.defender_indices[state.current_defender_position]
+        return state.players[defender_index]
+
+    def _get_next_defender_name(self, state: GameState) -> str:
+        for index, player in enumerate(state.players):
+            if index != state.attacker_index and player.is_active:
+                return player.name
+        return "-"
 
     def _format_letters(self, letters: str, word: str) -> str:
         if not letters:
@@ -361,6 +579,12 @@ class GUIApp:
                 messages.append(message)
 
         return " ".join(messages)
+
+    def _get_player_name(self, state: GameState, player_id: str) -> str:
+        for player in state.players:
+            if player.id == player_id:
+                return player.name
+        return player_id
 
     def _format_event(self, state: GameState, event: Event) -> str:
         name = event.name
@@ -402,54 +626,6 @@ class GUIApp:
 
         return ""
 
-    def _open_history_window(self) -> None:
-        if self.controller is None:
-            return
-
-        state = self.controller.get_state()
-        rows: list[HistoryRow] = state.history.build_rows()
-
-        window = tk.Toplevel(self.root)
-        window.title("History")
-        window.geometry("860x360")
-
-        columns = ("turn", "attacker", "trick", "valid", "defender", "defense", "letters")
-        tree = ttk.Treeview(window, columns=columns, show="headings")
-
-        tree.heading("turn", text="Turn")
-        tree.heading("attacker", text="Attacker")
-        tree.heading("trick", text="Trick")
-        tree.heading("valid", text="Valid")
-        tree.heading("defender", text="Defender")
-        tree.heading("defense", text="Defense")
-        tree.heading("letters", text="Letters")
-
-        tree.column("turn", width=60, anchor="center")
-        tree.column("attacker", width=120, anchor="w")
-        tree.column("trick", width=180, anchor="w")
-        tree.column("valid", width=70, anchor="center")
-        tree.column("defender", width=120, anchor="w")
-        tree.column("defense", width=100, anchor="center")
-        tree.column("letters", width=100, anchor="center")
-
-        for row in rows:
-            letters = self._format_letters(row.letters, state.rule_set.letters_word)
-            tree.insert(
-                "",
-                "end",
-                values=(
-                    row.turn_number,
-                    row.attacker_name,
-                    row.trick_name,
-                    row.trick_validated,
-                    row.defender_name or "-",
-                    row.defense_result or "-",
-                    letters,
-                ),
-            )
-
-        tree.pack(fill="both", expand=True, padx=12, pady=12)
-
     def _show_game_over_message(self, state: GameState) -> None:
         active_players = [player for player in state.players if player.is_active]
 
@@ -458,61 +634,6 @@ class GUIApp:
         else:
             messagebox.showinfo("Game Over", "No winner determined.")
 
-    def _display_history(self, state: GameState) -> None:
-        rows: list[HistoryRow] = state.history.build_rows()
-
-        if not rows:
-            return
-
-        print("\nHistory:")
-        print(
-            f"{'Turn':<6}"
-            f"{'Attacker':<12}"
-            f"{'Trick':<16}"
-            f"{'Valid':<8}"
-            f"{'Defender':<12}"
-            f"{'Defense':<10}"
-            f"{'Letters':<10}"
-        )
-        print("-" * 74)
-
-        for row in rows:
-            letters = self._format_letters(row.letters, state.rule_set.letters_word)
-
-            print(
-                f"{row.turn_number:<6}"
-                f"{row.attacker_name:<12}"
-                f"{row.trick_name:<16}"
-                f"{row.trick_validated:<8}"
-                f"{row.defender_name:<12}"
-                f"{row.defense_result or '-':<10}"
-                f"{letters:<10}"
-            )
-
-    def _render_score_text(self, state: GameState) -> None:
-        assert self.score_text is not None
-
-        self.score_text.config(state="normal")
-        self.score_text.delete("1.0", tk.END)
-
-        self.score_text.insert(tk.END, "Score:\n")
-
-        word = state.rule_set.letters_word
-
-        for player in state.players:
-            self.score_text.insert(tk.END, f"{player.name:<12}", "player_name")
-
-            taken = word[:player.score]
-            remaining = word[player.score:]
-
-            if taken:
-                self.score_text.insert(tk.END, taken, "word_active")
-            if remaining:
-                self.score_text.insert(tk.END, remaining, "word_inactive")
-
-            self.score_text.insert(tk.END, "\n")
-
-        self.score_text.config(state="disabled")
 
 if __name__ == "__main__":
     GUIApp().run()
