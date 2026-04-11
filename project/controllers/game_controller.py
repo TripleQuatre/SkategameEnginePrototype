@@ -19,5 +19,5 @@ class GameController:
     def get_state(self):
         return self.engine.get_state()
     
-    def cancel_turn(self) -> None:
-        self.engine.cancel_turn()
+    def cancel_turn(self, trick: str) -> None:
+        self.engine.cancel_turn(trick)

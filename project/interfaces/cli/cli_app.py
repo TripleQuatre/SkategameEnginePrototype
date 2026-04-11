@@ -3,7 +3,8 @@ from config.rule_set_config import RuleSetConfig
 from controllers.game_controller import GameController
 from core.exceptions import InvalidActionError
 from core.types import Phase, DefenseResolutionStatus
-
+from core.state import GameState
+from core.history import HistoryRow
 
 class CLIApp:
     def run(self) -> None:
@@ -35,6 +36,7 @@ class CLIApp:
 
             if state.phase == Phase.END:
                 self._display_winner(state)
+                self._display_history(state)
                 break
 
             self._display_state(state)
@@ -199,6 +201,42 @@ class CLIApp:
                 return False
             print("Type y or n.")
 
+    def _display_history(self, state) -> None:
+            rows: list[HistoryRow] = state.history.build_rows()
+
+            if not rows:
+                return
+
+            print("\nHistory:")
+            print(
+                f"{'Turn':<6}"
+                f"{'Attacker':<12}"
+                f"{'Trick':<16}"
+                f"{'Valid':<8}"
+                f"{'Defender':<12}"
+                f"{'Defense':<10}"
+                f"{'Letters':<10}"
+            )
+            print("-" * 74)
+
+            for row in rows:
+                letters = row.letters or "-"
+                print(
+                    f"{row.turn_number:<6}"
+                    f"{row.attacker_name:<12}"
+                    f"{row.trick_name:<16}"
+                    f"{row.trick_validated:<8}"
+                    f"{row.defender_name:<12}"
+                    f"{row.defense_result or '-':<10}"
+                    f"{letters:<10}"
+                )
+
+    def _format_letters(self, letters: str, word: str) -> str:
+      if not letters:
+          return "-"
+      if len(letters) >= len(word):
+          return f"[{letters}]"
+      return letters
 
 if __name__ == "__main__":
     CLIApp().run()
