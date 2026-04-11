@@ -5,6 +5,7 @@ from core.exceptions import InvalidActionError
 from core.types import Phase, DefenseResolutionStatus
 from core.state import GameState
 from core.history import HistoryRow
+from core.events import Event
 
 class CLIApp:
     def run(self) -> None:
@@ -83,7 +84,7 @@ class CLIApp:
                     print()
                     break
 
-    def _display_state(self, state) -> None:
+    def _display_state(self, state: GameState) -> None:
         print("Score:")
         for player in state.players:
             penalty = self._format_penalty_slots(state.rule_set.letters_word, player.score)
@@ -101,7 +102,7 @@ class CLIApp:
             if message:
                 print(message)
 
-    def _format_event(self, event) -> str:
+    def _format_event(self, event: Event) -> str:
         name = event.name
         payload = event.payload
 
@@ -131,7 +132,7 @@ class CLIApp:
 
         return ""
 
-    def _display_winner(self, state) -> None:
+    def _display_winner(self, state: GameState) -> None:
         active_players = [player for player in state.players if player.is_active]
 
         print("Final score:")
@@ -201,7 +202,7 @@ class CLIApp:
                 return False
             print("Type y or n.")
 
-    def _display_history(self, state) -> None:
+    def _display_history(self, state: GameState) -> None:
             rows: list[HistoryRow] = state.history.build_rows()
 
             if not rows:
