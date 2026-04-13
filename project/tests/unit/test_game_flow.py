@@ -108,14 +108,25 @@ def test_cancel_turn_adds_only_turn_cancelled_event(
     assert state.current_trick is None
     assert state.defender_indices == []
 
-
-def test_start_turn_adds_trick_to_validated_tricks(
+def test_cancel_turn_rejects_when_trick_is_already_engaged(
     game_flow: GameFlow, state: GameState
 ) -> None:
     game_flow.start_game(state)
     game_flow.start_turn(state, "Soul")
 
-    assert "soul" in state.validated_tricks
+    with pytest.raises(InvalidActionError):
+        game_flow.cancel_turn(state, "Soul")
+
+
+def test_start_turn_does_not_consume_trick_yet(
+    game_flow: GameFlow, state: GameState
+) -> None:
+    game_flow.start_game(state)
+    game_flow.start_turn(state, "Soul")
+
+    assert state.current_trick == "Soul"
+    assert "soul" not in state.validated_tricks
+
 
 
 def test_start_turn_rejects_already_validated_trick(
@@ -126,3 +137,26 @@ def test_start_turn_rejects_already_validated_trick(
 
     with pytest.raises(InvalidActionError):
         game_flow.start_turn(state, "soul")
+
+def test_resolve_defense_consumes_trick_when_turn_finishes(
+    game_flow: GameFlow, state: GameState
+) -> None:
+    game_flow.start_game(state)
+    game_flow.start_turn(state, "Soul")
+
+    result = game_flow.resolve_defense(state, success=True)
+
+    assert result == DefenseResolutionStatus.TURN_FINISHED
+    assert "soul" in state.validated_tricks
+
+def test_resolve_defense_consumes_trick_when_game_finishes(
+    game_flow: GameFlow, state: GameState
+) -> None:
+    state.rule_set.letters_word = "S"
+    game_flow.start_game(state)
+    game_flow.start_turn(state, "Soul")
+
+    result = game_flow.resolve_defense(state, success=False)
+
+    assert result == DefenseResolutionStatus.GAME_FINISHED
+    assert "soul" in state.validated_tricks

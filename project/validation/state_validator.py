@@ -19,3 +19,19 @@ class StateValidator:
 
         if state.defense_attempts_left < 0:
             raise InvalidStateError("defense_attempts_left cannot be negative.")
+
+        if state.current_trick is None:
+            if state.defender_indices:
+                raise InvalidStateError(
+                    "defender_indices must be empty when no trick is engaged."
+                )
+
+            if state.current_defender_position != 0:
+                raise InvalidStateError(
+                    "current_defender_position must be 0 when no trick is engaged."
+                )
+
+            if state.defense_attempts_left != 0:
+                raise InvalidStateError(
+                    "defense_attempts_left must be 0 when no trick is engaged."
+                )

@@ -30,3 +30,13 @@ class ActionValidator:
 
         if state.current_defender_position >= len(state.defender_indices):
             raise InvalidActionError("No current defender to resolve.")
+        
+    def validate_cancel_turn(self, state: GameState, trick: str) -> None:
+        if state.phase != Phase.TURN:
+            raise InvalidActionError("Cannot cancel turn outside TURN phase.")
+
+        if not trick:
+            raise InvalidActionError("A trick is required to cancel a turn.")
+
+        if state.current_trick is not None:
+            raise InvalidActionError("Cannot cancel turn after a trick has been engaged.")

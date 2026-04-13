@@ -36,10 +36,8 @@ class GameFlow:
         self.action_validator.validate_start_turn(state, trick)
 
         attacker = state.players[state.attacker_index]
-        normalized_trick = self.rules_registry.special.normalize_trick(trick)
 
         state.current_trick = trick
-        state.validated_tricks.append(normalized_trick)
         state.defender_indices = [
             index
             for index, player in enumerate(state.players)
@@ -60,6 +58,17 @@ class GameFlow:
                 },
             )
         )
+
+    def _consume_current_trick(self, state: GameState) -> None:
+        if state.current_trick is None:
+            return
+
+        normalized_trick = self.rules_registry.special.normalize_trick(
+            state.current_trick
+        )
+
+        if normalized_trick not in state.validated_tricks:
+            state.validated_tricks.append(normalized_trick)
 
     def resolve_defense(
         self, state: GameState, success: bool
@@ -91,9 +100,11 @@ class GameFlow:
                     },
                 )
             )
+            self._consume_current_trick(state)
             return DefenseResolutionStatus.GAME_FINISHED
 
         if turn_finished:
+            self._consume_current_trick(state)
             self._advance_to_next_attacker(state, log_turn_end=True)
             return DefenseResolutionStatus.TURN_FINISHED
 
@@ -135,8 +146,7 @@ class GameFlow:
             )
 
     def cancel_turn(self, state: GameState, trick: str) -> None:
-        if state.phase != Phase.TURN:
-            return
+        self.action_validator.validate_cancel_turn(state, trick)
 
         attacker = state.players[state.attacker_index]
 

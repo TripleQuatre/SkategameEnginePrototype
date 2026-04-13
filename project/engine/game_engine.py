@@ -7,7 +7,6 @@ from validation.config_validator import ConfigValidator
 from validation.state_validator import StateValidator
 from modes.one_vs_one import OneVsOneMode
 from modes.base_mode import BaseMode
-from modes.one_vs_one import OneVsOneMode
 
 
 class GameEngine:
