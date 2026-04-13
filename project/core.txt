@@ -1,0 +1,304 @@
+# 📁 Dossier `core/`
+
+## 🎯 Rôle global
+
+Le dossier `core/` contient les **briques fondamentales du moteur**.
+
+C’est ici qu’on trouve :
+
+* les objets principaux du jeu
+* l’état de la partie
+* les événements
+* l’historique
+* les types communs
+* les exceptions
+* la base des snapshots
+
+👉 `core/` ne décide pas du flow du jeu.
+Il fournit les **structures de données** sur lesquelles le reste du projet s’appuie.
+
+---
+
+## 📄 `player.py`
+
+### Rôle
+
+Représente un joueur dans le moteur.
+
+Contient actuellement :
+
+* `id`
+* `name`
+* `internal_id`
+* `score`
+* `is_active`
+* propriété `is_eliminated`
+
+### Position dans l’architecture
+
+* utilisé par `GameState`
+* manipulé par `engine/`
+* affiché par les interfaces
+
+### Évolution probable
+
+* ajout éventuel de métadonnées légères liées au joueur dans le moteur
+* mais sans aller vers une vraie gestion de compte utilisateur
+
+### Améliorations possibles
+
+* peu de choses à faire maintenant
+* la classe est déjà simple et cohérente
+
+---
+
+## 📄 `state.py`
+
+### Rôle
+
+Représente l’**état vivant complet de la partie**.
+
+Contient :
+
+* la liste des joueurs
+* la phase actuelle
+* l’attaquant courant
+* les défenseurs courants
+* les essais restants
+* le trick courant
+* l’historique
+* le ruleset
+* la mémoire des tricks validés
+
+### Position dans l’architecture
+
+C’est le **centre de gravité du moteur**.
+
+Tout le système tourne autour de cet objet :
+
+* `engine/` le modifie
+* `validation/` le vérifie
+* `interfaces/` le lisent
+* `persistence/` le sauvegarde
+
+### Évolution probable
+
+* ajout futur de données spécifiques à certains modes
+* éventuelle évolution pour du multi-défenseurs plus riche
+* possible séparation de certains sous-états si le moteur grossit beaucoup
+
+### Améliorations possibles
+
+* aucune urgente pour la V3
+* il faut juste éviter de le surcharger trop vite en V4
+
+---
+
+## 📄 `history.py`
+
+### Rôle
+
+Gère l’**historique du match**.
+
+Contient :
+
+* `History` : stockage brut des événements
+* `HistoryRow` : vue reconstruite pour affichage tableau
+* `build_rows()` : reconstruction des lignes à partir des events
+
+### Position dans l’architecture
+
+* reçoit les événements produits par `engine/`
+* sert au CLI et à la GUI
+* pourra servir plus tard à l’export ou à l’analyse de match
+
+### Évolution probable
+
+* enrichissement des lignes d’historique
+* adaptation future pour les modes multijoueurs plus complexes
+* éventuelle séparation entre historique brut et historique “présentable”
+
+### Améliorations possibles
+
+* légère incohérence sémantique actuelle :
+
+  * `attacker_name` / `defender_name` stockent encore en pratique des ids moteur si `id != name`
+* plus tard, il faudra décider si on renomme les champs ou si on injecte de vrais noms au bon moment
+
+---
+
+## 📄 `events.py`
+
+### Rôle
+
+Définit la structure d’un **événement moteur**.
+
+Contient :
+
+* `name`
+* `payload`
+
+### Position dans l’architecture
+
+* créé par `engine/`
+* stocké dans `History`
+* interprété par les interfaces
+
+### Évolution probable
+
+* ajout futur d’un système de types d’événements plus formalisé
+* possible passage vers Enum ou structure plus stricte
+
+### Améliorations possibles
+
+* vraie dette connue :
+
+  * les noms d’événements sont encore des strings brutes
+* pas urgent pour la V3, mais à surveiller pour V4
+
+---
+
+## 📄 `snapshots.py`
+
+### Rôle
+
+Prépare un futur système de **snapshot / undo**.
+
+Contient :
+
+* `Snapshot`
+* `SnapshotHistory`
+
+### Position dans l’architecture
+
+* s’appuie sur `Serializer`
+* lié au `GameState`
+* pour l’instant non branché à l’UI ni au moteur en usage courant
+
+### Évolution probable
+
+* vrai undo dans le controller ou le moteur
+* bouton Undo dans une future interface
+* snapshots automatiques avant certaines actions
+
+### Améliorations possibles
+
+* pour la V3, c’est suffisant
+* le prochain vrai pas serait de brancher les snapshots dans le flow, mais pas maintenant
+
+---
+
+## 📄 `types.py`
+
+### Rôle
+
+Centralise les **types communs** sous forme d’Enum.
+
+Contient :
+
+* `Phase`
+* `Role`
+* `DefenseResolutionStatus`
+
+### Position dans l’architecture
+
+* utilisé par le moteur
+* utilisé par la validation
+* utilisé par les interfaces
+
+### Évolution probable
+
+* ajout futur d’autres types structurants
+* peut-être `EventType` plus tard
+
+### Améliorations possibles
+
+* aucune urgente
+* fichier déjà utile et propre
+
+---
+
+## 📄 `exceptions.py`
+
+### Rôle
+
+Centralise les **exceptions métier du moteur**.
+
+Contient notamment :
+
+* `GameError`
+* `InvalidActionError`
+* `InvalidStateError`
+
+### Position dans l’architecture
+
+* utilisé surtout par `engine/` et `validation/`
+
+### Évolution probable
+
+* ajout de nouvelles exceptions ciblées si le moteur devient plus riche
+
+### Améliorations possibles
+
+* aucune nécessaire pour la V3
+
+---
+
+## 📄 `phases.py`
+
+### Rôle actuel
+
+Actuellement, ce fichier est surtout un **emplacement prévu par l’architecture**.
+
+### Rôle futur probable
+
+Il pourra accueillir :
+
+* des helpers autour des phases
+* des transitions de phase
+* de la logique si la gestion des phases devient plus riche
+
+### Position dans l’architecture
+
+* complément potentiel de `types.py`
+* pas un remplacement
+
+### Améliorations possibles
+
+* si le fichier n’existe pas encore dans le repo, il peut être créé vide avec un commentaire
+* sinon, il peut attendre tant qu’aucune logique dédiée n’est nécessaire
+
+---
+
+## 🧠 Conclusion du dossier `core/`
+
+`core/` est le socle du projet.
+
+Il contient :
+
+* les données fondamentales
+* les types partagés
+* l’historique
+* la base de snapshots
+
+👉 Le dossier est globalement très cohérent avec la V3.
+👉 La seule vraie dette légère concerne la formalisation future des événements.
+
+---
+
+## 🔎 À retenir
+
+* `player.py` = un joueur
+* `state.py` = l’état complet d’une partie
+* `history.py` = historique brut + vue tableau
+* `events.py` = structure des événements
+* `snapshots.py` = base de l’undo futur
+* `types.py` = enums communs
+* `exceptions.py` = erreurs métier
+* `phases.py` = réserve pour logique future autour des phases
+
+**Confiance : 0.99**
+
+**Caveat :**
+
+* `history.py` est très bon pour le 1v1 actuel, mais devra évoluer si les futurs modes deviennent plus complexes.

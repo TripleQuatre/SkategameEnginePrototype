@@ -1,0 +1,146 @@
+# 📁 Dossier `rules/`
+
+## 🎯 Rôle global
+
+Le dossier `rules/` contient la **logique métier pure des règles du jeu**.
+
+C’est ici qu’on place :
+
+* ce qui détermine comment une règle fonctionne
+* sans gérer directement le flow du match
+* sans dépendre de l’interface
+
+👉 `rules/` ne décide pas **quand** appliquer une règle.
+Il définit **comment** elle fonctionne.
+
+---
+
+## 📄 `scoring_rules.py`
+
+### Rôle
+
+Gère la logique liée au **score / lettres**.
+
+Contient actuellement :
+
+* l’ajout d’une lettre via le score
+* l’affichage courant du mot atteint par un joueur
+
+### Position dans l’architecture
+
+* utilisé par `TurnResolver`
+* dépend du `RuleSetConfig` via `GameState`
+
+### Évolution probable
+
+* prise en charge de systèmes de score alternatifs
+* éventuel support de variantes :
+
+  * points
+  * manches
+  * handicap
+  * lettres différentes selon le mode
+
+### Améliorations possibles
+
+* rien d’urgent pour la V3
+* tant que la règle “lettres = score” reste dominante, le fichier est bien dimensionné
+
+---
+
+## 📄 `special_rules.py`
+
+### Rôle
+
+Contient les **règles spéciales ou transversales** qui ne relèvent pas directement du score.
+
+Contient actuellement :
+
+* validation de l’activité d’un joueur
+* normalisation d’un trick
+* détection d’un trick déjà validé
+
+### Position dans l’architecture
+
+* utilisé par `ActionValidator`
+* accédé via `RulesRegistry`
+
+### Évolution probable
+
+C’est probablement ici que viendront plus tard :
+
+* variantes avancées
+* restrictions supplémentaires
+* comportements spéciaux de certains modes
+* règles contextuelles non liées au score
+
+### Améliorations possibles
+
+* rien à changer maintenant
+* simplement éviter d’en faire un “fourre-tout”
+* garder une vraie distinction avec `scoring_rules.py`
+
+---
+
+## 📄 `rules_registry.py`
+
+### Rôle
+
+Centralise l’accès aux objets de règles.
+
+Contient aujourd’hui :
+
+* `self.scoring`
+* `self.special`
+
+### Position dans l’architecture
+
+* utilisé surtout par `GameFlow`
+* injecté dans `TurnResolver`
+* injecté dans `ActionValidator`
+
+### Pourquoi c’est utile
+
+Ça évite :
+
+* des imports dispersés partout
+* des instanciations multiples sans contrôle
+* un moteur trop couplé à chaque règle individuellement
+
+### Évolution probable
+
+* ajout de nouveaux groupes de règles
+* éventuelle injection dynamique selon le mode ou le ruleset
+* futur point d’entrée si le système de règles devient plus riche
+
+### Améliorations possibles
+
+* aucune urgente
+* le fichier est léger, mais il a déjà un vrai rôle structurel
+
+---
+
+## 🧠 Conclusion du dossier `rules/`
+
+Le dossier `rules/` est proprement séparé du moteur.
+
+Il permet de distinguer :
+
+* le **flow** du jeu (`engine/`)
+* la **logique métier des règles** (`rules/`)
+
+👉 C’est un bon point fort de la V3.
+
+---
+
+## 🔎 À retenir
+
+* `scoring_rules.py` = règles de score / lettres
+* `special_rules.py` = règles spéciales / comportementales
+* `rules_registry.py` = point d’accès central aux règles
+
+**Confiance : 0.99**
+
+**Caveat :**
+
+* le dossier est très cohérent pour la V3 actuelle, mais devra être surveillé en V4 pour éviter que `special_rules.py` devienne trop généraliste.

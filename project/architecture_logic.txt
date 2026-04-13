@@ -1,0 +1,299 @@
+Parfait, là on passe au niveau “vision globale” du projet 👇
+
+---
+
+# 🧠 Architecture de SkateGame Engine V3
+
+## 🎯 Objectif
+
+Ce document explique **pourquoi l’architecture a été conçue ainsi**,
+et **ce qu’elle permet concrètement**.
+
+👉 Ce n’est plus “comment ça marche”, mais “pourquoi c’est structuré comme ça”.
+
+---
+
+## 🏗️ Principe fondamental
+
+L’architecture repose sur une idée simple :
+
+> **séparer strictement les responsabilités pour garder un moteur propre, testable et évolutif**
+
+---
+
+## 🧭 Structure globale
+
+```text
+Interfaces → Controllers → Engine → Rules → Core
+     ↓              ↓         ↓       ↓      ↓
+  Validation    GameFlow   RuleSet   State / Events
+     ↓              ↓         ↓
+  Persistence ← Snapshots ← History
+```
+
+---
+
+# 🧱 Les grands blocs
+
+## 1. Core → la base du système
+
+### Rôle
+
+* contient les données fondamentales
+* ne contient pas de logique de jeu
+
+### Pourquoi c’est important
+
+* tout repose dessus
+* permet de garder un état clair et centralisé
+
+👉 Sans `core/`, le moteur n’a pas de structure
+
+---
+
+## 2. Rules → la logique métier
+
+### Rôle
+
+* définit les règles du jeu
+* sans gérer le flow
+
+### Pourquoi c’est séparé
+
+* permet de modifier les règles sans toucher au moteur
+* facilite l’ajout de variantes
+
+👉 Exemple :
+changer le système de score sans casser `GameFlow`
+
+---
+
+## 3. Engine → le cœur actif
+
+### Rôle
+
+* orchestre le jeu
+* applique les règles
+* gère les phases
+
+### Pourquoi c’est séparé
+
+* évite que la logique soit dispersée
+* centralise le comportement
+
+👉 C’est le cerveau du jeu
+
+---
+
+## 4. Validation → les garde-fous
+
+### Rôle
+
+* empêcher les états invalides
+* empêcher les actions illégales
+
+### Pourquoi c’est séparé
+
+* évite de polluer le moteur
+* rend les règles plus lisibles
+
+👉 Le moteur avance uniquement dans des conditions valides
+
+---
+
+## 5. Controller → le relais
+
+### Rôle
+
+* interface entre UI et moteur
+
+### Pourquoi c’est utile
+
+* évite que l’UI dépende directement du moteur
+* simplifie les appels
+
+👉 Permet de changer l’UI sans toucher au moteur
+
+---
+
+## 6. Interfaces → la présentation
+
+### Rôle
+
+* interaction utilisateur
+* affichage
+
+### Pourquoi c’est séparé
+
+* permet d’avoir CLI, GUI, mobile, web…
+* sans toucher au moteur
+
+👉 Le moteur est totalement indépendant
+
+---
+
+## 7. Persistence → la mémoire externe
+
+### Rôle
+
+* sauvegarder / charger les données
+
+### Pourquoi c’est séparé
+
+* ne pollue pas le moteur
+* permet d’ajouter export/import facilement
+
+---
+
+## 8. Snapshots → la mémoire interne
+
+### Rôle
+
+* capturer des états du jeu
+* préparer un undo
+
+### Pourquoi c’est séparé
+
+* différent de la persistance (temporaire vs fichier)
+
+---
+
+## 9. History → la mémoire logique
+
+### Rôle
+
+* stocker les événements
+* reconstruire le déroulement
+
+### Pourquoi c’est central
+
+* permet :
+
+  * affichage
+  * debug
+  * export
+  * analyse
+
+---
+
+# 🧠 Les choix architecturaux clés
+
+## 1. Événements comme source de vérité secondaire
+
+* le `GameState` est la vérité principale
+* les `Events` permettent de reconstruire le passé
+
+👉 C’est ce qui rend l’historique puissant
+
+---
+
+## 2. Moteur indépendant des interfaces
+
+* aucune dépendance UI
+* testable entièrement en Python pur
+
+👉 Permet CLI + GUI + futur mobile
+
+---
+
+## 3. Séparation règles / flow
+
+* `Rules` = logique métier
+* `Engine` = orchestration
+
+👉 Permet d’ajouter des variantes facilement
+
+---
+
+## 4. Validation externalisée
+
+* évite des `if` partout dans le moteur
+* rend le code plus lisible
+
+---
+
+## 5. État centralisé
+
+* un seul `GameState`
+* pas de duplication
+
+👉 évite les incohérences
+
+---
+
+## 6. Persistance découplée
+
+* pas de JSON dans le moteur
+* pas de dépendance fichier
+
+👉 facilite l’évolution future (API, DB…)
+
+---
+
+# ⚖️ Ce que cette architecture permet
+
+## ✅ Avantages
+
+* code lisible
+* testabilité forte
+* séparation claire des responsabilités
+* extensibilité (modes, règles, UI…)
+* faible couplage
+
+---
+
+## ❌ Ce que ça évite
+
+* logique dispersée
+* dépendance UI → moteur
+* code spaghetti
+* duplication de règles
+* état incohérent
+
+---
+
+# ⚠️ Limites (assumées en V3)
+
+* architecture un peu “lourde” pour un jeu simple
+* certains fichiers encore très légers (modes, rules…)
+* events encore en string (pas typés fortement)
+* GUI encore utilitaire
+
+👉 Mais tout ça est volontaire :
+
+> on prépare l’évolution sans sur-construire
+
+---
+
+# 🚀 Vision
+
+Cette architecture permet de faire évoluer le projet vers :
+
+* application mobile
+* backend
+* réseau social de skate
+* modes de jeu avancés
+* analyse de parties
+
+👉 sans refonte majeure
+
+---
+
+# 🧩 Conclusion
+
+L’architecture de la V3 repose sur une idée forte :
+
+> **un moteur pur, indépendant, structuré, prêt à évoluer**
+
+Elle permet de passer :
+
+* d’un prototype
+* à une vraie base d’application
+
+---
+
+**Confiance : 1.00**
+
+**Caveat :**
+
+* cette architecture est volontairement anticipatrice ; certaines parties prennent leur pleine valeur seulement à partir de la V4.

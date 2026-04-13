@@ -1,0 +1,175 @@
+# 📁 Dossier `persistence/`
+
+## 🎯 Rôle global
+
+Le dossier `persistence/` gère la **sauvegarde et le rechargement des données du moteur**.
+
+Son rôle n’est pas encore de fournir une vraie feature utilisateur complète dans la V3, mais de poser une base propre pour :
+
+* l’export de partie
+* le chargement de partie
+* le debug
+* les snapshots
+* les futurs usages backend / social / archivage
+
+👉 La persistance travaille sur les **données**, pas sur l’interface.
+
+---
+
+## 📄 `serializers.py`
+
+### Rôle
+
+Transforme les objets Python du moteur en **données sérialisables** (`dict`) et inversement.
+
+Il gère actuellement :
+
+* `Player`
+* `Event`
+* `History`
+* `RuleSetConfig`
+* `MatchParameters`
+* `GameState`
+
+### Position dans l’architecture
+
+* utilisé par `snapshot_repository.py`
+* utilisé par `config_repository.py`
+* utilisé indirectement par `snapshots.py`
+
+### Pourquoi il est important
+
+Il sépare :
+
+* la logique métier
+* du format de sauvegarde
+
+Grâce à lui, le projet n’est pas directement dépendant du JSON.
+
+### Évolution probable
+
+* prise en charge de nouveaux types
+* sérialisation plus riche si les modes ou les règles deviennent plus complexes
+* support futur d’autres formats si besoin
+
+### Améliorations possibles
+
+* aucune urgente pour la V3
+* le fichier est déjà bien positionné
+
+---
+
+## 📄 `snapshot_repository.py`
+
+### Rôle
+
+Gère la sauvegarde et le chargement d’un **état complet de partie**.
+
+Concrètement :
+
+* sauvegarde un `GameState` dans un fichier JSON
+* recharge un `GameState` depuis ce fichier
+
+### Position dans l’architecture
+
+* repose sur `Serializer`
+* lié au moteur via `GameState`
+* pas encore branché directement à la GUI/CLI comme feature utilisateur
+
+### Pourquoi il est utile déjà maintenant
+
+Même si l’utilisateur final ne s’en sert pas encore directement, il permet :
+
+* de prouver que l’état est persistant
+* de préparer un futur export / load
+* de rendre le moteur plus robuste
+
+### Évolution probable
+
+* ajout d’une vraie feature d’export / import dans les interfaces
+* meilleure gestion d’erreurs fichier/JSON
+* intégration à un futur système de reprise de partie
+
+### Améliorations possibles
+
+* ajout futur de gestion d’erreurs plus explicite
+* éventuellement horodatage ou métadonnées de sauvegarde
+* mais rien d’obligatoire pour la V3
+
+---
+
+## 📄 `config_repository.py`
+
+### Rôle
+
+Gère la sauvegarde et le chargement d’une **configuration de match**.
+
+Concrètement :
+
+* sauvegarde un `MatchParameters`
+* recharge un `MatchParameters`
+
+### Position dans l’architecture
+
+* repose sur `Serializer`
+* lié à la couche `config/`
+
+### Pourquoi il est utile
+
+Il prépare :
+
+* la sauvegarde de presets
+* des configurations réutilisables
+* des futures interfaces de sélection de setup
+
+### Évolution probable
+
+* sauvegarde de plusieurs profils de configuration
+* presets utilisateur
+* presets système (“casual”, “competitive”, etc.)
+
+### Améliorations possibles
+
+* aucune urgente
+* c’est un bon socle pour la suite
+
+---
+
+## 🧠 Conclusion du dossier `persistence/`
+
+Le dossier `persistence/` est surtout un **investissement structurel** pour l’avenir.
+
+Il ne sert pas encore massivement à l’utilisateur final dans la V3, mais il est déjà très utile pour :
+
+* rendre le moteur sérialisable
+* préparer l’export / import
+* servir de base aux snapshots et à l’undo
+* préparer la V4+
+
+👉 C’est une bonne fondation, pas une feature centrale de la V3.
+
+---
+
+## 🔎 À retenir
+
+* `serializers.py` = conversion objet ↔ dictionnaire
+* `snapshot_repository.py` = sauvegarde/chargement d’une partie
+* `config_repository.py` = sauvegarde/chargement d’une config
+
+---
+
+## ⚠️ Point d’attention futur
+
+La persistance existe, mais l’interface ne l’exploite pas encore directement.
+Pour en faire une vraie feature utilisateur, il faudra plus tard :
+
+* permettre au controller/engine de charger un état
+* brancher ça à la GUI/CLI
+
+Mais pour la V3, le dossier est déjà à la bonne place.
+
+**Confiance : 0.99**
+
+**Caveat :**
+
+* la persistance est surtout “en avance” sur les usages actuels, ce qui est normal dans cette version.

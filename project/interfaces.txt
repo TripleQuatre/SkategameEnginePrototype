@@ -1,0 +1,157 @@
+# 📁 Dossier `interfaces/`
+
+## 🎯 Rôle global
+
+Le dossier `interfaces/` contient les **points d’interaction utilisateur** avec le moteur.
+
+Son rôle est de :
+
+* récupérer des entrées utilisateur
+* afficher l’état du jeu
+* appeler le controller
+* ne jamais porter la logique métier du moteur
+
+👉 Les interfaces sont des **couches de présentation**.
+Elles doivent rester découplées du cœur du jeu.
+
+---
+
+# 📁 Sous-dossier `interfaces/cli/`
+
+## 📄 `cli_app.py`
+
+### Rôle
+
+Fournit une interface texte jouable du moteur.
+
+Permet actuellement :
+
+* de configurer une partie
+* lancer des tricks
+* confirmer ou annuler un trick
+* résoudre la défense
+* afficher le score
+* afficher le gagnant
+* afficher l’historique de fin de partie
+
+### Position dans l’architecture
+
+* utilise `GameController`
+* lit `GameState`
+* affiche des données préparées pour un humain
+
+### Pourquoi c’est important
+
+Le CLI a servi de :
+
+* première interface jouable
+* outil de validation rapide du moteur
+* support pour tester les flows avant la GUI
+
+### Évolution probable
+
+* debug CLI plus avancé
+* commandes d’export / import
+* commandes techniques pour snapshots ou simulation
+* éventuellement maintien comme interface de test interne
+
+### Améliorations possibles
+
+* aucune urgente pour la V3
+* le wording pourra être harmonisé plus tard
+* l’historique pourrait un jour être mieux séparé dans une couche de présentation
+
+---
+
+# 📁 Sous-dossier `interfaces/gui/`
+
+## 📄 `gui_app.py`
+
+### Rôle
+
+Fournit l’interface graphique Tkinter du moteur.
+
+Elle permet actuellement :
+
+* de configurer une partie
+* de jouer une partie complète
+* de visualiser le score en direct
+* d’accéder à l’historique via une vue dédiée
+* de suivre l’état courant du jeu
+
+### Structure actuelle
+
+La GUI fonctionne sur **trois vues dans une seule fenêtre** :
+
+* setup
+* game
+* history
+
+👉 C’est un choix important, car il évite les popups inutiles et rapproche l’interface d’une vraie application.
+
+### Position dans l’architecture
+
+* utilise `GameController`
+* lit `GameState`
+* affiche l’historique reconstruit via `HistoryRow`
+
+### Pourquoi c’est important
+
+La GUI valide que le moteur est suffisamment propre pour :
+
+* être piloté par une interface graphique
+* changer d’état visuellement
+* réutiliser l’historique et les validations sans logique dupliquée
+
+### Évolution probable
+
+* amélioration visuelle
+* réduction du texte au profit d’icônes
+* ajout de boutons export / import / undo
+* meilleure structuration de la présentation
+* éventuel passage à une interface plus avancée si le projet grandit
+
+### Améliorations possibles
+
+* quelques helpers restent très orientés 1v1
+* l’affichage pourrait plus tard être factorisé dans une couche de présentation
+* le wording est encore “prototype”, ce qui est acceptable pour la V3
+
+---
+
+## 🧠 Conclusion du dossier `interfaces/`
+
+Le dossier `interfaces/` est cohérent avec la philosophie du projet :
+
+* il n’embarque pas la logique métier
+* il s’appuie correctement sur le controller
+* il permet de tester concrètement le moteur
+
+👉 La présence d’un CLI **et** d’une GUI est un vrai point fort de la V3.
+
+---
+
+## 🔎 À retenir
+
+* `cli/cli_app.py` = interface texte complète
+* `gui/gui_app.py` = interface graphique simple mais fonctionnelle
+* les deux reposent sur le même moteur et le même controller
+
+---
+
+## ⚠️ Point d’attention futur
+
+Les interfaces fonctionnent bien, mais elles restent des interfaces de prototype avancé.
+La vraie évolution future portera surtout sur :
+
+* la présentation
+* l’ergonomie
+* l’intégration de fonctionnalités comme persistance ou undo
+
+Mais pour la V3, le dossier remplit très bien son rôle.
+
+**Confiance : 0.99**
+
+**Caveat :**
+
+* la GUI est bien suffisante pour la V3, mais elle reste volontairement utilitaire, pas encore orientée “produit final”.
