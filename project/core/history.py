@@ -34,7 +34,7 @@ class History:
                 turn_number += 1
                 current_row = HistoryRow(
                     turn_number=turn_number,
-                    attacker_name=payload["attacker_id"],
+                    attacker_id=payload["attacker_id"],
                     trick_name=payload["trick"],
                     trick_validated="V",
                     defender_name="",
@@ -65,7 +65,7 @@ class History:
                 rows.append(
                     HistoryRow(
                         turn_number=turn_number,
-                        attacker_name=payload["attacker_id"],
+                        attacker_id=payload["attacker_id"],
                         trick_name=payload["trick"],
                         trick_validated="X",
                         defender_name="",
@@ -76,5 +76,5 @@ class History:
 
         if current_row is not None:
             rows.append(current_row)
-            
+
         return rows
