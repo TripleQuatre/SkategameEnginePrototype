@@ -50,11 +50,11 @@ class GameEngine:
     def get_state(self) -> GameState:
         return self.state
 
-    def _load_mode(self, mode_name: str) -> BaseMode:
-        if mode_name == "one_vs_one":
+    def _load_mode(self):
+        if self.match_parameters.mode_name == "one_vs_one":
             return OneVsOneMode()
 
-        raise ValueError(f"Unknown mode: {mode_name}")
+        raise ValueError(f"Unknown mode: {self.match_parameters.mode_name}")
     
     def cancel_turn(self, trick: str) -> None:
         self.state_validator.validate(self.state)
