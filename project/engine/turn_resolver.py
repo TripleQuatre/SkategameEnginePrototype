@@ -1,7 +1,9 @@
 from core.events import Event
-from core.state import GameState
 from core.exceptions import InvalidStateError
+from core.state import GameState
+from core.types import EventName
 from rules.rules_registry import RulesRegistry
+
 
 class TurnResolver:
     def __init__(self, rules_registry: RulesRegistry) -> None:
@@ -19,7 +21,7 @@ class TurnResolver:
         if success:
             state.history.add_event(
                 Event(
-                    name="defense_succeeded",
+                    name=EventName.DEFENSE_SUCCEEDED,
                     payload={
                         "player_id": defender.id,
                         "trick": state.current_trick,
@@ -33,7 +35,7 @@ class TurnResolver:
         if state.defense_attempts_left > 0:
             state.history.add_event(
                 Event(
-                    name="defense_failed_attempt",
+                    name=EventName.DEFENSE_FAILED_ATTEMPT,
                     payload={
                         "player_id": defender.id,
                         "trick": state.current_trick,
@@ -46,7 +48,7 @@ class TurnResolver:
         self.rules_registry.scoring.apply_letter_penalty(state, defender)
         state.history.add_event(
             Event(
-                name="letter_received",
+                name=EventName.LETTER_RECEIVED,
                 payload={
                     "player_id": defender.id,
                     "trick": state.current_trick,

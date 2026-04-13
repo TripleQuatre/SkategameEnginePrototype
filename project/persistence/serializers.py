@@ -6,7 +6,7 @@ from core.events import Event
 from core.history import History
 from core.player import Player
 from core.state import GameState
-from core.types import Phase
+from core.types import EventName, Phase
 
 
 class Serializer:
@@ -30,13 +30,13 @@ class Serializer:
 
     def serialize_event(self, event: Event) -> dict:
         return {
-            "name": event.name,
+            "name": event.name.value,
             "payload": event.payload,
         }
 
     def deserialize_event(self, data: dict) -> Event:
         return Event(
-            name=data["name"],
+            name=EventName(data["name"]),
             payload=data.get("payload", {}),
         )
 

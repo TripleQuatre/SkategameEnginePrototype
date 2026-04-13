@@ -1,6 +1,6 @@
 from config.match_parameters import MatchParameters
-from core.types import Phase, DefenseResolutionStatus
 from controllers.game_controller import GameController
+from core.types import DefenseResolutionStatus, EventName, Phase
 
 
 def test_game_controller_can_start_a_game() -> None:
@@ -12,7 +12,7 @@ def test_game_controller_can_start_a_game() -> None:
     state = controller.get_state()
     assert state.phase == Phase.TURN
     assert state.attacker_index == 0
-    assert state.history.events[-1].name == "game_started"
+    assert state.history.events[-1].name == EventName.GAME_STARTED
 
 
 def test_game_controller_can_start_a_turn() -> None:
@@ -26,7 +26,7 @@ def test_game_controller_can_start_a_turn() -> None:
     assert state.current_trick == "kickflip"
     assert state.defender_indices == [1]
     assert state.current_defender_position == 0
-    assert state.history.events[-1].name == "turn_started"
+    assert state.history.events[-1].name == EventName.TURN_STARTED
 
 
 def test_game_controller_defense_success_finishes_turn() -> None:
@@ -42,7 +42,7 @@ def test_game_controller_defense_success_finishes_turn() -> None:
     assert state.attacker_index == 1
     assert state.current_trick is None
     assert state.defender_indices == []
-    assert state.history.events[-1].name == "turn_ended"
+    assert state.history.events[-1].name == EventName.TURN_ENDED
 
 
 def test_game_controller_defense_failure_can_finish_game() -> None:
@@ -59,4 +59,4 @@ def test_game_controller_defense_failure_can_finish_game() -> None:
     assert result == DefenseResolutionStatus.GAME_FINISHED
     assert state.phase == Phase.END
     assert state.players[1].is_active is False
-    assert state.history.events[-1].name == "game_finished"
+    assert state.history.events[-1].name == EventName.GAME_FINISHED

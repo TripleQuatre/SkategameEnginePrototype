@@ -1,12 +1,13 @@
 from core.events import Event
 from core.history import History
+from core.types import EventName
 
 
 def test_build_rows_from_completed_turn() -> None:
     history = History()
     history.add_event(
         Event(
-            name="turn_started",
+            name=EventName.TURN_STARTED,
             payload={
                 "attacker_id": "Stan",
                 "trick": "Soul",
@@ -16,7 +17,7 @@ def test_build_rows_from_completed_turn() -> None:
     )
     history.add_event(
         Event(
-            name="defense_failed_attempt",
+            name=EventName.DEFENSE_FAILED_ATTEMPT,
             payload={
                 "player_id": "Denise",
                 "trick": "Soul",
@@ -26,7 +27,7 @@ def test_build_rows_from_completed_turn() -> None:
     )
     history.add_event(
         Event(
-            name="defense_failed_attempt",
+            name=EventName.DEFENSE_FAILED_ATTEMPT,
             payload={
                 "player_id": "Denise",
                 "trick": "Soul",
@@ -36,7 +37,7 @@ def test_build_rows_from_completed_turn() -> None:
     )
     history.add_event(
         Event(
-            name="letter_received",
+            name=EventName.LETTER_RECEIVED,
             payload={
                 "player_id": "Denise",
                 "trick": "Soul",
@@ -47,7 +48,7 @@ def test_build_rows_from_completed_turn() -> None:
     )
     history.add_event(
         Event(
-            name="turn_ended",
+            name=EventName.TURN_ENDED,
             payload={"next_attacker_id": "Denise"},
         )
     )
@@ -68,7 +69,7 @@ def test_build_rows_from_cancelled_turn() -> None:
     history = History()
     history.add_event(
         Event(
-            name="turn_cancelled",
+            name=EventName.TURN_CANCELLED,
             payload={
                 "attacker_id": "Stan",
                 "trick": "Soul",

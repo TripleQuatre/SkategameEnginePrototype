@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 
 from core.events import Event
+from core.types import EventName
 
 
 @dataclass
@@ -30,7 +31,7 @@ class History:
             name = event.name
             payload = event.payload
 
-            if name == "turn_started":
+            if name == EventName.TURN_STARTED:
                 turn_number += 1
                 current_row = HistoryRow(
                     turn_number=turn_number,
@@ -46,21 +47,21 @@ class History:
                 if defender_ids:
                     current_row.defender_name = defender_ids[0]
 
-            elif name == "defense_succeeded" and current_row is not None:
+            elif name == EventName.DEFENSE_SUCCEEDED and current_row is not None:
                 current_row.defense_result += "V"
 
-            elif name == "defense_failed_attempt" and current_row is not None:
+            elif name == EventName.DEFENSE_FAILED_ATTEMPT and current_row is not None:
                 current_row.defense_result += "X"
 
-            elif name == "letter_received" and current_row is not None:
+            elif name == EventName.LETTER_RECEIVED and current_row is not None:
                 current_row.defense_result += "X"
                 current_row.letters = payload["penalty_display"]
 
-            elif name == "turn_ended" and current_row is not None:
+            elif name == EventName.TURN_ENDED and current_row is not None:
                 rows.append(current_row)
                 current_row = None
 
-            elif name == "turn_cancelled":
+            elif name == EventName.TURN_CANCELLED:
                 turn_number += 1
                 rows.append(
                     HistoryRow(

@@ -1,5 +1,5 @@
 from config.match_parameters import MatchParameters
-from core.types import Phase, DefenseResolutionStatus
+from core.types import DefenseResolutionStatus, EventName, Phase
 from engine.game_engine import GameEngine
 
 
@@ -12,7 +12,7 @@ def test_game_engine_can_start_a_game() -> None:
     state = engine.get_state()
     assert state.phase == Phase.TURN
     assert state.attacker_index == 0
-    assert state.history.events[-1].name == "game_started"
+    assert state.history.events[-1].name == EventName.GAME_STARTED
 
 
 def test_game_engine_can_start_a_turn() -> None:
@@ -27,7 +27,7 @@ def test_game_engine_can_start_a_turn() -> None:
     assert state.defender_indices == [1]
     assert state.current_defender_position == 0
     assert state.defense_attempts_left == state.rule_set.defense_attempts
-    assert state.history.events[-1].name == "turn_started"
+    assert state.history.events[-1].name == EventName.TURN_STARTED
 
 
 def test_game_engine_defense_failure_can_finish_game() -> None:
@@ -45,7 +45,7 @@ def test_game_engine_defense_failure_can_finish_game() -> None:
     assert state.phase == Phase.END
     assert state.players[1].score == 1
     assert state.players[1].is_active is False
-    assert state.history.events[-1].name == "game_finished"
+    assert state.history.events[-1].name == EventName.GAME_FINISHED
 
 
 def test_game_engine_defense_success_finishes_turn_and_rotates_attacker() -> None:
@@ -61,4 +61,4 @@ def test_game_engine_defense_success_finishes_turn_and_rotates_attacker() -> Non
     assert state.attacker_index == 1
     assert state.current_trick is None
     assert state.defender_indices == []
-    assert state.history.events[-1].name == "turn_ended"
+    assert state.history.events[-1].name == EventName.TURN_ENDED

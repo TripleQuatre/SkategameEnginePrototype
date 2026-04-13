@@ -1,8 +1,8 @@
 from core.events import Event
 from core.state import GameState
-from core.types import Phase, DefenseResolutionStatus
-from engine.turn_resolver import TurnResolver
+from core.types import DefenseResolutionStatus, EventName, Phase
 from engine.end_conditions import EndConditions
+from engine.turn_resolver import TurnResolver
 from rules.rules_registry import RulesRegistry
 from validation.action_validator import ActionValidator
 
@@ -25,7 +25,7 @@ class GameFlow:
 
         state.history.add_event(
             Event(
-                name="game_started",
+                name=EventName.GAME_STARTED,
                 payload={
                     "player_ids": [player.id for player in state.players],
                 },
@@ -48,7 +48,7 @@ class GameFlow:
 
         state.history.add_event(
             Event(
-                name="turn_started",
+                name=EventName.TURN_STARTED,
                 payload={
                     "attacker_id": attacker.id,
                     "trick": trick,
@@ -58,17 +58,6 @@ class GameFlow:
                 },
             )
         )
-
-    def _consume_current_trick(self, state: GameState) -> None:
-        if state.current_trick is None:
-            return
-
-        normalized_trick = self.rules_registry.special.normalize_trick(
-            state.current_trick
-        )
-
-        if normalized_trick not in state.validated_tricks:
-            state.validated_tricks.append(normalized_trick)
 
     def resolve_defense(
         self, state: GameState, success: bool
@@ -81,7 +70,7 @@ class GameFlow:
         for player in eliminated_players:
             state.history.add_event(
                 Event(
-                    name="player_eliminated",
+                    name=EventName.PLAYER_ELIMINATED,
                     payload={
                         "player_id": player.id,
                     },
@@ -94,12 +83,13 @@ class GameFlow:
 
             state.history.add_event(
                 Event(
-                    name="game_finished",
+                    name=EventName.GAME_FINISHED,
                     payload={
                         "winner_id": winner.id if winner else None,
                     },
                 )
             )
+
             self._consume_current_trick(state)
             return DefenseResolutionStatus.GAME_FINISHED
 
@@ -109,6 +99,17 @@ class GameFlow:
             return DefenseResolutionStatus.TURN_FINISHED
 
         return DefenseResolutionStatus.DEFENSE_CONTINUES
+
+    def _consume_current_trick(self, state: GameState) -> None:
+        if state.current_trick is None:
+            return
+
+        normalized_trick = self.rules_registry.special.normalize_trick(
+            state.current_trick
+        )
+
+        if normalized_trick not in state.validated_tricks:
+            state.validated_tricks.append(normalized_trick)
 
     def _advance_to_next_attacker(
         self, state: GameState, log_turn_end: bool = True
@@ -138,7 +139,7 @@ class GameFlow:
         if log_turn_end:
             state.history.add_event(
                 Event(
-                    name="turn_ended",
+                    name=EventName.TURN_ENDED,
                     payload={
                         "next_attacker_id": state.players[state.attacker_index].id,
                     },
@@ -154,7 +155,7 @@ class GameFlow:
 
         state.history.add_event(
             Event(
-                name="turn_cancelled",
+                name=EventName.TURN_CANCELLED,
                 payload={
                     "attacker_id": attacker.id,
                     "trick": trick,

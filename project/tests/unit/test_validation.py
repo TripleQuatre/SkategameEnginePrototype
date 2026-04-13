@@ -226,3 +226,182 @@ def test_state_validator_rejects_defense_attempts_left_when_no_trick_is_engaged(
 
     with pytest.raises(InvalidStateError):
         validator.validate(state)
+
+def test_state_validator_rejects_defender_indices_when_no_trick_is_engaged() -> None:
+    validator = StateValidator()
+    state = GameState(
+        players=[
+            Player(id="p1", name="Player 1"),
+            Player(id="p2", name="Player 2"),
+        ],
+        current_trick=None,
+        defender_indices=[1],
+    )
+
+    with pytest.raises(InvalidStateError):
+        validator.validate(state)
+
+def test_state_validator_rejects_current_defender_position_when_no_trick_is_engaged() -> None:
+    validator = StateValidator()
+    state = GameState(
+        players=[
+            Player(id="p1", name="Player 1"),
+            Player(id="p2", name="Player 2"),
+        ],
+        current_trick=None,
+        current_defender_position=1,
+    )
+
+    with pytest.raises(InvalidStateError):
+        validator.validate(state)
+
+def test_state_validator_rejects_defense_attempts_left_when_no_trick_is_engaged() -> None:
+    validator = StateValidator()
+    state = GameState(
+        players=[
+            Player(id="p1", name="Player 1"),
+            Player(id="p2", name="Player 2"),
+        ],
+        current_trick=None,
+        defense_attempts_left=1,
+    )
+
+    with pytest.raises(InvalidStateError):
+        validator.validate(state)
+
+def test_state_validator_rejects_engaged_trick_outside_turn_phase() -> None:
+    validator = StateValidator()
+    state = GameState(
+        players=[
+            Player(id="p1", name="Player 1"),
+            Player(id="p2", name="Player 2"),
+        ],
+        phase=Phase.SETUP,
+        current_trick="Soul",
+        defender_indices=[1],
+        current_defender_position=0,
+        defense_attempts_left=1,
+    )
+
+    with pytest.raises(InvalidStateError):
+        validator.validate(state)
+
+def test_state_validator_rejects_engaged_trick_without_defenders() -> None:
+    validator = StateValidator()
+    state = GameState(
+        players=[
+            Player(id="p1", name="Player 1"),
+            Player(id="p2", name="Player 2"),
+        ],
+        phase=Phase.TURN,
+        current_trick="Soul",
+        defender_indices=[],
+        current_defender_position=0,
+        defense_attempts_left=1,
+    )
+
+    with pytest.raises(InvalidStateError):
+        validator.validate(state)
+
+def test_state_validator_rejects_current_defender_position_out_of_range_for_engaged_trick() -> None:
+    validator = StateValidator()
+    state = GameState(
+        players=[
+            Player(id="p1", name="Player 1"),
+            Player(id="p2", name="Player 2"),
+        ],
+        phase=Phase.TURN,
+        current_trick="Soul",
+        defender_indices=[1],
+        current_defender_position=1,
+        defense_attempts_left=1,
+    )
+
+    with pytest.raises(InvalidStateError):
+        validator.validate(state)
+
+def test_state_validator_rejects_non_positive_defense_attempts_for_engaged_trick() -> None:
+    validator = StateValidator()
+    state = GameState(
+        players=[
+            Player(id="p1", name="Player 1"),
+            Player(id="p2", name="Player 2"),
+        ],
+        phase=Phase.TURN,
+        current_trick="Soul",
+        defender_indices=[1],
+        current_defender_position=0,
+        defense_attempts_left=0,
+    )
+
+    with pytest.raises(InvalidStateError):
+        validator.validate(state)
+
+def test_state_validator_rejects_attacker_in_defender_indices() -> None:
+    validator = StateValidator()
+    state = GameState(
+        players=[
+            Player(id="p1", name="Player 1"),
+            Player(id="p2", name="Player 2"),
+        ],
+        phase=Phase.TURN,
+        attacker_index=0,
+        current_trick="Soul",
+        defender_indices=[0, 1],
+        current_defender_position=0,
+        defense_attempts_left=1,
+    )
+
+    with pytest.raises(InvalidStateError):
+        validator.validate(state)
+
+def test_state_validator_rejects_duplicate_defender_indices() -> None:
+    validator = StateValidator()
+    state = GameState(
+        players=[
+            Player(id="p1", name="Player 1"),
+            Player(id="p2", name="Player 2"),
+        ],
+        phase=Phase.TURN,
+        current_trick="Soul",
+        defender_indices=[1, 1],
+        current_defender_position=0,
+        defense_attempts_left=1,
+    )
+
+    with pytest.raises(InvalidStateError):
+        validator.validate(state)
+
+def test_state_validator_rejects_inactive_player_in_defender_indices() -> None:
+    validator = StateValidator()
+    state = GameState(
+        players=[
+            Player(id="p1", name="Player 1"),
+            Player(id="p2", name="Player 2", is_active=False),
+        ],
+        phase=Phase.TURN,
+        current_trick="Soul",
+        defender_indices=[1],
+        current_defender_position=0,
+        defense_attempts_left=1,
+    )
+
+    with pytest.raises(InvalidStateError):
+        validator.validate(state)
+
+def test_state_validator_accepts_consistent_engaged_trick_state() -> None:
+    validator = StateValidator()
+    state = GameState(
+        players=[
+            Player(id="p1", name="Player 1"),
+            Player(id="p2", name="Player 2"),
+        ],
+        phase=Phase.TURN,
+        attacker_index=0,
+        current_trick="Soul",
+        defender_indices=[1],
+        current_defender_position=0,
+        defense_attempts_left=1,
+    )
+
+    validator.validate(state)

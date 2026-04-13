@@ -2,7 +2,7 @@ import pytest
 
 from core.player import Player
 from core.state import GameState
-from core.types import Phase
+from core.types import EventName, Phase
 from engine.turn_resolver import TurnResolver
 from rules.rules_registry import RulesRegistry
 
@@ -36,7 +36,7 @@ def test_resolve_defense_success_moves_to_next_defender(
     assert turn_finished is True
     assert state.current_defender_position == 1
     assert state.players[1].score == 0
-    assert state.history.events[-1].name == "defense_succeeded"
+    assert state.history.events[-1].name == EventName.DEFENSE_SUCCEEDED
 
 
 def test_resolve_defense_failed_attempt_keeps_same_defender(
@@ -48,7 +48,7 @@ def test_resolve_defense_failed_attempt_keeps_same_defender(
     assert state.current_defender_position == 0
     assert state.defense_attempts_left == 1
     assert state.players[1].score == 0
-    assert state.history.events[-1].name == "defense_failed_attempt"
+    assert state.history.events[-1].name == EventName.DEFENSE_FAILED_ATTEMPT
 
 
 def test_resolve_defense_final_failure_applies_letter_penalty(
@@ -61,5 +61,5 @@ def test_resolve_defense_final_failure_applies_letter_penalty(
     assert turn_finished is True
     assert state.current_defender_position == 1
     assert state.players[1].score == 1
-    assert state.history.events[-1].name == "letter_received"
+    assert state.history.events[-1].name == EventName.LETTER_RECEIVED
     assert state.history.events[-1].payload["penalty_display"] == "S"

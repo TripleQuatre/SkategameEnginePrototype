@@ -4,7 +4,7 @@ from config.match_parameters import MatchParameters
 from config.rule_set_config import RuleSetConfig
 from core.player import Player
 from core.state import GameState
-from core.types import Phase
+from core.types import EventName, Phase
 from persistence.config_repository import ConfigRepository
 from persistence.serializers import Serializer
 from persistence.snapshot_repository import SnapshotRepository
@@ -52,7 +52,7 @@ def test_serializer_can_roundtrip_game_state() -> None:
     assert restored_state.players[1].score == 2
     assert restored_state.players[1].is_active is False
     assert len(restored_state.history.events) == 1
-    assert restored_state.history.events[0].name == "turn_started"
+    assert restored_state.history.events[0].name == EventName.TURN_STARTED
 
 
 def test_snapshot_repository_can_save_and_load_game_state(tmp_path) -> None:
