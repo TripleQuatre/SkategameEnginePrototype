@@ -3,31 +3,29 @@ from core.state import GameState
 from core.types import DefenseResolutionStatus, EventName, Phase
 from engine.end_conditions import EndConditions
 from engine.turn_resolver import TurnResolver
+from modes.base_mode import BaseMode
 from rules.rules_registry import RulesRegistry
 from validation.action_validator import ActionValidator
 
 
 class GameFlow:
-    def __init__(self) -> None:
+    def __init__(self, mode: BaseMode) -> None:
+        self.mode = mode
         self.rules_registry = RulesRegistry()
         self.turn_resolver = TurnResolver(self.rules_registry)
         self.end_conditions = EndConditions()
         self.action_validator = ActionValidator(self.rules_registry)
 
     def start_game(self, state: GameState) -> None:
-        state.phase = Phase.TURN
-        state.attacker_index = 0
-        state.current_trick = None
-        state.defender_indices = []
-        state.current_defender_position = 0
-        state.defense_attempts_left = 0
-        state.validated_tricks = []
+        self.mode.initialize_game(state)
 
         state.history.add_event(
             Event(
                 name=EventName.GAME_STARTED,
                 payload={
                     "player_ids": [player.id for player in state.players],
+                    "turn_order": state.turn_order,
+                    "starting_attacker_id": state.players[state.attacker_index].id,
                 },
             )
         )
@@ -38,11 +36,7 @@ class GameFlow:
         attacker = state.players[state.attacker_index]
 
         state.current_trick = trick
-        state.defender_indices = [
-            index
-            for index, player in enumerate(state.players)
-            if index != state.attacker_index and player.is_active
-        ]
+        state.defender_indices = self.mode.build_defender_indices(state)
         state.current_defender_position = 0
         state.defense_attempts_left = state.rule_set.defense_attempts
 
@@ -122,23 +116,13 @@ class GameFlow:
     def _advance_to_next_attacker(
         self, state: GameState, log_turn_end: bool = True
     ) -> None:
-        active_player_indices = [
-            index for index, player in enumerate(state.players) if player.is_active
-        ]
+        next_attacker_index = self.mode.get_next_attacker_index(state)
 
-        if not active_player_indices:
+        if next_attacker_index is None:
             state.phase = Phase.END
             return
 
-        current_attacker = state.attacker_index
-
-        for index in active_player_indices:
-            if index > current_attacker:
-                state.attacker_index = index
-                break
-        else:
-            state.attacker_index = active_player_indices[0]
-
+        state.attacker_index = next_attacker_index
         self._clear_current_turn_state(state)
 
         if log_turn_end:
@@ -160,7 +144,7 @@ class GameFlow:
 
         state.history.add_event(
             Event(
-                name=EventName.TURN_CANCELLED,
+                name=EventName.TURN_FAILED,
                 payload={
                     "attacker_id": attacker.id,
                     "trick": trick,

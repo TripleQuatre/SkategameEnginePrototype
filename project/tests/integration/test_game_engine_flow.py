@@ -1,3 +1,5 @@
+import modes.battle as battle_module
+
 from config.match_parameters import MatchParameters
 from core.types import DefenseResolutionStatus, EventName, Phase
 from engine.game_engine import GameEngine
@@ -11,6 +13,7 @@ def test_game_engine_can_start_a_game() -> None:
 
     state = engine.get_state()
     assert state.phase == Phase.TURN
+    assert state.turn_order == [0, 1]
     assert state.attacker_index == 0
     assert state.history.events[-1].name == EventName.GAME_STARTED
 
@@ -147,3 +150,51 @@ def test_game_engine_undo_restores_state_before_cancel_turn() -> None:
     assert state.current_trick is None
     assert state.defender_indices == []
     assert state.history.events[-1].name == EventName.GAME_STARTED
+
+
+def test_battle_game_engine_start_turn_sets_multiple_defenders(monkeypatch) -> None:
+    def fixed_shuffle(values: list[int]) -> None:
+        values[:] = [2, 0, 1]
+
+    monkeypatch.setattr(battle_module.random, "shuffle", fixed_shuffle)
+
+    match_parameters = MatchParameters(
+        player_ids=["p1", "p2", "p3"],
+        mode_name="battle",
+    )
+    engine = GameEngine(match_parameters)
+
+    engine.start_game()
+    engine.start_turn("kickflip")
+
+    state = engine.get_state()
+    assert state.turn_order == [2, 0, 1]
+    assert state.attacker_index == 2
+    assert state.defender_indices == [0, 1]
+    assert state.current_defender_position == 0
+    assert state.defense_attempts_left == state.rule_set.defense_attempts
+
+
+def test_battle_game_engine_rotates_to_next_active_attacker(monkeypatch) -> None:
+    def fixed_shuffle(values: list[int]) -> None:
+        values[:] = [2, 0, 1]
+
+    monkeypatch.setattr(battle_module.random, "shuffle", fixed_shuffle)
+
+    match_parameters = MatchParameters(
+        player_ids=["p1", "p2", "p3"],
+        mode_name="battle",
+    )
+    engine = GameEngine(match_parameters)
+
+    engine.start_game()
+    engine.start_turn("kickflip")
+    engine.resolve_defense(True)
+    result = engine.resolve_defense(True)
+
+    state = engine.get_state()
+    assert result == DefenseResolutionStatus.TURN_FINISHED
+    assert state.attacker_index == 0
+    assert state.current_trick is None
+    assert state.defender_indices == []
+    assert state.history.events[-1].name == EventName.TURN_ENDED

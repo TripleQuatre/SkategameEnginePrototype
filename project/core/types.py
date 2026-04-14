@@ -26,5 +26,5 @@ class EventName(Enum):
     LETTER_RECEIVED = "letter_received"
     PLAYER_ELIMINATED = "player_eliminated"
     TURN_ENDED = "turn_ended"
-    TURN_CANCELLED = "turn_cancelled"
+    TURN_FAILED = "turn_failed"
     GAME_FINISHED = "game_finished"

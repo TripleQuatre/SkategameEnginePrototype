@@ -10,6 +10,7 @@ from config.rule_set_config import RuleSetConfig
 class GameState:
     players: list[Player]
     phase: Phase = Phase.SETUP
+    turn_order: list[int] = field(default_factory=list)
     attacker_index: int = 0
     defender_indices: list[int] = field(default_factory=list)
     current_defender_position: int = 0

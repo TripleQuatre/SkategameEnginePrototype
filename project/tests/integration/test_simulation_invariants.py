@@ -1,3 +1,5 @@
+import modes.battle as battle_module
+
 from config.match_parameters import MatchParameters
 from core.types import DefenseResolutionStatus, Phase
 from engine.game_engine import GameEngine
@@ -131,3 +133,34 @@ def test_simulation_sequence_with_multiple_undos_keeps_state_valid_at_each_step(
 
     assert engine.undo() is False
     assert_valid_state(engine)
+
+
+def test_battle_simulation_sequence_keeps_state_valid(monkeypatch) -> None:
+    def fixed_shuffle(values: list[int]) -> None:
+        values[:] = [2, 0, 1]
+
+    monkeypatch.setattr(battle_module.random, "shuffle", fixed_shuffle)
+
+    match_parameters = MatchParameters(
+        player_ids=["p1", "p2", "p3"],
+        mode_name="battle",
+    )
+    engine = GameEngine(match_parameters)
+
+    engine.start_game()
+    assert_valid_state(engine)
+
+    engine.start_turn("kickflip")
+    assert_valid_state(engine)
+
+    result = engine.resolve_defense(True)
+    assert result == DefenseResolutionStatus.DEFENSE_CONTINUES
+    assert_valid_state(engine)
+
+    result = engine.resolve_defense(False)
+    assert result == DefenseResolutionStatus.TURN_FINISHED
+    assert_valid_state(engine)
+
+    state = engine.get_state()
+    assert state.attacker_index == 0
+    assert state.players[1].score == 1

@@ -1,3 +1,5 @@
+import random
+
 from core.exceptions import InvalidStateError
 from core.state import GameState
 from core.types import Phase
@@ -5,10 +7,11 @@ from core.types import Phase
 from modes.base_mode import BaseMode
 
 
-class OneVsOneMode(BaseMode):
+class BattleMode(BaseMode):
     def initialize_game(self, state: GameState) -> None:
         state.phase = Phase.TURN
-        state.turn_order = [0, 1]
+        state.turn_order = list(range(len(state.players)))
+        random.shuffle(state.turn_order)
         state.attacker_index = state.turn_order[0]
         state.current_trick = None
         state.defender_indices = []
@@ -40,10 +43,10 @@ class OneVsOneMode(BaseMode):
         return None
 
     def validate(self, state: GameState) -> None:
-        if len(state.players) != 2:
-            raise InvalidStateError("One vs one mode requires exactly two players.")
+        if len(state.players) < 3:
+            raise InvalidStateError("Battle mode requires at least three players.")
 
-        if state.turn_order and state.turn_order != [0, 1]:
+        if state.turn_order and len(state.turn_order) != len(state.players):
             raise InvalidStateError(
-                "One vs one mode requires a fixed turn_order of [0, 1]."
+                "Battle mode requires turn_order to include every player."
             )

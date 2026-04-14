@@ -5,11 +5,19 @@ from core.exceptions import InvalidStateError
 
 class ConfigValidator:
     def validate_match_parameters(self, match_parameters: MatchParameters) -> None:
-        if len(match_parameters.player_ids) < 2:
+        player_count = len(match_parameters.player_ids)
+
+        if player_count < 2:
             raise InvalidStateError("At least two players are required.")
 
         if not match_parameters.mode_name:
             raise InvalidStateError("A mode name is required.")
+
+        if match_parameters.mode_name == "one_vs_one" and player_count != 2:
+            raise InvalidStateError("One vs one mode requires exactly two players.")
+
+        if match_parameters.mode_name == "battle" and player_count < 3:
+            raise InvalidStateError("Battle mode requires at least three players.")
 
     def validate_rule_set(self, rule_set: RuleSetConfig) -> None:
         if not rule_set.letters_word:

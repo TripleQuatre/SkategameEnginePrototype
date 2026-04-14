@@ -5,7 +5,7 @@ from core.state import GameState
 from core.types import DefenseResolutionStatus
 from engine.game_flow import GameFlow
 from modes.base_mode import BaseMode
-from modes.one_vs_one import OneVsOneMode
+from modes.mode_factory import ModeFactory
 from persistence.snapshot_repository import SnapshotRepository
 from validation.config_validator import ConfigValidator
 from validation.state_validator import StateValidator
@@ -16,9 +16,9 @@ class GameEngine:
         self.match_parameters = match_parameters
         self.config_validator = ConfigValidator()
         self.state_validator = StateValidator()
-        self.game_flow = GameFlow()
         self.snapshot_history = SnapshotHistory()
         self.snapshot_repository = SnapshotRepository()
+        self.mode_factory = ModeFactory()
 
         self.config_validator.validate_match_parameters(self.match_parameters)
 
@@ -30,6 +30,7 @@ class GameEngine:
 
         self.mode = self._load_mode()
         self.mode.validate(self.state)
+        self.game_flow = GameFlow(self.mode)
 
     def _create_initial_state(self) -> GameState:
         players = [
@@ -46,34 +47,38 @@ class GameEngine:
         self._save_snapshot()
         self.game_flow.start_game(self.state)
         self.state_validator.validate(self.state)
+        self.mode.validate(self.state)
 
     def start_turn(self, trick: str) -> None:
         self.state_validator.validate(self.state)
+        self.mode.validate(self.state)
         self._save_snapshot()
         self.game_flow.start_turn(self.state, trick)
         self.state_validator.validate(self.state)
+        self.mode.validate(self.state)
 
     def resolve_defense(self, success: bool) -> DefenseResolutionStatus:
         self.state_validator.validate(self.state)
+        self.mode.validate(self.state)
         self._save_snapshot()
         result = self.game_flow.resolve_defense(self.state, success)
         self.state_validator.validate(self.state)
+        self.mode.validate(self.state)
         return result
 
     def get_state(self) -> GameState:
         return self.state
 
     def _load_mode(self) -> BaseMode:
-        if self.match_parameters.mode_name == "one_vs_one":
-            return OneVsOneMode()
-
-        raise ValueError(f"Unknown mode: {self.match_parameters.mode_name}")
+        return self.mode_factory.create(self.match_parameters.mode_name)
 
     def cancel_turn(self, trick: str) -> None:
         self.state_validator.validate(self.state)
+        self.mode.validate(self.state)
         self._save_snapshot()
         self.game_flow.cancel_turn(self.state, trick)
         self.state_validator.validate(self.state)
+        self.mode.validate(self.state)
 
     def undo(self) -> bool:
         snapshot = self.snapshot_history.pop()

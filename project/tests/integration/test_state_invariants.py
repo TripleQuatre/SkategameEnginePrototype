@@ -1,3 +1,5 @@
+import modes.battle as battle_module
+
 from config.match_parameters import MatchParameters
 from core.types import DefenseResolutionStatus, EventName, Phase
 from engine.game_engine import GameEngine
@@ -13,6 +15,8 @@ def assert_open_turn_state(
     state = engine.get_state()
 
     assert state.phase == expected_phase
+    assert state.turn_order
+    assert sorted(state.turn_order) == list(range(len(state.players)))
     assert state.attacker_index == attacker_index
     assert state.current_trick is None
     assert state.defender_indices == []
@@ -33,6 +37,8 @@ def assert_engaged_turn_state(
     state = engine.get_state()
 
     assert state.phase == Phase.TURN
+    assert state.turn_order
+    assert sorted(state.turn_order) == list(range(len(state.players)))
     assert state.attacker_index == attacker_index
     assert state.current_trick == trick
     assert state.defender_indices == defender_indices
@@ -138,4 +144,27 @@ def test_cancel_turn_keeps_engine_in_open_turn_state() -> None:
 
     assert_open_turn_state(engine, attacker_index=1)
     assert engine.get_state().validated_tricks == []
-    assert engine.get_state().history.events[-1].name == EventName.TURN_CANCELLED
+    assert engine.get_state().history.events[-1].name == EventName.TURN_FAILED
+
+
+def test_battle_start_game_leaves_engine_in_open_turn_state(monkeypatch) -> None:
+    def fixed_shuffle(values: list[int]) -> None:
+        values[:] = [1, 2, 0]
+
+    monkeypatch.setattr(battle_module.random, "shuffle", fixed_shuffle)
+
+    match_parameters = MatchParameters(
+        player_ids=["p1", "p2", "p3"],
+        mode_name="battle",
+    )
+    engine = GameEngine(match_parameters)
+
+    engine.start_game()
+
+    state = engine.get_state()
+    assert state.phase == Phase.TURN
+    assert state.turn_order == [1, 2, 0]
+    assert state.attacker_index == 1
+    assert state.current_trick is None
+    assert state.defender_indices == []
+    StateValidator().validate(state)

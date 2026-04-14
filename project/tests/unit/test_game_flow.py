@@ -5,11 +5,12 @@ from core.player import Player
 from core.state import GameState
 from core.types import DefenseResolutionStatus, EventName, Phase
 from engine.game_flow import GameFlow
+from modes.one_vs_one import OneVsOneMode
 
 
 @pytest.fixture
 def game_flow() -> GameFlow:
-    return GameFlow()
+    return GameFlow(OneVsOneMode())
 
 
 @pytest.fixture
@@ -25,6 +26,7 @@ def test_start_game_sets_turn_phase(game_flow: GameFlow, state: GameState) -> No
     game_flow.start_game(state)
 
     assert state.phase == Phase.TURN
+    assert state.turn_order == [0, 1]
     assert state.attacker_index == 0
     assert state.current_trick is None
     assert state.defender_indices == []
@@ -91,7 +93,7 @@ def test_resolve_defense_returns_game_finished_on_final_elimination(
     assert state.history.events[-1].name == EventName.GAME_FINISHED
 
 
-def test_cancel_turn_adds_only_turn_cancelled_event(
+def test_cancel_turn_adds_only_turn_failed_event(
     game_flow: GameFlow, state: GameState
 ) -> None:
     game_flow.start_game(state)
@@ -101,7 +103,7 @@ def test_cancel_turn_adds_only_turn_cancelled_event(
     new_events = state.history.events[events_before:]
 
     assert len(new_events) == 1
-    assert new_events[0].name == EventName.TURN_CANCELLED
+    assert new_events[0].name == EventName.TURN_FAILED
     assert new_events[0].payload["attacker_id"] == "p1"
     assert new_events[0].payload["trick"] == "Soul"
     assert new_events[0].payload["next_attacker_id"] == "p2"
