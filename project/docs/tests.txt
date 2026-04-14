@@ -1,0 +1,45 @@
+Documentation V4 - Dossier `tests/`
+
+Role global
+Le dossier `tests/` valide la solidite reelle du moteur.
+
+Structure
+- `tests/unit/` : verification fine des composants
+- `tests/integration/` : verification des couches branchees ensemble
+
+Couverture notable en V4
+
+Unit tests
+- flow de jeu
+- validation
+- historique
+- persistence
+- turn resolver
+- end conditions
+
+Integration tests
+- `test_game_engine_flow.py`
+- `test_game_controller_flow.py`
+- `test_undo_sequences.py`
+- `test_state_invariants.py`
+- `test_simulation_invariants.py`
+- `test_save_load_sequences.py`
+
+Ce que la V4 a ajoute
+- tests d'undo
+- tests de save/load
+- tests d'invariants sur etats reels du moteur
+- sequences plus longues pour attraper les bugs de transition
+
+Interet de ces tests
+- ils protegent les decisions V4
+- ils securisent l'evolution du moteur
+- ils servent de specification executable
+
+Ce qui manque encore
+- tests automatises dedies au CLI
+- tests automatises dedies au GUI
+- outillage de simulation interface plus riche
+
+Etat V4
+La couverture de tests est un des points forts du projet.

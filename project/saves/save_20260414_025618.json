@@ -1,0 +1,82 @@
+{
+    "players": [
+        {
+            "id": "Stan",
+            "name": "Stan",
+            "internal_id": "addb8013-83be-498b-bbcd-d23ad7589acd",
+            "score": 0,
+            "is_active": true
+        },
+        {
+            "id": "Denise",
+            "name": "Denise",
+            "internal_id": "976a4588-2ceb-49da-8d56-44e64ed879c0",
+            "score": 1,
+            "is_active": true
+        }
+    ],
+    "phase": "turn",
+    "attacker_index": 1,
+    "defender_indices": [
+        0
+    ],
+    "current_defender_position": 0,
+    "defense_attempts_left": 1,
+    "current_trick": "Acid",
+    "history": {
+        "events": [
+            {
+                "name": "game_started",
+                "payload": {
+                    "player_ids": [
+                        "Stan",
+                        "Denise"
+                    ]
+                }
+            },
+            {
+                "name": "turn_started",
+                "payload": {
+                    "attacker_id": "Stan",
+                    "trick": "Soul",
+                    "defender_ids": [
+                        "Denise"
+                    ]
+                }
+            },
+            {
+                "name": "letter_received",
+                "payload": {
+                    "player_id": "Denise",
+                    "trick": "Soul",
+                    "new_score": 1,
+                    "penalty_display": "O"
+                }
+            },
+            {
+                "name": "turn_ended",
+                "payload": {
+                    "next_attacker_id": "Denise"
+                }
+            },
+            {
+                "name": "turn_started",
+                "payload": {
+                    "attacker_id": "Denise",
+                    "trick": "Acid",
+                    "defender_ids": [
+                        "Stan"
+                    ]
+                }
+            }
+        ]
+    },
+    "rule_set": {
+        "letters_word": "OUT",
+        "elimination_enabled": true,
+        "defense_attempts": 1
+    },
+    "validated_tricks": [
+        "soul"
+    ]
+}

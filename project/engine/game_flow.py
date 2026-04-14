@@ -91,6 +91,7 @@ class GameFlow:
             )
 
             self._consume_current_trick(state)
+            self._clear_current_turn_state(state)
             return DefenseResolutionStatus.GAME_FINISHED
 
         if turn_finished:
@@ -110,6 +111,13 @@ class GameFlow:
 
         if normalized_trick not in state.validated_tricks:
             state.validated_tricks.append(normalized_trick)
+
+    def _clear_current_turn_state(self, state: GameState) -> None:
+        state.current_trick = None
+        state.defender_indices = []
+        state.current_defender_position = 0
+        state.defense_attempts_left = 0
+
 
     def _advance_to_next_attacker(
         self, state: GameState, log_turn_end: bool = True
@@ -131,10 +139,7 @@ class GameFlow:
         else:
             state.attacker_index = active_player_indices[0]
 
-        state.current_trick = None
-        state.defender_indices = []
-        state.current_defender_position = 0
-        state.defense_attempts_left = 0
+        self._clear_current_turn_state(state)
 
         if log_turn_end:
             state.history.add_event(

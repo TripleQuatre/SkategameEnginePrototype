@@ -1,3 +1,5 @@
+from datetime import datetime
+from pathlib import Path
 import tkinter as tk
 from tkinter import ttk, messagebox
 from tkinter import font as tkfont
@@ -8,11 +10,12 @@ from controllers.game_controller import GameController
 from core.events import Event
 from core.history import HistoryRow
 from core.state import GameState
-from core.types import Phase, DefenseResolutionStatus
-from core.exceptions import InvalidActionError
+from core.types import DefenseResolutionStatus, EventName, Phase
+from core.exceptions import InvalidActionError, InvalidStateError
 
 
 class GUIApp:
+    SAVES_DIR = Path(__file__).resolve().parents[2] / "saves"
     def __init__(self) -> None:
         self.root = tk.Tk()
         self.root.title("SkateGame Prototype")
@@ -60,6 +63,9 @@ class GUIApp:
         self.cancel_trick_button: ttk.Button | None = None
         self.success_button: ttk.Button | None = None
         self.failure_button: ttk.Button | None = None
+        self.undo_button: ttk.Button | None = None
+        self.save_button: ttk.Button | None = None
+        self.load_button: ttk.Button | None = None
         self.history_button: ttk.Button | None = None
         self.back_to_game_button: ttk.Button | None = None
 
@@ -72,6 +78,19 @@ class GUIApp:
 
     def run(self) -> None:
         self.root.mainloop()
+
+    def _ensure_saves_dir(self) -> Path:
+        self.SAVES_DIR.mkdir(parents=True, exist_ok=True)
+        return self.SAVES_DIR
+
+    def _build_save_path(self) -> Path:
+        saves_dir = self._ensure_saves_dir()
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        return saves_dir / f"save_{timestamp}.json"
+
+    def _list_save_files(self) -> list[Path]:
+        saves_dir = self._ensure_saves_dir()
+        return sorted(saves_dir.glob("*.json"), key=lambda path: path.name)
 
     # =========================
     # View management
@@ -146,12 +165,22 @@ class GUIApp:
             attempts_frame, text="3", variable=self.defense_attempts_var, value=3
         ).pack(side="left")
 
+        buttons = ttk.Frame(form)
+        buttons.grid(row=8, column=0, columnspan=2, pady=(6, 0))
+
         ttk.Button(
-            form,
+            buttons,
             text="Start game",
             command=self._start_game,
             width=18,
-        ).grid(row=8, column=0, columnspan=2, pady=(6, 0))
+        ).pack(side="left", padx=6)
+
+        ttk.Button(
+            buttons,
+            text="Load saved game",
+            command=self._load_game_from_setup,
+            width=18,
+        ).pack(side="left", padx=6)
 
     # =========================
     # Game view
@@ -213,13 +242,40 @@ class GUIApp:
         )
         self.failure_button.pack(side="left", padx=8)
 
+        session_buttons = ttk.Frame(frame)
+        session_buttons.grid(row=7, column=0, pady=(0, 20))
+
+        self.undo_button = ttk.Button(
+            session_buttons,
+            text="Undo",
+            command=self._undo_action,
+            width=10,
+        )
+        self.undo_button.pack(side="left", padx=6)
+
+        self.save_button = ttk.Button(
+            session_buttons,
+            text="Save",
+            command=self._save_game,
+            width=10,
+        )
+        self.save_button.pack(side="left", padx=6)
+
+        self.load_button = ttk.Button(
+            session_buttons,
+            text="Load",
+            command=self._load_game_during_session,
+            width=10,
+        )
+        self.load_button.pack(side="left", padx=6)
+
         self.history_button = ttk.Button(
-            frame,
+            session_buttons,
             text="History",
             command=self._show_history_view,
             width=10,
         )
-        self.history_button.grid(row=7, column=0, pady=(0, 20))
+        self.history_button.pack(side="left", padx=6)
 
         self.status_label = ttk.Label(
             frame,
@@ -302,6 +358,183 @@ class GUIApp:
     # Game actions
     # =========================
 
+    def _load_game_into_controller(self, selected_path: Path) -> None:
+        placeholder_match_parameters = MatchParameters(
+            player_ids=["Player 1", "Player 2"],
+            mode_name="one_vs_one",
+            rule_set=RuleSetConfig(),
+        )
+
+        controller = GameController(placeholder_match_parameters)
+        controller.load_game(str(selected_path))
+        self.controller = controller
+        self.trick_var.set("")
+
+    def _load_game_from_setup(self) -> None:
+        save_files = self._list_save_files()
+
+        if not save_files:
+            messagebox.showinfo("Load game", "No saved games found.")
+            return
+
+        chooser = tk.Toplevel(self.root)
+        chooser.title("Load saved game")
+        chooser.resizable(False, False)
+        chooser.transient(self.root)
+        chooser.grab_set()
+
+        ttk.Label(
+            chooser,
+            text="Choose a saved game:",
+            padding=(16, 16, 16, 8),
+        ).pack()
+
+        selected_var = tk.StringVar(value=save_files[-1].name)
+
+        combo = ttk.Combobox(
+            chooser,
+            textvariable=selected_var,
+            values=[path.name for path in save_files],
+            state="readonly",
+            width=30,
+        )
+        combo.pack(padx=16, pady=(0, 16))
+        combo.focus_set()
+
+        buttons = ttk.Frame(chooser, padding=(16, 0, 16, 16))
+        buttons.pack()
+
+        def confirm_load() -> None:
+            selected_name = selected_var.get()
+            selected_path = next(
+                (path for path in save_files if path.name == selected_name),
+                None,
+            )
+            if selected_path is None:
+                messagebox.showerror("Load game", "Invalid save selection.")
+                return
+
+            try:
+                self._load_game_into_controller(selected_path)
+            except (OSError, ValueError, InvalidStateError) as error:
+                messagebox.showerror("Load game", str(error))
+                return
+
+            self.status_var.set(f"Game loaded from {selected_path.name}.")
+
+            chooser.destroy()
+            self._show_view("game")
+            self._refresh_game_view()
+
+        ttk.Button(
+            buttons,
+            text="Load",
+            command=confirm_load,
+            width=12,
+        ).pack(side="left", padx=6)
+
+        ttk.Button(
+            buttons,
+            text="Cancel",
+            command=chooser.destroy,
+            width=12,
+        ).pack(side="left", padx=6)
+
+    def _undo_action(self) -> None:
+        if self.controller is None:
+            return
+
+        if self.controller.undo():
+            self.trick_var.set("")
+            self.status_var.set("Undo successful.")
+        else:
+            self.status_var.set("Nothing to undo.")
+
+        self._refresh_game_view()
+
+    def _save_game(self) -> None:
+        if self.controller is None:
+            return
+
+        filepath = self._build_save_path()
+
+        try:
+            self.controller.save_game(str(filepath))
+        except (OSError, ValueError, InvalidStateError) as error:
+            messagebox.showerror("Save game", str(error))
+            return
+
+        self.status_var.set(f"Game saved to {filepath.name}.")
+
+    def _load_game_during_session(self) -> None:
+        save_files = self._list_save_files()
+
+        if not save_files:
+            messagebox.showinfo("Load game", "No saved games found.")
+            return
+
+        chooser = tk.Toplevel(self.root)
+        chooser.title("Load saved game")
+        chooser.resizable(False, False)
+        chooser.transient(self.root)
+        chooser.grab_set()
+
+        ttk.Label(
+            chooser,
+            text="Choose a saved game:",
+            padding=(16, 16, 16, 8),
+        ).pack()
+
+        selected_var = tk.StringVar(value=save_files[-1].name)
+
+        combo = ttk.Combobox(
+            chooser,
+            textvariable=selected_var,
+            values=[path.name for path in save_files],
+            state="readonly",
+            width=30,
+        )
+        combo.pack(padx=16, pady=(0, 16))
+        combo.focus_set()
+
+        buttons = ttk.Frame(chooser, padding=(16, 0, 16, 16))
+        buttons.pack()
+
+        def confirm_load() -> None:
+            selected_name = selected_var.get()
+            selected_path = next(
+                (path for path in save_files if path.name == selected_name),
+                None,
+            )
+            if selected_path is None:
+                messagebox.showerror("Load game", "Invalid save selection.")
+                return
+
+            try:
+                self._load_game_into_controller(selected_path)
+            except (OSError, ValueError, InvalidStateError) as error:
+                messagebox.showerror("Load game", str(error))
+                return
+
+            self.status_var.set(f"Game loaded from {selected_path.name}.")
+            chooser.destroy()
+            self._show_view("game")
+            self._refresh_game_view()
+
+        ttk.Button(
+            buttons,
+            text="Load",
+            command=confirm_load,
+            width=12,
+        ).pack(side="left", padx=6)
+
+        ttk.Button(
+            buttons,
+            text="Cancel",
+            command=chooser.destroy,
+            width=12,
+        ).pack(side="left", padx=6)
+
     def _start_game(self) -> None:
         player_1 = self.player_1_var.get().strip()
         player_2 = self.player_2_var.get().strip()
@@ -362,9 +595,13 @@ class GUIApp:
             messagebox.showerror("Invalid input", "Enter a trick before cancelling it.")
             return
 
-        self.controller.cancel_turn(trick)
-        self.trick_var.set("")
-        self.status_var.set("Trick cancelled. Next player.")
+        try:
+            self.controller.cancel_turn(trick)
+            self.trick_var.set("")
+            self.status_var.set("Trick cancelled. Next player.")
+        except InvalidActionError as error:
+            self.status_var.set(f"Invalid action: {error}")
+
         self._refresh_game_view()
 
     def _resolve_defense(self, success: bool) -> None:
@@ -590,34 +827,34 @@ class GUIApp:
         name = event.name
         payload = event.payload
 
-        if name == "defense_succeeded":
+        if name == EventName.DEFENSE_SUCCEEDED:
             player_name = self._get_player_name(state, payload["player_id"])
             return f"{player_name} landed '{payload['trick']}'."
 
-        if name == "defense_failed_attempt":
+        if name == EventName.DEFENSE_FAILED_ATTEMPT:
             player_name = self._get_player_name(state, payload["player_id"])
             return (
                 f"{player_name} missed '{payload['trick']}' "
                 f"({payload['attempts_left']} left)."
             )
 
-        if name == "letter_received":
+        if name == EventName.LETTER_RECEIVED:
             player_name = self._get_player_name(state, payload["player_id"])
             return f"{player_name} gets a letter: {payload['penalty_display']}"
 
-        if name == "player_eliminated":
+        if name == EventName.PLAYER_ELIMINATED:
             player_name = self._get_player_name(state, payload["player_id"])
             return f"{player_name} is eliminated."
 
-        if name == "turn_ended":
+        if name == EventName.TURN_ENDED:
             next_attacker_name = self._get_player_name(state, payload["next_attacker_id"])
             return f"Next attacker: {next_attacker_name}"
 
-        if name == "turn_cancelled":
+        if name == EventName.TURN_CANCELLED:
             next_attacker_name = self._get_player_name(state, payload["next_attacker_id"])
             return f"Turn cancelled. Next attacker: {next_attacker_name}"
 
-        if name == "game_finished":
+        if name == EventName.GAME_FINISHED:
             winner_id = payload["winner_id"]
             if winner_id is None:
                 return "Game finished."
@@ -633,7 +870,6 @@ class GUIApp:
             messagebox.showinfo("Game Over", f"Winner: {active_players[0].name}")
         else:
             messagebox.showinfo("Game Over", "No winner determined.")
-
 
 if __name__ == "__main__":
     GUIApp().run()

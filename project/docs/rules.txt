@@ -1,0 +1,31 @@
+Documentation V4 - Dossier `rules/`
+
+Role global
+`rules/` contient la logique metier pure du jeu, separee du flow.
+
+Fichiers
+
+`scoring_rules.py`
+- applique les penalites de score
+- calcule l'affichage du mot atteint
+
+`special_rules.py`
+- normalise les tricks
+- verifie qu'un trick a deja ete consomme
+- reste la couche metier de support aux actions
+
+`rules_registry.py`
+- centralise l'acces aux groupes de regles
+
+Lien avec la V4
+- `normalize_trick()` reste central
+- `is_trick_already_validated()` s'appuie maintenant sur la nouvelle semantique :
+  `validated_tricks` = tricks definitivement consommes
+
+Ce que la V4 n'a pas change
+- pas de refonte profonde des regles
+- pas d'enum de tricks
+- pas de systeme de variantes complexes
+
+Point a retenir
+La V4 a clarifie le sens des donnees autour des tricks, sans alourdir `rules/`.

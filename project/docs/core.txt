@@ -1,0 +1,66 @@
+Documentation V4 - Dossier `core/`
+
+Role global
+`core/` contient les structures fondamentales du moteur.
+
+Fichiers importants
+
+`player.py`
+- representation d'un joueur
+- score, activite, identifiants
+
+`state.py`
+- etat canonique de la partie
+- contient :
+  - joueurs
+  - phase
+  - attaquant courant
+  - defenseurs courants
+  - trick courant
+  - historique
+  - ruleset
+  - tricks consommes
+
+Semantique V4 de `GameState`
+- `current_trick is None` : tour ouvert
+- `current_trick is not None` : tour engage
+- `validated_tricks` : tricks definitivement consommes par la partie
+
+`events.py`
+- structure des evenements moteur
+- `Event.name` est maintenant un `EventName`
+
+`history.py`
+- stocke la liste brute des evenements
+- reconstruit des lignes lisibles via `build_rows()`
+- ne depend plus de strings d'evenements disperses
+
+`snapshots.py`
+- `Snapshot` capture un etat complet
+- `SnapshotHistory` gere une pile de snapshots pour l'undo
+- ajoute en V4 :
+  - `peek()`
+  - `clear()`
+  - `max_size` optionnel
+
+`types.py`
+- enums partages
+- contient notamment :
+  - `Phase`
+  - `DefenseResolutionStatus`
+  - `EventName`
+
+`exceptions.py`
+- erreurs metier du moteur
+
+Apports V4 majeurs
+- typage des evenements via `EventName`
+- sens clarifie de `validated_tricks`
+- snapshots rendus plus robustes
+- socle d'undo completement branche
+
+Point a retenir
+La V4 a clarifie le vocabulaire du coeur moteur :
+- trick accepte pour entrer dans le tour
+- trick engage comme `current_trick`
+- trick consomme dans `validated_tricks`

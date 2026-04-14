@@ -1,0 +1,91 @@
+SkateGame Engine Prototype - Architecture V4
+
+Objectif
+Cette documentation decrit l'architecture reelle du projet apres la V4 de stabilisation.
+Le but de la V4 etait de verrouiller le moteur sans changer lourdement le gameplay.
+
+Principe general
+Le projet repose sur un moteur central simple et testable :
+
+Interfaces -> Controller -> Engine -> Rules -> Core
+                         -> Validation
+                         -> Persistence
+
+Idees fortes de la V4
+- `GameState` reste la source de verite principale.
+- `History` garde la trace des evenements du match.
+- `SnapshotHistory` sert a l'undo par restauration complete d'etat.
+- les noms d'evenements sont maintenant centralises via `EventName`.
+- les invariants d'etat sont verifies explicitement.
+
+Blocs principaux
+
+1. `core/`
+- contient les structures fondamentales du moteur
+- `GameState`, `Event`, `History`, `Snapshot`, `Player`, `EventName`, `Phase`
+
+2. `rules/`
+- contient la logique metier pure
+- pas d'orchestration de match
+
+3. `engine/`
+- orchestre la partie
+- applique les transitions
+- gere l'undo et le save/load au niveau moteur
+
+4. `validation/`
+- verifie config, etat et actions
+- protege les invariants les plus importants
+
+5. `controllers/`
+- relais fin entre interfaces et moteur
+- expose une API simple aux interfaces
+
+6. `persistence/`
+- serialization, sauvegarde et rechargement d'etat
+
+7. `interfaces/`
+- CLI et GUI minimales
+- pas de logique metier
+
+Decisions V4 importantes
+
+Etat du tour
+- tour ouvert : l'attaquant a la main et `current_trick is None`
+- tour engage : `current_trick is not None`
+- tour termine : le tour a produit un resultat terminal
+
+Tricks
+- `validated_tricks` contient uniquement les tricks definitivement consommes
+- `start_turn(trick)` engage le trick du tour, sans le consommer
+- le trick est consomme a la fin terminale du tour :
+  - `TURN_FINISHED`
+  - `GAME_FINISHED`
+
+Annulation
+- `cancel_turn(trick)` est autorise seulement quand aucun trick n'est engage
+- `turn_cancelled` est un evenement metier, mais pas un tour normal complet
+
+Undo
+- l'undo repose uniquement sur des snapshots complets
+- un snapshot est pris avant chaque action mutante exposee par le moteur
+- l'undo restaure un etat entier valide, sans suppression manuelle d'evenements
+
+Save / Load
+- le moteur peut sauvegarder et recharger une partie en cours ou terminee
+- un chargement remet l'historique d'undo a zero
+
+Etat actuel de la V4
+- moteur stabilise
+- invariants renforces
+- evenements types
+- save/load disponibles
+- undo disponible
+- interfaces minimalistes mais alignees avec le moteur
+
+Points volontairement laisses pour la suite
+- ergonomie avancee des interfaces
+- gestion post-game plus riche
+- multijoueur
+- refonte UX
+- simulations plus avancees via outils d'interface

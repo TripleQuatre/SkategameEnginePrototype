@@ -1,0 +1,27 @@
+Documentation V4 - Dossier `modes/`
+
+Role global
+`modes/` prepare la separation entre structure de match et orchestration generale.
+
+Fichiers
+
+`base_mode.py`
+- interface de base des modes
+- fournit un contrat simple au moteur
+
+`one_vs_one.py`
+- implemente le mode actuel
+- verifie que la partie contient exactement 2 joueurs
+
+Etat V4
+- le projet reste centre sur `one_vs_one`
+- la couche modes est encore legere
+- elle est conservee parce qu'elle sert deja au chargement de mode dans `GameEngine`
+
+Ce que la V4 n'a pas change
+- pas de nouvelle logique de mode
+- pas de refonte multijoueur
+
+Pourquoi cette couche reste utile
+- elle garde le moteur pret pour des evolutions futures
+- elle evite de disperser la validation de mode dans l'engine

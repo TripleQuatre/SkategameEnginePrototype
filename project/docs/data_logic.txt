@@ -1,0 +1,58 @@
+Documentation V4 - Logique des donnees
+
+But
+Ce document decrit la logique de donnees la plus importante du moteur, independamment
+des interfaces.
+
+Source de verite
+- `GameState` est la source de verite principale
+- `History` est une trace exploitable du passe
+- `Snapshot` est une image restaurable de l'etat
+
+Distinction cle V4
+
+1. Etat courant
+- ce que le moteur est en train de vivre
+- porte par `GameState`
+
+2. Historique
+- ce qui s'est produit
+- porte par `History`
+
+3. Snapshot
+- ce qui peut etre restaure
+- porte par `Snapshot` et `SnapshotHistory`
+
+Cycle de tour
+- tour ouvert : `current_trick is None`
+- tour engage : `current_trick is not None`
+- tour termine : resultat terminal produit
+
+Donnees sensibles du state
+- `attacker_index`
+- `defender_indices`
+- `current_defender_position`
+- `defense_attempts_left`
+- `current_trick`
+- `validated_tricks`
+- `history`
+
+Semantique des tricks
+- un trick peut etre propose et accepte pour entrer dans le tour
+- il devient alors `current_trick`
+- il n'entre dans `validated_tricks` qu'en fin terminale du tour
+
+Pourquoi c'est important
+Cette separation a permis a la V4 de rendre coherents :
+- l'annulation de tour
+- l'undo
+- le save/load
+- les tests d'invariants
+
+Persistence
+- la serialisation conserve la difference entre :
+  - un trick engage
+  - un trick deja consomme
+
+Conclusion
+La V4 a renforce non seulement le code, mais aussi le modele de donnees du moteur.

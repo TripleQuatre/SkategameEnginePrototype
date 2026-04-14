@@ -1,0 +1,176 @@
+{
+    "players": [
+        {
+            "id": "Stan",
+            "name": "Stan",
+            "internal_id": "667e23b9-79b7-4dd2-91b4-f74d324acdf7",
+            "score": 0,
+            "is_active": true
+        },
+        {
+            "id": "Denise",
+            "name": "Denise",
+            "internal_id": "a78373e1-bc92-46c9-9409-6ba5716b2e73",
+            "score": 3,
+            "is_active": false
+        }
+    ],
+    "phase": "end",
+    "attacker_index": 0,
+    "defender_indices": [],
+    "current_defender_position": 0,
+    "defense_attempts_left": 0,
+    "current_trick": null,
+    "history": {
+        "events": [
+            {
+                "name": "game_started",
+                "payload": {
+                    "player_ids": [
+                        "Stan",
+                        "Denise"
+                    ]
+                }
+            },
+            {
+                "name": "turn_started",
+                "payload": {
+                    "attacker_id": "Stan",
+                    "trick": "Soul",
+                    "defender_ids": [
+                        "Denise"
+                    ]
+                }
+            },
+            {
+                "name": "letter_received",
+                "payload": {
+                    "player_id": "Denise",
+                    "trick": "Soul",
+                    "new_score": 1,
+                    "penalty_display": "O"
+                }
+            },
+            {
+                "name": "turn_ended",
+                "payload": {
+                    "next_attacker_id": "Denise"
+                }
+            },
+            {
+                "name": "turn_cancelled",
+                "payload": {
+                    "attacker_id": "Denise",
+                    "trick": "Acid",
+                    "next_attacker_id": "Stan"
+                }
+            },
+            {
+                "name": "turn_started",
+                "payload": {
+                    "attacker_id": "Stan",
+                    "trick": "Acid",
+                    "defender_ids": [
+                        "Denise"
+                    ]
+                }
+            },
+            {
+                "name": "letter_received",
+                "payload": {
+                    "player_id": "Denise",
+                    "trick": "Acid",
+                    "new_score": 2,
+                    "penalty_display": "OU"
+                }
+            },
+            {
+                "name": "turn_ended",
+                "payload": {
+                    "next_attacker_id": "Denise"
+                }
+            },
+            {
+                "name": "turn_cancelled",
+                "payload": {
+                    "attacker_id": "Denise",
+                    "trick": "Mizu",
+                    "next_attacker_id": "Stan"
+                }
+            },
+            {
+                "name": "turn_cancelled",
+                "payload": {
+                    "attacker_id": "Stan",
+                    "trick": "Mizu",
+                    "next_attacker_id": "Denise"
+                }
+            },
+            {
+                "name": "turn_started",
+                "payload": {
+                    "attacker_id": "Denise",
+                    "trick": "Mizu",
+                    "defender_ids": [
+                        "Stan"
+                    ]
+                }
+            },
+            {
+                "name": "defense_succeeded",
+                "payload": {
+                    "player_id": "Stan",
+                    "trick": "Mizu"
+                }
+            },
+            {
+                "name": "turn_ended",
+                "payload": {
+                    "next_attacker_id": "Stan"
+                }
+            },
+            {
+                "name": "turn_started",
+                "payload": {
+                    "attacker_id": "Stan",
+                    "trick": "FIsh",
+                    "defender_ids": [
+                        "Denise"
+                    ]
+                }
+            },
+            {
+                "name": "letter_received",
+                "payload": {
+                    "player_id": "Denise",
+                    "trick": "FIsh",
+                    "new_score": 3,
+                    "penalty_display": "OUT"
+                }
+            },
+            {
+                "name": "player_eliminated",
+                "payload": {
+                    "player_id": "Denise"
+                }
+            },
+            {
+                "name": "game_finished",
+                "payload": {
+                    "winner_id": "Stan"
+                }
+            }
+        ]
+    },
+    "rule_set": {
+        "letters_word": "OUT",
+        "elimination_enabled": true,
+        "defense_attempts": 1
+    },
+    "validated_tricks": [
+        "soul",
+        "acid",
+        "mizu",
+        "fish"
+    ]
+}

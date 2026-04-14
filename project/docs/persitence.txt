@@ -1,0 +1,42 @@
+Documentation V4 - Dossier `persistence/`
+
+Role global
+`persistence/` gere la conversion et le stockage des donnees du moteur.
+
+Fichiers
+
+`serializers.py`
+- convertit les objets moteur en dictionnaires et inversement
+- couvre notamment :
+  - `Player`
+  - `Event`
+  - `History`
+  - `RuleSetConfig`
+  - `MatchParameters`
+  - `GameState`
+
+Apport V4
+- serialization des evenements types via `EventName`
+- maintien d'un format JSON lisible avec `event.name.value`
+
+`snapshot_repository.py`
+- sauvegarde et recharge un `GameState` complet dans un fichier JSON
+
+`config_repository.py`
+- sauvegarde et recharge un `MatchParameters`
+
+Capacites V4
+- sauvegarde d'une partie en cours
+- sauvegarde d'une partie terminee
+- reprise d'une partie non terminee
+- reprise d'une partie terminee si souhaite
+
+Lien avec l'undo
+- `Snapshot` sert a la memoire interne temporaire
+- `SnapshotRepository` sert au stockage externe
+- les deux restent separes
+
+Etat V4
+La persistence n'est plus seulement preparatoire :
+- elle est maintenant exposee par le moteur
+- elle est utilisee par les interfaces

@@ -1,0 +1,37 @@
+Documentation V4 - Dossier `controllers/`
+
+Role
+Le dossier `controllers/` fournit la couche de relais entre les interfaces et le moteur.
+
+Fichier principal
+
+`game_controller.py`
+- encapsule `GameEngine`
+- expose une API simple aux interfaces
+
+Methodes exposees en V4
+- `start_game()`
+- `start_turn(trick)`
+- `resolve_defense(success)`
+- `cancel_turn(trick)`
+- `undo()`
+- `save_game(filepath)`
+- `load_game(filepath)`
+- `get_state()`
+
+Pourquoi cette couche reste utile
+- le CLI et le GUI n'accedent pas directement a l'orchestration interne
+- l'API utilisateur reste simple
+- le moteur garde son independance
+
+Etat V4
+- le controller est volontairement fin
+- il n'ajoute pas de logique metier
+- il suit l'evolution du moteur sans la dupliquer
+
+Point a retenir
+Dans la V4, le controller est devenu plus utile qu'en V3 car il expose maintenant
+des capacites de session :
+- undo
+- save
+- load

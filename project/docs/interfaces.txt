@@ -1,0 +1,55 @@
+Documentation V4 - Dossier `interfaces/`
+
+Role global
+`interfaces/` contient les couches de presentation du moteur.
+
+Principe
+- aucune logique metier critique ne doit vivre ici
+- les interfaces lisent le state et appellent le controller
+
+CLI
+
+`interfaces/cli/cli_app.py`
+- interface texte jouable
+- permet en V4 :
+  - nouvelle partie
+  - chargement d'une sauvegarde au lancement
+  - saisie et confirmation de tricks
+  - resolution des defenses
+  - annulation de tour
+  - undo
+  - save/load pendant la partie
+  - affichage de l'historique
+
+Choix V4 du CLI
+- commandes globales disponibles pendant la partie
+- dossier de sauvegarde dedie
+- reprise correcte d'un etat charge en tour ouvert ou engage
+
+GUI
+
+`interfaces/gui/gui_app.py`
+- interface Tkinter minimale
+- permet en V4 :
+  - nouvelle partie
+  - chargement d'une sauvegarde depuis l'ecran d'accueil
+  - saisie et annulation de trick
+  - resolution de defense
+  - undo
+  - save/load pendant la partie
+  - affichage de l'historique
+
+Choix V4 du GUI
+- pas de refonte UX lourde
+- simple alignement avec les nouvelles capacites moteur
+- chargement compatible avec un etat charge en milieu de tour
+
+Etat V4
+- les interfaces sont alignees avec `EventName`
+- elles exposent undo et save/load
+- elles restent volontairement utilitaires
+
+Sujet a garder pour la suite
+- comportement post-game plus riche
+- tests automatises dedies aux interfaces
+- outil de simulation de partie via interface

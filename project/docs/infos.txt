@@ -1,0 +1,44 @@
+SkateGame Engine Prototype - Informations V4
+
+Statut
+La V4 est une version de stabilisation du moteur.
+
+Objectifs atteints
+- clarification des etats de tour
+- clarification de `validated_tricks`
+- evenements centralises et types
+- invariants renforces
+- snapshots consolides
+- undo par snapshot
+- save/load de parties
+- tests d'integration et de simulation enrichis
+
+Capacites utilisateur actuelles
+- jouer une partie en CLI
+- jouer une partie en GUI
+- annuler la derniere action via undo
+- sauvegarder une partie
+- recharger une partie
+- afficher l'historique de match
+
+Limites assumees
+- UX encore minimale
+- interfaces peu testees automatiquement
+- comportement post-game encore simple
+- pas de multijoueur
+
+Ce que la V4 ne cherche pas encore a faire
+- refonte visuelle majeure
+- architecture reseau
+- gestion de lobby ou de session multijoueur
+- outils riches de simulation via interface
+
+Base de robustesse
+- unit tests
+- integration tests
+- undo sequences
+- state invariants
+- simulation invariants
+
+Bilan
+La V4 ne change pas l'identite du projet, mais elle le rend beaucoup plus solide.

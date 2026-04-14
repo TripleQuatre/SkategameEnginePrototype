@@ -2,6 +2,7 @@ import json
 
 from config.match_parameters import MatchParameters
 from config.rule_set_config import RuleSetConfig
+from core.snapshots import Snapshot, SnapshotHistory
 from core.player import Player
 from core.state import GameState
 from core.types import EventName, Phase
@@ -53,6 +54,99 @@ def test_serializer_can_roundtrip_game_state() -> None:
     assert restored_state.players[1].is_active is False
     assert len(restored_state.history.events) == 1
     assert restored_state.history.events[0].name == EventName.TURN_STARTED
+
+
+def test_snapshot_restores_independent_game_state_copy() -> None:
+    state = GameState(
+        players=[
+            Player(id="p1", name="Stan", score=1),
+            Player(id="p2", name="Denise", score=0),
+        ],
+        phase=Phase.TURN,
+        attacker_index=0,
+        defender_indices=[1],
+        current_defender_position=0,
+        defense_attempts_left=1,
+        current_trick="Makio",
+        validated_tricks=["makio"],
+    )
+
+    snapshot = Snapshot.from_state(state)
+    restored_state = snapshot.restore_state()
+
+    state.players[0].name = "Changed"
+    state.validated_tricks.append("soul")
+    state.history.events.clear()
+
+    assert restored_state.players[0].name == "Stan"
+    assert restored_state.validated_tricks == ["makio"]
+    assert restored_state.history.events == []
+
+
+def test_snapshot_history_push_pop_and_peek() -> None:
+    history = SnapshotHistory()
+
+    state = GameState(
+        players=[
+            Player(id="p1", name="Stan"),
+            Player(id="p2", name="Denise"),
+        ]
+    )
+
+    history.push(state)
+
+    assert history.can_undo() is True
+    assert history.peek() is not None
+
+    snapshot = history.pop()
+
+    assert snapshot is not None
+    assert history.peek() is None
+    assert history.can_undo() is False
+
+
+def test_snapshot_history_clear_removes_all_snapshots() -> None:
+    history = SnapshotHistory()
+
+    state = GameState(
+        players=[
+            Player(id="p1", name="Stan"),
+            Player(id="p2", name="Denise"),
+        ]
+    )
+
+    history.push(state)
+    history.push(state)
+
+    history.clear()
+
+    assert history.can_undo() is False
+    assert history.peek() is None
+    assert history.pop() is None
+
+
+def test_snapshot_history_respects_max_size() -> None:
+    history = SnapshotHistory(max_size=2)
+
+    state = GameState(
+        players=[
+            Player(id="p1", name="Stan"),
+            Player(id="p2", name="Denise"),
+        ]
+    )
+
+    state.attacker_index = 0
+    history.push(state)
+
+    state.attacker_index = 1
+    history.push(state)
+
+    state.attacker_index = 0
+    history.push(state)
+
+    assert len(history.snapshots) == 2
+    assert history.snapshots[0].restore_state().attacker_index == 1
+    assert history.snapshots[1].restore_state().attacker_index == 0
 
 
 def test_snapshot_repository_can_save_and_load_game_state(tmp_path) -> None:

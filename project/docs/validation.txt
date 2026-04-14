@@ -1,0 +1,48 @@
+Documentation V4 - Dossier `validation/`
+
+Role global
+`validation/` protege la coherence des donnees, des etats et des actions.
+
+Fichiers
+
+`config_validator.py`
+- verifie les parametres de match et le ruleset
+
+`action_validator.py`
+- verifie si une action peut etre executee
+- en V4, il distingue clairement :
+  - validation d'entree du trick
+  - possibilite d'annuler un tour
+  - possibilite de resoudre une defense
+
+`state_validator.py`
+- verifie la coherence interne de `GameState`
+- en V4, il est plus metier qu'en V3
+
+Invariants V4 importants
+- si `current_trick is None` :
+  - `defender_indices` doit etre vide
+  - `current_defender_position` doit etre 0
+  - `defense_attempts_left` doit etre 0
+
+- si `current_trick is not None` :
+  - phase doit etre `TURN`
+  - `defender_indices` ne doit pas etre vide
+  - `current_defender_position` doit etre borne
+  - `defense_attempts_left` doit etre positif
+
+- `defender_indices` :
+  - ne contient pas l'attaquant
+  - ne contient pas de doublons
+  - ne contient pas de joueurs inactifs
+
+Effet V4
+Ces validateurs ont permis de verrouiller :
+- la nouvelle semantique du tour
+- l'undo
+- la reprise de partie
+- la robustesse des transitions
+
+Point a retenir
+La V4 ne s'est pas contente d'ajouter des tests. Elle a aussi rendu les validateurs
+plus proches du modele metier reel.
