@@ -153,7 +153,7 @@ class CLIApp:
 
     def _build_save_path(self) -> Path:
         saves_dir = self._ensure_saves_dir()
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
         return saves_dir / f"save_{timestamp}.json"
 
     def _list_save_files(self) -> list[Path]:
@@ -229,7 +229,12 @@ class CLIApp:
             try:
                 controller.load_game(str(filepath))
                 print(f"Game loaded from {filepath.name}.\n")
-            except (OSError, ValueError, InvalidActionError) as error:
+            except (
+                OSError,
+                ValueError,
+                InvalidActionError,
+                InvalidStateError,
+            ) as error:
                 print(f"Load failed: {error}\n")
             return None
 

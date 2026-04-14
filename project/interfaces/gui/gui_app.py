@@ -85,7 +85,7 @@ class GUIApp:
 
     def _build_save_path(self) -> Path:
         saves_dir = self._ensure_saves_dir()
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
         return saves_dir / f"save_{timestamp}.json"
 
     def _list_save_files(self) -> list[Path]:
