@@ -8,7 +8,7 @@ from config.match_parameters import MatchParameters
 from config.rule_set_config import RuleSetConfig
 from controllers.game_controller import GameController
 from core.events import Event
-from core.history import HistoryRow
+from core.history import HistoryTurn
 from core.state import GameState
 from core.types import DefenseResolutionStatus, EventName, Phase
 from core.exceptions import InvalidActionError, InvalidStateError
@@ -24,8 +24,8 @@ class GUIApp:
 
         self.controller: GameController | None = None
 
-        self.player_1_var = tk.StringVar()
-        self.player_2_var = tk.StringVar()
+        self.player_count_var = tk.IntVar(value=2)
+        self.player_name_vars: list[tk.StringVar] = []
         self.word_var = tk.StringVar(value="SKATE")
         self.defense_attempts_var = tk.IntVar(value=1)
         self.trick_var = tk.StringVar()
@@ -48,6 +48,7 @@ class GUIApp:
         self.setup_frame = ttk.Frame(self.container)
         self.game_frame = ttk.Frame(self.container)
         self.history_frame = ttk.Frame(self.container)
+        self.players_frame: ttk.Frame | None = None
 
         self.matchup_label: ttk.Label | None = None
         self.phase_title_label: ttk.Label | None = None
@@ -67,6 +68,7 @@ class GUIApp:
         self.save_button: ttk.Button | None = None
         self.load_button: ttk.Button | None = None
         self.history_button: ttk.Button | None = None
+        self.new_game_button: ttk.Button | None = None
         self.back_to_game_button: ttk.Button | None = None
 
         self.history_tree: ttk.Treeview | None = None
@@ -127,19 +129,28 @@ class GUIApp:
 
         form.columnconfigure(1, weight=1)
 
-        ttk.Label(form, text="Player 1 name:", font=self.body_font).grid(
+        ttk.Label(form, text="Number of players:", font=self.body_font).grid(
             row=0, column=0, sticky="w", pady=(0, 6)
         )
-        ttk.Entry(form, textvariable=self.player_1_var, width=36).grid(
-            row=1, column=0, columnspan=2, sticky="ew", pady=(0, 18)
-        )
 
-        ttk.Label(form, text="Player 2 name:", font=self.body_font).grid(
+        player_count_spinbox = ttk.Spinbox(
+            form,
+            from_=2,
+            to=8,
+            textvariable=self.player_count_var,
+            width=6,
+            command=self._rebuild_player_inputs,
+        )
+        player_count_spinbox.grid(row=1, column=0, sticky="w", pady=(0, 18))
+        player_count_spinbox.bind("<FocusOut>", lambda _event: self._rebuild_player_inputs())
+        player_count_spinbox.bind("<Return>", lambda _event: self._rebuild_player_inputs())
+
+        ttk.Label(form, text="Players:", font=self.body_font).grid(
             row=2, column=0, sticky="w", pady=(0, 6)
         )
-        ttk.Entry(form, textvariable=self.player_2_var, width=36).grid(
-            row=3, column=0, columnspan=2, sticky="ew", pady=(0, 18)
-        )
+
+        self.players_frame = ttk.Frame(form)
+        self.players_frame.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(0, 18))
 
         ttk.Label(form, text="Word:", font=self.body_font).grid(
             row=4, column=0, sticky="w", pady=(0, 6)
@@ -181,6 +192,36 @@ class GUIApp:
             command=self._load_game_from_setup,
             width=18,
         ).pack(side="left", padx=6)
+
+        self._rebuild_player_inputs()
+
+    def _rebuild_player_inputs(self) -> None:
+        assert self.players_frame is not None
+
+        existing_values = [var.get() for var in self.player_name_vars]
+
+        for child in self.players_frame.winfo_children():
+            child.destroy()
+
+        player_count = max(2, self.player_count_var.get())
+        self.player_name_vars = [
+            tk.StringVar(
+                value=existing_values[index] if index < len(existing_values) else ""
+            )
+            for index in range(player_count)
+        ]
+
+        for index, player_var in enumerate(self.player_name_vars, start=1):
+            ttk.Label(
+                self.players_frame,
+                text=f"Player {index} name:",
+                font=self.body_font,
+            ).grid(row=(index - 1) * 2, column=0, sticky="w", pady=(0, 6))
+            ttk.Entry(
+                self.players_frame,
+                textvariable=player_var,
+                width=36,
+            ).grid(row=(index - 1) * 2 + 1, column=0, sticky="ew", pady=(0, 12))
 
     # =========================
     # Game view
@@ -276,6 +317,14 @@ class GUIApp:
             width=10,
         )
         self.history_button.pack(side="left", padx=6)
+
+        self.new_game_button = ttk.Button(
+            session_buttons,
+            text="New game",
+            command=self._return_to_setup,
+            width=10,
+        )
+        self.new_game_button.pack(side="left", padx=6)
 
         self.status_label = ttk.Label(
             frame,
@@ -420,7 +469,13 @@ class GUIApp:
                 messagebox.showerror("Load game", str(error))
                 return
 
-            self.status_var.set(f"Game loaded from {selected_path.name}.")
+            loaded_state = self.controller.get_state()
+            if loaded_state.phase == Phase.END:
+                self.status_var.set(
+                    f"Finished game loaded from {selected_path.name}. Consultation mode."
+                )
+            else:
+                self.status_var.set(f"Game loaded from {selected_path.name}.")
 
             chooser.destroy()
             self._show_view("game")
@@ -516,7 +571,13 @@ class GUIApp:
                 messagebox.showerror("Load game", str(error))
                 return
 
-            self.status_var.set(f"Game loaded from {selected_path.name}.")
+            loaded_state = self.controller.get_state()
+            if loaded_state.phase == Phase.END:
+                self.status_var.set(
+                    f"Finished game loaded from {selected_path.name}. Consultation mode."
+                )
+            else:
+                self.status_var.set(f"Game loaded from {selected_path.name}.")
             chooser.destroy()
             self._show_view("game")
             self._refresh_game_view()
@@ -536,14 +597,15 @@ class GUIApp:
         ).pack(side="left", padx=6)
 
     def _start_game(self) -> None:
-        player_1 = self.player_1_var.get().strip()
-        player_2 = self.player_2_var.get().strip()
+        player_ids = [player_var.get().strip() for player_var in self.player_name_vars]
         word = self.word_var.get().strip().upper()
         attempts = self.defense_attempts_var.get()
 
-        if not player_1 or not player_2:
-            messagebox.showerror("Invalid input", "Both player names are required.")
+        if any(not player_id for player_id in player_ids):
+            messagebox.showerror("Invalid input", "All player names are required.")
             return
+
+        mode_name = "one_vs_one" if len(player_ids) == 2 else "battle"
 
         try:
             rule_set = RuleSetConfig(
@@ -551,8 +613,8 @@ class GUIApp:
                 defense_attempts=attempts,
             )
             match_parameters = MatchParameters(
-                player_ids=[player_1, player_2],
-                mode_name="one_vs_one",
+                player_ids=player_ids,
+                mode_name=mode_name,
                 rule_set=rule_set,
             )
             self.controller = GameController(match_parameters)
@@ -598,7 +660,7 @@ class GUIApp:
         try:
             self.controller.cancel_turn(trick)
             self.trick_var.set("")
-            self.status_var.set("Trick cancelled. Next player.")
+            self.status_var.set("Turn failed. Next player.")
         except InvalidActionError as error:
             self.status_var.set(f"Invalid action: {error}")
 
@@ -651,7 +713,7 @@ class GUIApp:
         assert self.attempts_label is not None
 
         self.matchup_label.config(
-            text=f"{state.players[0].name.upper()} - {state.players[1].name.upper()}"
+            text=" / ".join(player.name.upper() for player in state.players)
         )
 
         self._render_score_text(state)
@@ -659,7 +721,9 @@ class GUIApp:
         if state.phase == Phase.END:
             self.phase_title_label.config(text="Game over")
             self.trick_label.config(text="")
-            self.phase_description_label.config(text="The match is finished.")
+            self.phase_description_label.config(
+                text="Consultation mode. Use Undo, Save, Load, History or New game."
+            )
             self.attempts_label.config(text="")
             self._set_trick_controls_enabled(False)
             self._set_defense_controls_enabled(False)
@@ -668,13 +732,13 @@ class GUIApp:
         attacker = state.players[state.attacker_index]
 
         if state.current_trick is None:
-            defender_name = self._get_next_defender_name(state)
+            defenders = self._format_active_defender_names(state)
             self.phase_title_label.config(
                 text=f"{attacker.name} sets the next trick"
             )
             self.trick_label.config(text="")
             self.phase_description_label.config(
-                text=f"{attacker.name} attacks / {defender_name} defends"
+                text=f"Defenders: {defenders}"
             )
             self.attempts_label.config(text="")
             self._set_trick_controls_enabled(True)
@@ -682,13 +746,14 @@ class GUIApp:
         else:
             defender = self._get_current_defender(state)
             defender_name = defender.name if defender is not None else "-"
+            remaining = self._get_remaining_defender_names(state)
 
             self.phase_title_label.config(
-                text=f"{attacker.name} attacks / {defender_name} defends"
+                text=f"{attacker.name} attacks"
             )
             self.trick_label.config(text=f"Trick: {state.current_trick}")
             self.phase_description_label.config(
-                text=f"Defense phase: {defender_name} tries to reproduce the trick"
+                text=f"Current defender: {defender_name} | Remaining: {remaining}"
             )
             self.attempts_label.config(
                 text=f"{defender_name} has {state.defense_attempts_left} defense attempt(s) left"
@@ -701,18 +766,17 @@ class GUIApp:
 
         self.score_text.config(state="normal")
         self.score_text.delete("1.0", tk.END)
-
-        if len(state.players) < 2:
-            self.score_text.config(state="disabled")
-            return
+        self.score_text.config(height=max(3, len(state.players)))
 
         word = state.rule_set.letters_word
-        player_1 = state.players[0]
-        player_2 = state.players[1]
 
-        self._insert_score_word(word, player_1.score)
-        self.score_text.insert(tk.END, "  -  ", "score_separator")
-        self._insert_score_word(word, player_2.score)
+        for index, player in enumerate(state.players):
+            self.score_text.insert(tk.END, f"{player.name}: ", "score_name")
+            self._insert_score_word(word, player.score)
+            if not player.is_active:
+                self.score_text.insert(tk.END, "  OUT", "score_inactive")
+            if index < len(state.players) - 1:
+                self.score_text.insert(tk.END, "\n")
 
         self.score_text.config(state="disabled")
 
@@ -756,31 +820,61 @@ class GUIApp:
         self._refresh_game_view()
         self._show_view("game")
 
+    def _return_to_setup(self) -> None:
+        self.controller = None
+        self.trick_var.set("")
+        self.status_var.set("Configure the game to begin.")
+        self._show_view("setup")
+
     def _refresh_history_view(self) -> None:
         if self.controller is None or self.history_tree is None:
             return
 
         state = self.controller.get_state()
-        rows: list[HistoryRow] = state.history.build_rows()
+        turns: list[HistoryTurn] = state.history.build_turns()
 
         for item in self.history_tree.get_children():
             self.history_tree.delete(item)
 
-        for row in rows:
-            letters = self._format_letters(row.letters, state.rule_set.letters_word)
-            self.history_tree.insert(
-                "",
-                "end",
-                values=(
-                    row.turn_number,
-                    row.attacker_name,
-                    row.trick_name,
-                    row.trick_validated,
-                    row.defender_name or "-",
-                    row.defense_result or "-",
-                    letters,
-                ),
-            )
+        for turn in turns:
+            trick_validated = "V" if turn.trick_status == "validated" else "X"
+
+            if not turn.defenses:
+                self.history_tree.insert(
+                    "",
+                    "end",
+                    values=(
+                        turn.turn_number,
+                        turn.attacker_name,
+                        turn.trick_name,
+                        trick_validated,
+                        "-",
+                        "-",
+                        "-",
+                    ),
+                )
+                continue
+
+            for index, defense in enumerate(turn.defenses):
+                letters = self._format_letters(defense.letters, state.rule_set.letters_word)
+                turn_value = turn.turn_number if index == 0 else ""
+                attacker_value = turn.attacker_name if index == 0 else ""
+                trick_value = turn.trick_name if index == 0 else ""
+                valid_value = trick_validated if index == 0 else ""
+
+                self.history_tree.insert(
+                    "",
+                    "end",
+                    values=(
+                        turn_value,
+                        attacker_value,
+                        trick_value,
+                        valid_value,
+                        defense.defender_name,
+                        defense.attempts_trace or "-",
+                        letters,
+                    ),
+                )
 
     # =========================
     # Helpers
@@ -793,18 +887,31 @@ class GUIApp:
         defender_index = state.defender_indices[state.current_defender_position]
         return state.players[defender_index]
 
-    def _get_next_defender_name(self, state: GameState) -> str:
-        for index, player in enumerate(state.players):
-            if index != state.attacker_index and player.is_active:
-                return player.name
-        return "-"
-
     def _format_letters(self, letters: str, word: str) -> str:
         if not letters:
             return "-"
         if len(letters) >= len(word):
             return f"[{letters}]"
         return letters
+
+    def _format_defender_names(
+        self, state: GameState, defender_indices: list[int]
+    ) -> str:
+        if not defender_indices:
+            return "-"
+        return ", ".join(state.players[index].name for index in defender_indices)
+
+    def _format_active_defender_names(self, state: GameState) -> str:
+        defender_indices = [
+            index
+            for index, player in enumerate(state.players)
+            if index != state.attacker_index and player.is_active
+        ]
+        return self._format_defender_names(state, defender_indices)
+
+    def _get_remaining_defender_names(self, state: GameState) -> str:
+        remaining_indices = state.defender_indices[state.current_defender_position + 1 :]
+        return self._format_defender_names(state, remaining_indices)
 
     def _format_new_events(self, state: GameState, events_before: int) -> str:
         new_events = state.history.events[events_before:]
@@ -850,9 +957,9 @@ class GUIApp:
             next_attacker_name = self._get_player_name(state, payload["next_attacker_id"])
             return f"Next attacker: {next_attacker_name}"
 
-        if name == EventName.TURN_CANCELLED:
+        if name == EventName.TURN_FAILED:
             next_attacker_name = self._get_player_name(state, payload["next_attacker_id"])
-            return f"Turn cancelled. Next attacker: {next_attacker_name}"
+            return f"Turn failed. Next attacker: {next_attacker_name}"
 
         if name == EventName.GAME_FINISHED:
             winner_id = payload["winner_id"]

@@ -164,3 +164,32 @@ def test_battle_simulation_sequence_keeps_state_valid(monkeypatch) -> None:
     state = engine.get_state()
     assert state.attacker_index == 0
     assert state.players[1].score == 1
+
+
+def test_battle_eliminated_previous_defender_keeps_state_valid(monkeypatch) -> None:
+    def fixed_shuffle(values: list[int]) -> None:
+        values[:] = [2, 0, 1]
+
+    monkeypatch.setattr(battle_module.random, "shuffle", fixed_shuffle)
+
+    match_parameters = MatchParameters(
+        player_ids=["p1", "p2", "p3"],
+        mode_name="battle",
+    )
+    engine = GameEngine(match_parameters)
+    engine.get_state().rule_set.letters_word = "S"
+
+    engine.start_game()
+    assert_valid_state(engine)
+
+    engine.start_turn("makio")
+    assert_valid_state(engine)
+
+    result = engine.resolve_defense(False)
+    assert result == DefenseResolutionStatus.DEFENSE_CONTINUES
+    assert_valid_state(engine)
+
+    state = engine.get_state()
+    assert state.players[0].is_active is False
+    assert state.current_defender_position == 1
+    assert state.defender_indices == [0, 1]

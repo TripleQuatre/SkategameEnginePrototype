@@ -7,6 +7,7 @@ from core.history import History
 from core.player import Player
 from core.state import GameState
 from core.types import EventName, Phase
+from persistence.game_save import GameSave
 
 
 class Serializer:
@@ -79,6 +80,7 @@ class Serializer:
         return {
             "players": [self.serialize_player(player) for player in state.players],
             "phase": state.phase.value,
+            "turn_order": state.turn_order,
             "attacker_index": state.attacker_index,
             "defender_indices": state.defender_indices,
             "current_defender_position": state.current_defender_position,
@@ -93,6 +95,7 @@ class Serializer:
         return GameState(
             players=[self.deserialize_player(player) for player in data["players"]],
             phase=Phase(data["phase"]),
+            turn_order=data.get("turn_order", []),
             attacker_index=data["attacker_index"],
             defender_indices=data["defender_indices"],
             current_defender_position=data["current_defender_position"],
@@ -101,4 +104,20 @@ class Serializer:
             history=self.deserialize_history(data["history"]),
             rule_set=self.deserialize_rule_set(data["rule_set"]),
             validated_tricks=data.get("validated_tricks", []),
+        )
+
+    def serialize_game_save(self, game_save: GameSave) -> dict:
+        return {
+            "match_parameters": self.serialize_match_parameters(
+                game_save.match_parameters
+            ),
+            "game_state": self.serialize_game_state(game_save.game_state),
+        }
+
+    def deserialize_game_save(self, data: dict) -> GameSave:
+        return GameSave(
+            match_parameters=self.deserialize_match_parameters(
+                data["match_parameters"]
+            ),
+            game_state=self.deserialize_game_state(data["game_state"]),
         )

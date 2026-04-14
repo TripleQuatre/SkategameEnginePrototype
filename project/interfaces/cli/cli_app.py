@@ -6,7 +6,7 @@ from config.rule_set_config import RuleSetConfig
 from controllers.game_controller import GameController
 from core.events import Event
 from core.exceptions import InvalidActionError, InvalidStateError
-from core.history import HistoryRow
+from core.history import HistoryTurn
 from core.state import GameState
 from core.types import DefenseResolutionStatus, EventName, Phase
 
@@ -24,9 +24,9 @@ class CLIApp:
             state = controller.get_state()
 
             if state.phase == Phase.END:
-                self._display_winner(state)
-                self._display_history(state)
-                break
+                controller = self._run_end_of_game_loop(controller)
+                print()
+                continue
 
             self._display_state(state)
 
@@ -105,8 +105,11 @@ class CLIApp:
             print("Invalid choice.\n")
 
     def _create_new_game_controller(self) -> GameController:
-        player_1 = self._ask_non_empty_input("Player 1 name: ")
-        player_2 = self._ask_non_empty_input("Player 2 name: ")
+        player_count = self._ask_player_count()
+        player_ids = [
+            self._ask_non_empty_input(f"Player {index} name: ")
+            for index in range(1, player_count + 1)
+        ]
         letters_word = self._ask_letters_word()
         defense_attempts = self._ask_defense_attempts()
 
@@ -115,9 +118,11 @@ class CLIApp:
             defense_attempts=defense_attempts,
         )
 
+        mode_name = "one_vs_one" if player_count == 2 else "battle"
+
         match_parameters = MatchParameters(
-            player_ids=[player_1, player_2],
-            mode_name="one_vs_one",
+            player_ids=player_ids,
+            mode_name=mode_name,
             rule_set=rule_set,
         )
 
@@ -144,7 +149,11 @@ class CLIApp:
             print(f"Load failed: {error}\n")
             return None
 
-        print(f"Game loaded from {filepath.name}.\n")
+        loaded_state = controller.get_state()
+        if loaded_state.phase == Phase.END:
+            print(f"Finished game loaded from {filepath.name}. Consultation mode.\n")
+        else:
+            print(f"Game loaded from {filepath.name}.\n")
         return controller
 
     def _ensure_saves_dir(self) -> Path:
@@ -268,20 +277,26 @@ class CLIApp:
         print("Score:")
         for player in state.players:
             penalty = self._format_penalty_slots(state.rule_set.letters_word, player.score)
-            print(f"{player.name:<10} {penalty}")
+            status = "" if player.is_active else " (OUT)"
+            print(f"{player.name:<10} {penalty}{status}")
 
         attacker = state.players[state.attacker_index]
 
         if state.current_trick is None:
-            print(f"\n{attacker.name} sets the next trick: ", end="")
+            defenders = self._format_active_defenders_for_attacker(state)
+            print(f"\n{attacker.name} sets the next trick")
+            print(f"Defenders: {defenders}")
             return
 
         if state.current_defender_position < len(state.defender_indices):
             defender_index = state.defender_indices[state.current_defender_position]
             defender = state.players[defender_index]
+            remaining = self._format_remaining_defenders(state)
             print(
-                f"\n{attacker.name} attacks / {defender.name} defends"
+                f"\n{attacker.name} attacks"
             )
+            print(f"Current defender: {defender.name}")
+            print(f"Remaining defenders: {remaining}")
             print(
                 f"Current trick: {state.current_trick} "
                 f"({state.defense_attempts_left} attempt(s) left)"
@@ -320,8 +335,8 @@ class CLIApp:
         if name == EventName.TURN_ENDED:
             return f"Next attacker: {payload['next_attacker_id']}"
 
-        if name == EventName.TURN_CANCELLED:
-            return f"Turn cancelled. Next attacker: {payload['next_attacker_id']}"
+        if name == EventName.TURN_FAILED:
+            return f"Turn failed. Next attacker: {payload['next_attacker_id']}"
 
         if name == EventName.GAME_FINISHED:
             winner_id = payload["winner_id"]
@@ -344,6 +359,59 @@ class CLIApp:
             print(f"Winner: {active_players[0].name}")
         else:
             print("No winner determined.")
+
+    def _run_end_of_game_loop(self, controller: GameController) -> GameController:
+        while True:
+            state = controller.get_state()
+
+            print()
+            self._display_winner(state)
+            print("Consultation mode:")
+            print("1. Undo")
+            print("2. Save")
+            print("3. History")
+            print("4. Load saved game")
+            print("5. New game")
+            print("6. Quit")
+
+            choice = input("Choose an option (1-6): ").strip()
+
+            if choice == "1":
+                if controller.undo():
+                    print("Undo successful.")
+                    return controller
+
+                print("Nothing to undo.")
+                continue
+
+            if choice == "2":
+                filepath = self._build_save_path()
+                try:
+                    controller.save_game(str(filepath))
+                    print(f"Game saved to {filepath.name}.")
+                except OSError as error:
+                    print(f"Save failed: {error}")
+                continue
+
+            if choice == "3":
+                self._display_history(state)
+                continue
+
+            if choice == "4":
+                loaded_controller = self._load_saved_game_controller()
+                if loaded_controller is not None:
+                    return loaded_controller
+                continue
+
+            if choice == "5":
+                new_controller = self._create_new_game_controller()
+                print()
+                return new_controller
+
+            if choice == "6":
+                raise SystemExit(0)
+
+            print("Invalid choice.")
 
     def _ask_validated_trick_input(self, controller: GameController) -> str | None:
         while True:
@@ -370,7 +438,7 @@ class CLIApp:
             if confirm:
                 return trick
 
-            print("Trick cancelled. Next player.\n")
+            print("Turn failed. Next player.\n")
             try:
                 controller.cancel_turn(trick)
             except InvalidActionError as error:
@@ -430,6 +498,15 @@ class CLIApp:
                 return value
             print("Invalid input.")
 
+    def _ask_player_count(self) -> int:
+        while True:
+            value = input("Number of players (2+): ").strip()
+            if value.isdigit():
+                player_count = int(value)
+                if player_count >= 2:
+                    return player_count
+            print("Player count must be at least 2.")
+
     def _ask_letters_word(self) -> str:
         while True:
             value = input("Word: ").strip().upper()
@@ -456,9 +533,9 @@ class CLIApp:
             print("Type y or n.")
 
     def _display_history(self, state: GameState) -> None:
-            rows: list[HistoryRow] = state.history.build_rows()
+            turns: list[HistoryTurn] = state.history.build_turns()
 
-            if not rows:
+            if not turns:
                 return
 
             print("\nHistory:")
@@ -473,17 +550,39 @@ class CLIApp:
             )
             print("-" * 74)
 
-            for row in rows:
-                letters = self._format_letters(row.letters, state.rule_set.letters_word)
-                print(
-                    f"{row.turn_number:<6}"
-                    f"{row.attacker_name:<12}"
-                    f"{row.trick_name:<16}"
-                    f"{row.trick_validated:<8}"
-                    f"{row.defender_name:<12}"
-                    f"{row.defense_result or '-':<10}"
-                    f"{letters:<10}"
-                )
+            for turn in turns:
+                trick_validated = "V" if turn.trick_status == "validated" else "X"
+
+                if not turn.defenses:
+                    print(
+                        f"{turn.turn_number:<6}"
+                        f"{turn.attacker_name:<12}"
+                        f"{turn.trick_name:<16}"
+                        f"{trick_validated:<8}"
+                        f"{'-':<12}"
+                        f"{'-':<10}"
+                        f"{'-':<10}"
+                    )
+                    continue
+
+                for index, defense in enumerate(turn.defenses):
+                    letters = self._format_letters(
+                        defense.letters, state.rule_set.letters_word
+                    )
+                    turn_value = str(turn.turn_number) if index == 0 else ""
+                    attacker_value = turn.attacker_name if index == 0 else ""
+                    trick_value = turn.trick_name if index == 0 else ""
+                    valid_value = trick_validated if index == 0 else ""
+
+                    print(
+                        f"{turn_value:<6}"
+                        f"{attacker_value:<12}"
+                        f"{trick_value:<16}"
+                        f"{valid_value:<8}"
+                        f"{defense.defender_name:<12}"
+                        f"{(defense.attempts_trace or '-'): <10}"
+                        f"{letters:<10}"
+                    )
 
     def _format_letters(self, letters: str, word: str) -> str:
       if not letters:
@@ -491,6 +590,25 @@ class CLIApp:
       if len(letters) >= len(word):
           return f"[{letters}]"
       return letters
+
+    def _format_defender_names(
+        self, state: GameState, defender_indices: list[int]
+    ) -> str:
+        if not defender_indices:
+            return "-"
+        return ", ".join(state.players[index].name for index in defender_indices)
+
+    def _format_active_defenders_for_attacker(self, state: GameState) -> str:
+        defender_indices = [
+            index
+            for index, player in enumerate(state.players)
+            if index != state.attacker_index and player.is_active
+        ]
+        return self._format_defender_names(state, defender_indices)
+
+    def _format_remaining_defenders(self, state: GameState) -> str:
+        remaining_indices = state.defender_indices[state.current_defender_position + 1 :]
+        return self._format_defender_names(state, remaining_indices)
 
 if __name__ == "__main__":
     CLIApp().run()

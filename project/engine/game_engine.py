@@ -6,7 +6,8 @@ from core.types import DefenseResolutionStatus
 from engine.game_flow import GameFlow
 from modes.base_mode import BaseMode
 from modes.mode_factory import ModeFactory
-from persistence.snapshot_repository import SnapshotRepository
+from persistence.game_save import GameSave
+from persistence.game_save_repository import GameSaveRepository
 from validation.config_validator import ConfigValidator
 from validation.state_validator import StateValidator
 
@@ -17,7 +18,7 @@ class GameEngine:
         self.config_validator = ConfigValidator()
         self.state_validator = StateValidator()
         self.snapshot_history = SnapshotHistory()
-        self.snapshot_repository = SnapshotRepository()
+        self.save_repository = GameSaveRepository()
         self.mode_factory = ModeFactory()
 
         self.config_validator.validate_match_parameters(self.match_parameters)
@@ -94,11 +95,25 @@ class GameEngine:
     def save_game(self, filepath: str) -> None:
         self.state_validator.validate(self.state)
         self.mode.validate(self.state)
-        self.snapshot_repository.save(self.state, filepath)
+
+        game_save = GameSave(
+            match_parameters=self.match_parameters,
+            game_state=self.state,
+        )
+        self.save_repository.save(game_save, filepath)
 
     def load_game(self, filepath: str) -> None:
-        loaded_state = self.snapshot_repository.load(filepath)
-        self.state_validator.validate(loaded_state)
-        self.mode.validate(loaded_state)
-        self.state = loaded_state
+        game_save = self.save_repository.load(filepath)
+
+        self.config_validator.validate_match_parameters(game_save.match_parameters)
+        self.config_validator.validate_rule_set(game_save.match_parameters.rule_set)
+        self.state_validator.validate(game_save.game_state)
+
+        loaded_mode = self.mode_factory.create(game_save.match_parameters.mode_name)
+        loaded_mode.validate(game_save.game_state)
+
+        self.match_parameters = game_save.match_parameters
+        self.mode = loaded_mode
+        self.game_flow = GameFlow(self.mode)
+        self.state = game_save.game_state
         self.snapshot_history.clear()

@@ -41,7 +41,7 @@ class StateValidator:
 
         seen_defender_indices: set[int] = set()
 
-        for defender_index in state.defender_indices:
+        for position, defender_index in enumerate(state.defender_indices):
             if defender_index < 0 or defender_index >= len(state.players):
                 raise InvalidStateError("defender_indices contains an out-of-range index.")
 
@@ -53,9 +53,13 @@ class StateValidator:
             if defender_index in seen_defender_indices:
                 raise InvalidStateError("defender_indices cannot contain duplicates.")
 
-            if not state.players[defender_index].is_active:
+            if (
+                state.current_trick is not None
+                and position >= state.current_defender_position
+                and not state.players[defender_index].is_active
+            ):
                 raise InvalidStateError(
-                    "defender_indices cannot contain inactive players."
+                    "Current and remaining defenders must be active."
                 )
 
             seen_defender_indices.add(defender_index)

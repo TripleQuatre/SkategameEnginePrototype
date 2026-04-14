@@ -3,7 +3,7 @@ from core.history import History
 from core.types import EventName
 
 
-def test_build_rows_from_completed_turn() -> None:
+def test_build_turns_from_completed_one_vs_one_turn() -> None:
     history = History()
     history.add_event(
         Event(
@@ -53,23 +53,25 @@ def test_build_rows_from_completed_turn() -> None:
         )
     )
 
-    rows = history.build_rows()
+    turns = history.build_turns()
 
-    assert len(rows) == 1
-    assert rows[0].turn_number == 1
-    assert rows[0].attacker_name == "Stan"
-    assert rows[0].trick_name == "Soul"
-    assert rows[0].trick_validated == "V"
-    assert rows[0].defender_name == "Denise"
-    assert rows[0].defense_result == "XXX"
-    assert rows[0].letters == "O"
+    assert len(turns) == 1
+    assert turns[0].turn_number == 1
+    assert turns[0].attacker_name == "Stan"
+    assert turns[0].trick_name == "Soul"
+    assert turns[0].trick_status == "validated"
+    assert len(turns[0].defenses) == 1
+    assert turns[0].defenses[0].defender_name == "Denise"
+    assert turns[0].defenses[0].attempts_trace == "XXX"
+    assert turns[0].defenses[0].result == "letter"
+    assert turns[0].defenses[0].letters == "O"
 
 
-def test_build_rows_from_cancelled_turn() -> None:
+def test_build_turns_from_failed_turn() -> None:
     history = History()
     history.add_event(
         Event(
-            name=EventName.TURN_CANCELLED,
+            name=EventName.TURN_FAILED,
             payload={
                 "attacker_id": "Stan",
                 "trick": "Soul",
@@ -78,13 +80,132 @@ def test_build_rows_from_cancelled_turn() -> None:
         )
     )
 
+    turns = history.build_turns()
+
+    assert len(turns) == 1
+    assert turns[0].turn_number == 1
+    assert turns[0].attacker_name == "Stan"
+    assert turns[0].trick_name == "Soul"
+    assert turns[0].trick_status == "failed"
+    assert turns[0].defenses == []
+
+
+def test_build_turns_from_battle_turn_with_multiple_defenders() -> None:
+    history = History()
+    history.add_event(
+        Event(
+            name=EventName.TURN_STARTED,
+            payload={
+                "attacker_id": "Stan",
+                "trick": "Kickflip",
+                "defender_ids": ["Denise", "Alex"],
+            },
+        )
+    )
+    history.add_event(
+        Event(
+            name=EventName.DEFENSE_SUCCEEDED,
+            payload={
+                "player_id": "Denise",
+                "trick": "Kickflip",
+            },
+        )
+    )
+    history.add_event(
+        Event(
+            name=EventName.DEFENSE_FAILED_ATTEMPT,
+            payload={
+                "player_id": "Alex",
+                "trick": "Kickflip",
+                "attempts_left": 1,
+            },
+        )
+    )
+    history.add_event(
+        Event(
+            name=EventName.LETTER_RECEIVED,
+            payload={
+                "player_id": "Alex",
+                "trick": "Kickflip",
+                "new_score": 1,
+                "penalty_display": "S",
+            },
+        )
+    )
+    history.add_event(
+        Event(
+            name=EventName.TURN_ENDED,
+            payload={"next_attacker_id": "Denise"},
+        )
+    )
+
+    turns = history.build_turns()
+
+    assert len(turns) == 1
+    assert turns[0].turn_number == 1
+    assert turns[0].attacker_name == "Stan"
+    assert turns[0].trick_name == "Kickflip"
+    assert turns[0].trick_status == "validated"
+    assert len(turns[0].defenses) == 2
+
+    assert turns[0].defenses[0].defender_name == "Denise"
+    assert turns[0].defenses[0].attempts_trace == "V"
+    assert turns[0].defenses[0].result == "success"
+    assert turns[0].defenses[0].letters == ""
+
+    assert turns[0].defenses[1].defender_name == "Alex"
+    assert turns[0].defenses[1].attempts_trace == "XX"
+    assert turns[0].defenses[1].result == "letter"
+    assert turns[0].defenses[1].letters == "S"
+
+
+def test_build_rows_keeps_flat_compatibility() -> None:
+    history = History()
+    history.add_event(
+        Event(
+            name=EventName.TURN_STARTED,
+            payload={
+                "attacker_id": "Stan",
+                "trick": "Kickflip",
+                "defender_ids": ["Denise", "Alex"],
+            },
+        )
+    )
+    history.add_event(
+        Event(
+            name=EventName.DEFENSE_SUCCEEDED,
+            payload={
+                "player_id": "Denise",
+                "trick": "Kickflip",
+            },
+        )
+    )
+    history.add_event(
+        Event(
+            name=EventName.LETTER_RECEIVED,
+            payload={
+                "player_id": "Alex",
+                "trick": "Kickflip",
+                "new_score": 1,
+                "penalty_display": "S",
+            },
+        )
+    )
+    history.add_event(
+        Event(
+            name=EventName.TURN_ENDED,
+            payload={"next_attacker_id": "Denise"},
+        )
+    )
+
     rows = history.build_rows()
 
-    assert len(rows) == 1
-    assert rows[0].turn_number == 1
+    assert len(rows) == 2
     assert rows[0].attacker_name == "Stan"
-    assert rows[0].trick_name == "Soul"
-    assert rows[0].trick_validated == "X"
-    assert rows[0].defender_name == ""
-    assert rows[0].defense_result == ""
-    assert rows[0].letters == ""
+    assert rows[0].defender_name == "Denise"
+    assert rows[0].defense_result == "V"
+
+    assert rows[1].attacker_name == "Stan"
+    assert rows[1].defender_name == "Alex"
+    assert rows[1].defense_result == "X"
+    assert rows[1].letters == "S"
