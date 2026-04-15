@@ -40,6 +40,10 @@ Livrable
 Sortie de lot
 On sait exactement ce que la V6 cherche a faire et a ne pas faire.
 
+Statut actuel
+Lot 0 considere comme valide.
+Voir `docs/v6_lot_0_validation.txt`.
+
 Lot 1. Base de configuration
 
 Objectif
@@ -60,6 +64,10 @@ Points d'attention
 Critere de fin
 Une configuration V6 complete peut etre construite en memoire proprement.
 
+Statut actuel
+Lot 1 implemente.
+Voir `docs/v6_lot_1_validation.txt`.
+
 Lot 2. Validation de configuration
 
 Objectif
@@ -74,6 +82,10 @@ Travail attendu
 Critere de fin
 Une partie invalide echoue des la configuration,
 pas plus tard dans le flow.
+
+Statut actuel
+Lot 2 implemente.
+Voir `docs/v6_lot_2_validation.txt`.
 
 Lot 3. Integration moteur et modes
 
@@ -93,6 +105,10 @@ Points d'attention
 Critere de fin
 Le moteur sait jouer plusieurs presets officiels V6.
 
+Statut actuel
+Lot 3 implemente.
+Voir `docs/v6_lot_3_validation.txt`.
+
 Lot 4. Persistence
 
 Objectif
@@ -111,6 +127,10 @@ Points d'attention
 Critere de fin
 Une partie V6 sauvegardee se recharge sans ambiguite.
 
+Statut actuel
+Lot 4 implemente.
+Voir `docs/v6_lot_4_validation.txt`.
+
 Lot 5. Historique
 
 Objectif
@@ -123,6 +143,10 @@ Travail attendu
 
 Critere de fin
 On peut comprendre la variante active d'une partie V6 sans lire le code.
+
+Statut actuel
+Lot 5 implemente.
+Voir `docs/v6_lot_5_validation.txt`.
 
 Lot 6. Interfaces
 
@@ -142,6 +166,10 @@ Points d'attention
 Critere de fin
 Les presets V6 sont pilotables depuis les deux interfaces.
 
+Statut actuel
+Lot 6 implemente.
+Voir `docs/v6_lot_6_validation.txt`.
+
 Lot 7. Tests
 
 Objectif
@@ -156,6 +184,10 @@ Travail attendu
 
 Critere de fin
 Chaque preset officiel V6 est couvert sur ses parcours critiques.
+
+Statut actuel
+Lot 7 implemente.
+Voir `docs/v6_lot_7_validation.txt`.
 
 Lot 8. V6 plus - join between turns
 
@@ -179,6 +211,10 @@ Travail attendu
 
 Critere de fin
 Une partie `one_vs_one` peut devenir `battle` proprement entre deux tours.
+
+Statut actuel
+Lot 8 implemente.
+Voir `docs/v6_lot_8_validation.txt`.
 
 Ce qui reste hors lot
 - ajout en plein trick

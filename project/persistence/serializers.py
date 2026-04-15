@@ -1,6 +1,12 @@
 from dataclasses import asdict
 
 from config.match_parameters import MatchParameters
+from config.match_policies import (
+    AttackerRotationPolicy,
+    DefenderOrderPolicy,
+    InitialTurnOrderPolicy,
+    MatchPolicies,
+)
 from config.rule_set_config import RuleSetConfig
 from core.events import Event
 from core.history import History
@@ -62,11 +68,30 @@ class Serializer:
             defense_attempts=data["defense_attempts"],
         )
 
+    def serialize_match_policies(self, policies: MatchPolicies) -> dict:
+        return {
+            "initial_turn_order": policies.initial_turn_order.value,
+            "attacker_rotation": policies.attacker_rotation.value,
+            "defender_order": policies.defender_order.value,
+        }
+
+    def deserialize_match_policies(self, data: dict | None) -> MatchPolicies | None:
+        if not data:
+            return None
+
+        return MatchPolicies(
+            initial_turn_order=InitialTurnOrderPolicy(data["initial_turn_order"]),
+            attacker_rotation=AttackerRotationPolicy(data["attacker_rotation"]),
+            defender_order=DefenderOrderPolicy(data["defender_order"]),
+        )
+
     def serialize_match_parameters(self, match_parameters: MatchParameters) -> dict:
         return {
             "player_ids": match_parameters.player_ids,
             "mode_name": match_parameters.mode_name,
             "rule_set": self.serialize_rule_set(match_parameters.rule_set),
+            "policies": self.serialize_match_policies(match_parameters.policies),
+            "preset_name": match_parameters.preset_name,
         }
 
     def deserialize_match_parameters(self, data: dict) -> MatchParameters:
@@ -74,6 +99,8 @@ class Serializer:
             player_ids=data["player_ids"],
             mode_name=data["mode_name"],
             rule_set=self.deserialize_rule_set(data["rule_set"]),
+            policies=self.deserialize_match_policies(data.get("policies")),
+            preset_name=data.get("preset_name"),
         )
 
     def serialize_game_state(self, state: GameState) -> dict:

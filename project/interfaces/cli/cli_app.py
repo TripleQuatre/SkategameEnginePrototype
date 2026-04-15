@@ -2,6 +2,7 @@ from datetime import datetime
 from pathlib import Path
 
 from config.match_parameters import MatchParameters
+from config.preset_registry import PresetRegistry
 from config.rule_set_config import RuleSetConfig
 from controllers.game_controller import GameController
 from core.events import Event
@@ -13,6 +14,9 @@ from core.types import DefenseResolutionStatus, EventName, Phase
 
 class CLIApp:
     SAVES_DIR = Path(__file__).resolve().parents[2] / "saves"
+    def __init__(self) -> None:
+        self.preset_registry = PresetRegistry()
+
     def run(self) -> None:
         print("=== SkateGame Engine Prototype CLI ===")
 
@@ -105,25 +109,61 @@ class CLIApp:
             print("Invalid choice.\n")
 
     def _create_new_game_controller(self) -> GameController:
-        player_count = self._ask_player_count()
+        setup_type = self._ask_new_game_setup_type()
+
+        if setup_type == "preset":
+            return self._create_preset_game_controller()
+
+        return self._create_custom_game_controller()
+
+    def _create_preset_game_controller(self) -> GameController:
+        preset = self._choose_official_preset()
+
+        if preset.mode_name == "one_vs_one":
+            player_count = 2
+            print("Preset mode: exactly 2 players required.")
+        else:
+            player_count = self._ask_player_count(min_players=3)
+
         player_ids = [
             self._ask_non_empty_input(f"Player {index} name: ")
             for index in range(1, player_count + 1)
         ]
-        letters_word = self._ask_letters_word()
-        defense_attempts = self._ask_defense_attempts()
 
-        rule_set = RuleSetConfig(
-            letters_word=letters_word,
-            defense_attempts=defense_attempts,
+        match_parameters = MatchParameters(
+            player_ids=player_ids,
+            mode_name=preset.mode_name,
+            rule_set=RuleSetConfig(
+                letters_word=preset.rule_set.letters_word,
+                elimination_enabled=preset.rule_set.elimination_enabled,
+                defense_attempts=preset.rule_set.defense_attempts,
+            ),
+            policies=preset.policies,
+            preset_name=preset.name,
         )
 
+        controller = GameController(match_parameters)
+        controller.start_game()
+        return controller
+
+    def _create_custom_game_controller(self) -> GameController:
+        player_count = self._ask_player_count(min_players=2)
+        player_ids = [
+            self._ask_non_empty_input(f"Player {index} name: ")
+            for index in range(1, player_count + 1)
+        ]
+        word = self._ask_letters_word()
+        defense_attempts = self._ask_defense_attempts()
         mode_name = "one_vs_one" if player_count == 2 else "battle"
 
         match_parameters = MatchParameters(
             player_ids=player_ids,
             mode_name=mode_name,
-            rule_set=rule_set,
+            rule_set=RuleSetConfig(
+                letters_word=word,
+                elimination_enabled=True,
+                defense_attempts=defense_attempts,
+            ),
         )
 
         controller = GameController(match_parameters)
@@ -201,6 +241,7 @@ class CLIApp:
         print("/undo    Undo the previous action")
         print("/save    Save the current game")
         print("/load    Load a saved game")
+        print("/join    Add a player between turns")
         print("/history Show match history")
         print("/quit    Quit the CLI")
         print()
@@ -247,6 +288,16 @@ class CLIApp:
                 print(f"Load failed: {error}\n")
             return None
 
+        if command == "/join":
+            player_name = self._ask_non_empty_input("New player name: ")
+
+            try:
+                controller.add_player_between_turns(player_name)
+                print(f"{player_name} joined the game.\n")
+            except InvalidActionError as error:
+                print(f"Action invalide: {error}\n")
+            return None
+
         if command == "/history":
             self._display_history(controller.get_state())
             print()
@@ -274,6 +325,10 @@ class CLIApp:
             return value
 
     def _display_state(self, state: GameState) -> None:
+        preset_name = self._get_active_preset_name(state)
+        if preset_name:
+            print(f"Preset: {preset_name}")
+
         print("Score:")
         for player in state.players:
             penalty = self._format_penalty_slots(state.rule_set.letters_word, player.score)
@@ -354,6 +409,10 @@ class CLIApp:
                 return "Game finished."
             winner_name = payload.get("winner_name", winner_id)
             return f"Game finished. Winner: {winner_name}"
+
+        if name == EventName.PLAYER_JOINED:
+            player_name = payload.get("player_name", payload["player_id"])
+            return f"{player_name} joined the game."
 
         return ""
 
@@ -509,14 +568,50 @@ class CLIApp:
                 return value
             print("Invalid input.")
 
-    def _ask_player_count(self) -> int:
+    def _ask_new_game_setup_type(self) -> str:
         while True:
-            value = input("Number of players (2+): ").strip()
+            print("1. Start with official preset")
+            print("2. Start without preset")
+
+            value = input("Choose a setup type (1/2): ").strip()
+
+            if value == "1":
+                return "preset"
+
+            if value == "2":
+                return "custom"
+
+            print("Invalid choice.")
+
+    def _ask_player_count(self, min_players: int = 2) -> int:
+        while True:
+            value = input(f"Number of players ({min_players}+): ").strip()
             if value.isdigit():
                 player_count = int(value)
-                if player_count >= 2:
+                if player_count >= min_players:
                     return player_count
-            print("Player count must be at least 2.")
+            print(f"Player count must be at least {min_players}.")
+
+    def _choose_official_preset(self):
+        preset_names = self.preset_registry.list_preset_names()
+        print("Available presets:")
+        for index, preset_name in enumerate(preset_names, start=1):
+            preset = self.preset_registry.get(preset_name)
+            print(f"{index}. {preset.name} - {preset.description}")
+
+        while True:
+            value = input(f"Choose a preset (1-{len(preset_names)}): ").strip()
+            if value.isdigit():
+                selected_index = int(value)
+                if 1 <= selected_index <= len(preset_names):
+                    return self.preset_registry.get(preset_names[selected_index - 1])
+            print("Invalid choice.")
+
+    def _get_active_preset_name(self, state: GameState) -> str | None:
+        context = state.history.build_match_context()
+        if context is None:
+            return None
+        return context.preset_name
 
     def _ask_letters_word(self) -> str:
         while True:

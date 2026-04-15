@@ -33,11 +33,55 @@ class HistoryRow:
 
 
 @dataclass
+class HistoryMatchContext:
+    mode_name: str | None = None
+    preset_name: str | None = None
+    player_names: list[str] = field(default_factory=list)
+    turn_order: list[int] = field(default_factory=list)
+    starting_attacker_name: str | None = None
+    initial_turn_order_policy: str | None = None
+    attacker_rotation_policy: str | None = None
+    defender_order_policy: str | None = None
+
+
+@dataclass
 class History:
     events: list[Event] = field(default_factory=list)
 
     def add_event(self, event: Event) -> None:
         self.events.append(event)
+
+    def build_match_context(self) -> HistoryMatchContext | None:
+        context: HistoryMatchContext | None = None
+
+        for event in self.events:
+            payload = event.payload
+
+            if event.name == EventName.GAME_STARTED:
+                context = HistoryMatchContext(
+                    mode_name=payload.get("mode_name"),
+                    preset_name=payload.get("preset_name"),
+                    player_names=list(payload.get("player_names", [])),
+                    turn_order=list(payload.get("turn_order", [])),
+                    starting_attacker_name=payload.get(
+                        "starting_attacker_name",
+                        payload.get("starting_attacker_id"),
+                    ),
+                    initial_turn_order_policy=payload.get("initial_turn_order_policy"),
+                    attacker_rotation_policy=payload.get("attacker_rotation_policy"),
+                    defender_order_policy=payload.get("defender_order_policy"),
+                )
+                continue
+
+            if event.name == EventName.PLAYER_JOINED and context is not None:
+                context.mode_name = payload.get("mode_name", context.mode_name)
+                context.preset_name = payload.get("preset_name", context.preset_name)
+                context.player_names = list(
+                    payload.get("player_names", context.player_names)
+                )
+                context.turn_order = list(payload.get("turn_order", context.turn_order))
+
+        return context
 
     def build_turns(self) -> list[HistoryTurn]:
         turns: list[HistoryTurn] = []

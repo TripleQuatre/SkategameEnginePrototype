@@ -117,21 +117,21 @@ Le preset doit servir a la fois :
 
 Presets V6 recommandes
 
-`classic_duel`
+`classic_skate`
 - base `one_vs_one`
-- comportement le plus proche du jeu actuel a 2
+- preset skate classique a 2 joueurs
+
+`classic_blade`
+- base `one_vs_one`
+- preset blade classique a 2 joueurs
 
 `battle_standard`
 - base `battle`
-- ordre et rotation compatibles avec la V5
+- preset battle standard en `OUT` avec ordre initial aleatoire
 
-`battle_rotation_variant`
+`battle_hardcore`
 - base `battle`
-- meme socle mais avec au moins une politique de rotation differente
-
-`battle_no_elimination`
-- base `battle`
-- meme socle avec une condition de fin ou d'elimination differente
+- preset battle plus strict en `SKATE` avec 1 essai de defense
 
 Note
 Ces noms sont des pistes de travail.

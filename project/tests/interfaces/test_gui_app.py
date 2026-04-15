@@ -30,10 +30,11 @@ def test_gui_refresh_game_view_shows_consultation_mode_for_finished_game(
     for index, player_var in enumerate(gui_app.player_name_vars):
         player_var.set(f"Player {index + 1}")
 
-    gui_app.word_var.set("S")
     gui_app._start_game()
 
     assert gui_app.controller is not None
+    gui_app.controller.get_state().rule_set.letters_word = "S"
+    gui_app.controller.get_state().rule_set.defense_attempts = 1
     gui_app.controller.start_turn("soul")
     gui_app.controller.resolve_defense(False)
 
@@ -68,12 +69,12 @@ def test_gui_history_view_renders_battle_turns(
     gui_app.player_name_vars[0].set("Stan")
     gui_app.player_name_vars[1].set("Denise")
     gui_app.player_name_vars[2].set("Alex")
-    gui_app.word_var.set("SKATE")
-    gui_app.defense_attempts_var.set(1)
+    gui_app.preset_var.set("battle_standard")
 
     gui_app._start_game()
 
     assert gui_app.controller is not None
+    gui_app.controller.get_state().rule_set.defense_attempts = 1
     gui_app.controller.start_turn("kickflip")
     gui_app.controller.resolve_defense(True)
     gui_app.controller.resolve_defense(False)
@@ -89,7 +90,7 @@ def test_gui_history_view_renders_battle_turns(
     second_row = gui_app.history_tree.item(rows[1], "values")
 
     assert first_row == ("1", "Alex", "kickflip", "V", "Stan", "V", "-")
-    assert second_row == ("", "", "", "", "Denise", "X", "S")
+    assert second_row == ("", "", "", "", "Denise", "X", "O")
 
 
 def test_gui_start_game_with_three_players_uses_battle_mode(
@@ -106,25 +107,80 @@ def test_gui_start_game_with_three_players_uses_battle_mode(
     gui_app.player_name_vars[0].set("Stan")
     gui_app.player_name_vars[1].set("Denise")
     gui_app.player_name_vars[2].set("Margaux")
-    gui_app.word_var.set("OUT")
-    gui_app.defense_attempts_var.set(1)
+    gui_app.preset_var.set("battle_standard")
 
     gui_app._start_game()
 
     assert gui_app.controller is not None
     state = gui_app.controller.get_state()
 
+    assert gui_app.controller.engine.match_parameters.preset_name == "battle_standard"
     assert gui_app.controller.engine.match_parameters.mode_name == "battle"
     assert state.turn_order == [1, 2, 0]
     assert state.attacker_index == 1
 
     assert gui_app.matchup_label is not None
+    assert gui_app.preset_label is not None
     assert gui_app.phase_title_label is not None
     assert gui_app.phase_description_label is not None
 
     assert gui_app.matchup_label.cget("text") == "STAN / DENISE / MARGAUX"
+    assert gui_app.preset_label.cget("text") == "Preset: battle_standard"
     assert gui_app.phase_title_label.cget("text") == "Denise sets the next trick"
     assert gui_app.phase_description_label.cget("text") == "Defenders: Stan, Margaux"
+
+
+def test_gui_two_players_default_to_classic_skate_preset(gui_app: GUIApp) -> None:
+    gui_app.player_name_vars[0].set("Stan")
+    gui_app.player_name_vars[1].set("Denise")
+
+    gui_app._start_game()
+
+    assert gui_app.controller is not None
+    assert gui_app.controller.engine.match_parameters.preset_name == "classic_skate"
+
+
+def test_gui_can_start_custom_game_without_preset(gui_app: GUIApp) -> None:
+    gui_app.setup_mode_var.set("custom")
+    gui_app.player_count_var.set(2)
+    gui_app._rebuild_player_inputs()
+
+    gui_app.player_name_vars[0].set("Stan")
+    gui_app.player_name_vars[1].set("Denise")
+    gui_app.custom_word_var.set("OUT")
+    gui_app.custom_defense_attempts_var.set(3)
+
+    gui_app._start_game()
+
+    assert gui_app.controller is not None
+    match_parameters = gui_app.controller.engine.match_parameters
+    assert match_parameters.preset_name is None
+    assert match_parameters.mode_name == "one_vs_one"
+    assert match_parameters.rule_set.letters_word == "OUT"
+    assert match_parameters.rule_set.defense_attempts == 3
+
+
+def test_gui_can_add_player_between_turns(gui_app: GUIApp, monkeypatch) -> None:
+    gui_app.player_name_vars[0].set("Stan")
+    gui_app.player_name_vars[1].set("Denise")
+    gui_app._start_game()
+
+    monkeypatch.setattr(
+        "interfaces.gui.gui_app.simpledialog.askstring",
+        lambda *args, **kwargs: "Alex",
+    )
+
+    gui_app._add_player_between_turns()
+
+    assert gui_app.controller is not None
+    match_parameters = gui_app.controller.engine.match_parameters
+    assert match_parameters.mode_name == "battle"
+    assert [player.id for player in gui_app.controller.get_state().players] == [
+        "Stan",
+        "Denise",
+        "Alex",
+    ]
+    assert gui_app.status_var.get() == "Alex joined the game."
 
 
 def test_gui_return_to_setup_clears_controller_and_status(gui_app: GUIApp) -> None:

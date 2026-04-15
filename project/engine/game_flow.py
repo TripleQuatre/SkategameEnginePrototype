@@ -1,3 +1,4 @@
+from config.match_parameters import MatchParameters
 from core.events import Event
 from core.state import GameState
 from core.types import DefenseResolutionStatus, EventName, Phase
@@ -9,8 +10,13 @@ from validation.action_validator import ActionValidator
 
 
 class GameFlow:
-    def __init__(self, mode: BaseMode) -> None:
+    def __init__(
+        self,
+        mode: BaseMode,
+        match_parameters: MatchParameters | None = None,
+    ) -> None:
         self.mode = mode
+        self.match_parameters = match_parameters
         self.rules_registry = RulesRegistry()
         self.turn_resolver = TurnResolver(self.rules_registry)
         self.end_conditions = EndConditions()
@@ -28,6 +34,31 @@ class GameFlow:
                     "turn_order": state.turn_order,
                     "starting_attacker_id": state.players[state.attacker_index].id,
                     "starting_attacker_name": state.players[state.attacker_index].name,
+                    "mode_name": (
+                        self.match_parameters.mode_name
+                        if self.match_parameters is not None
+                        else None
+                    ),
+                    "preset_name": (
+                        self.match_parameters.preset_name
+                        if self.match_parameters is not None
+                        else None
+                    ),
+                    "initial_turn_order_policy": (
+                        self.match_parameters.policies.initial_turn_order.value
+                        if self.match_parameters is not None
+                        else None
+                    ),
+                    "attacker_rotation_policy": (
+                        self.match_parameters.policies.attacker_rotation.value
+                        if self.match_parameters is not None
+                        else None
+                    ),
+                    "defender_order_policy": (
+                        self.match_parameters.policies.defender_order.value
+                        if self.match_parameters is not None
+                        else None
+                    ),
                 },
             )
         )

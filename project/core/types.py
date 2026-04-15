@@ -20,6 +20,7 @@ class DefenseResolutionStatus(Enum):
 
 class EventName(Enum):
     GAME_STARTED = "game_started"
+    PLAYER_JOINED = "player_joined"
     TURN_STARTED = "turn_started"
     DEFENSE_SUCCEEDED = "defense_succeeded"
     DEFENSE_FAILED_ATTEMPT = "defense_failed_attempt"

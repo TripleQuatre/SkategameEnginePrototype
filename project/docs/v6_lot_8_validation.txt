@@ -1,0 +1,100 @@
+SkateGame Engine Prototype - Validation Lot 8 V6
+
+Role du document
+Ce document resume ce qui a ete effectivement livre pour le lot 8 de la V6.
+
+Statut
+Lot 8 implemente.
+
+Date de validation
+2026-04-15
+
+Rappel du role du lot 8
+Le lot 8 ajoute une reconfiguration simple du match entre deux tours,
+avec comme premier cas officiel le passage `one_vs_one -> battle`.
+
+Livraisons effectives
+
+1. Nouvelle operation moteur
+`engine/game_engine.py` expose maintenant `add_player_between_turns(...)`.
+
+Cette operation :
+- refuse l'ajout hors phase `TURN`
+- refuse l'ajout si un trick est deja engage
+- preserve l'attaquant courant
+- etend `players` et `turn_order`
+- bascule `one_vs_one -> battle` si necessaire
+
+2. Reconfiguration de configuration effective
+`MatchParameters` est maintenant restaure et reconfigure correctement
+pendant l'operation :
+- mise a jour de `player_ids`
+- mise a jour de `mode_name` quand le duel devient un battle
+- invalidation du `preset_name` seulement si le match ne correspond plus
+  a un preset officiel
+
+3. Undo compatible reconfiguration
+Le systeme de snapshot ne conserve plus seulement `GameState`.
+Il conserve aussi `MatchParameters`, ce qui permet a `undo()`
+de restaurer :
+- le roster precedent
+- le mode precedent
+- le preset precedent
+
+4. Tracage de l'operation
+Un nouvel evenement `PLAYER_JOINED` est ajoute a l'historique.
+
+Il permet de tracer :
+- le joueur ajoute
+- le mode avant/apres
+- le preset avant/apres
+- le roster courant
+- le `turn_order` courant
+
+5. Historique contextuel mis a jour
+`build_match_context()` sait maintenant tenir compte de `PLAYER_JOINED`
+pour refléter la configuration active apres reconfiguration.
+
+6. Surface publique
+`controllers/game_controller.py` expose aussi
+`add_player_between_turns(...)`.
+
+7. Interfaces utilisables
+La fonctionnalite est maintenant accessible depuis :
+- le CLI via la commande `/join`
+- le GUI via le bouton `Add player`
+
+Dans les deux cas, l'ajout reste refuse si un trick est deja engage.
+
+Couverture ajoutee
+
+Des tests ont ete ajoutes pour couvrir :
+- ajout de joueur entre deux tours
+- bascule `one_vs_one -> battle`
+- prise en compte du nouveau defenseur au trick suivant
+- rejet de l'ajout pendant un trick engage
+- undo apres reconfiguration
+- persistence du match reconfigure
+- restauration du contexte historique
+- restauration de `MatchParameters` dans les snapshots
+
+Ce que le lot 8 ne fait toujours pas
+
+1. Ajout pendant un trick
+Toujours hors scope.
+
+2. Rejoindre "depuis le debut"
+Toujours hors scope.
+
+3. Retrait de joueur
+Toujours hors scope.
+
+4. Roster dynamique generalise
+Le lot 8 reste une reconfiguration simple,
+pas un systeme complet de gestion dynamique du roster.
+
+Conclusion
+La V6 sait maintenant absorber proprement une arrivee de joueur
+entre deux tours, y compris le cas concret attendu
+`one_vs_one -> battle`, sans perdre les scores, l'historique,
+les tricks valides ni la coherence de l'undo.

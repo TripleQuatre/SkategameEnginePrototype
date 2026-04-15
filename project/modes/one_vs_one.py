@@ -17,27 +17,10 @@ class OneVsOneMode(BaseMode):
         state.validated_tricks = []
 
     def build_defender_indices(self, state: GameState) -> list[int]:
-        return [
-            index
-            for index in state.turn_order
-            if index != state.attacker_index and state.players[index].is_active
-        ]
+        return self._build_defender_indices_from_turn_order(state)
 
     def get_next_attacker_index(self, state: GameState) -> int | None:
-        if not state.turn_order:
-            return None
-
-        current_position = state.turn_order.index(state.attacker_index)
-        turn_order_length = len(state.turn_order)
-
-        for offset in range(1, turn_order_length + 1):
-            candidate_index = state.turn_order[
-                (current_position + offset) % turn_order_length
-            ]
-            if state.players[candidate_index].is_active:
-                return candidate_index
-
-        return None
+        return self._get_next_attacker_from_turn_order(state)
 
     def validate(self, state: GameState) -> None:
         if len(state.players) != 2:

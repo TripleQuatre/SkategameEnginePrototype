@@ -26,6 +26,9 @@ class GameController:
     def undo(self) -> bool:
         return self.engine.undo()
 
+    def add_player_between_turns(self, player_id: str) -> None:
+        self.engine.add_player_between_turns(player_id)
+
     def save_game(self, filepath: str) -> None:
         self.engine.save_game(filepath)
 

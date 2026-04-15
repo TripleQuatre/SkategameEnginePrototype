@@ -1,6 +1,7 @@
 import modes.battle as battle_module
 
 from config.match_parameters import MatchParameters
+from config.rule_set_config import RuleSetConfig
 from core.types import DefenseResolutionStatus, EventName, Phase
 from engine.game_engine import GameEngine
 
@@ -198,3 +199,40 @@ def test_battle_game_engine_rotates_to_next_active_attacker(monkeypatch) -> None
     assert state.current_trick is None
     assert state.defender_indices == []
     assert state.history.events[-1].name == EventName.TURN_ENDED
+
+
+def test_game_engine_can_add_player_between_turns_and_switch_to_battle() -> None:
+    match_parameters = MatchParameters(
+        player_ids=["p1", "p2"],
+        preset_name="classic_skate",
+        rule_set=RuleSetConfig(
+            letters_word="SKATE",
+            elimination_enabled=True,
+            defense_attempts=3,
+        ),
+    )
+    engine = GameEngine(match_parameters)
+
+    engine.start_game()
+    engine.add_player_between_turns("p3")
+
+    state = engine.get_state()
+    assert engine.match_parameters.mode_name == "battle"
+    assert engine.match_parameters.preset_name is None
+    assert engine.match_parameters.player_ids == ["p1", "p2", "p3"]
+    assert [player.id for player in state.players] == ["p1", "p2", "p3"]
+    assert state.turn_order == [0, 1, 2]
+    assert state.attacker_index == 0
+    assert state.history.events[-1].name == EventName.PLAYER_JOINED
+
+
+def test_game_engine_add_player_between_turns_extends_defenders_on_next_trick() -> None:
+    match_parameters = MatchParameters(player_ids=["p1", "p2"])
+    engine = GameEngine(match_parameters)
+
+    engine.start_game()
+    engine.add_player_between_turns("p3")
+    engine.start_turn("kickflip")
+
+    state = engine.get_state()
+    assert state.defender_indices == [1, 2]

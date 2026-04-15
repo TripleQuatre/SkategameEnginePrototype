@@ -1,4 +1,5 @@
 from config.match_parameters import MatchParameters
+from config.rule_set_config import RuleSetConfig
 from controllers.game_controller import GameController
 from core.types import DefenseResolutionStatus, EventName, Phase
 from engine.game_engine import GameEngine
@@ -148,3 +149,30 @@ def test_game_controller_can_undo_multiple_steps_back_to_setup() -> None:
     assert state.history.events == []
 
     assert controller.undo() is False
+
+
+def test_game_engine_undo_after_player_join_restores_one_vs_one_configuration() -> None:
+    engine = GameEngine(
+        MatchParameters(
+            player_ids=["p1", "p2"],
+            preset_name="classic_skate",
+            rule_set=RuleSetConfig(
+                letters_word="SKATE",
+                elimination_enabled=True,
+                defense_attempts=3,
+            ),
+        )
+    )
+
+    engine.start_game()
+    engine.add_player_between_turns("p3")
+
+    assert engine.undo() is True
+
+    state = engine.get_state()
+    assert engine.match_parameters.mode_name == "one_vs_one"
+    assert engine.match_parameters.preset_name == "classic_skate"
+    assert engine.match_parameters.player_ids == ["p1", "p2"]
+    assert [player.id for player in state.players] == ["p1", "p2"]
+    assert state.turn_order == [0, 1]
+    assert state.history.events[-1].name == EventName.GAME_STARTED

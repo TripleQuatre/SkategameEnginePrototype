@@ -139,21 +139,21 @@ Nombre cible
 
 Presets de travail recommandes
 
-`classic_duel`
+`classic_skate`
 - base `one_vs_one`
-- experience officielle standard a 2 joueurs
+- experience officielle standard skate a 2 joueurs
+
+`classic_blade`
+- base `one_vs_one`
+- experience officielle blade a 2 joueurs
 
 `battle_standard`
 - base `battle`
-- comportement le plus proche de la V5 multijoueur
+- preset battle standard en `OUT` avec 3 essais de defense
 
-`battle_rotation_variant`
+`battle_hardcore`
 - base `battle`
-- variante officielle avec une politique de rotation differente
-
-`battle_no_elimination`
-- base `battle`
-- variante officielle avec une logique d'elimination ou de fin differente
+- preset battle plus strict en `SKATE` avec 1 essai de defense
 
 Note
 Ces noms peuvent encore bouger,

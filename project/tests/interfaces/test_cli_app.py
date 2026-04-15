@@ -1,6 +1,7 @@
 import modes.battle as battle_module
 
 from config.match_parameters import MatchParameters
+from config.rule_set_config import RuleSetConfig
 from controllers.game_controller import GameController
 from core.events import Event
 from core.types import EventName
@@ -136,3 +137,75 @@ def test_cli_format_event_prefers_display_names_over_ids() -> None:
     )
 
     assert message == "Game finished. Winner: Stan"
+
+
+def test_cli_display_state_shows_active_preset(capsys) -> None:
+    match_parameters = MatchParameters(
+        player_ids=["p1", "p2"],
+        preset_name="classic_skate",
+        rule_set=RuleSetConfig(
+            letters_word="SKATE",
+            elimination_enabled=True,
+            defense_attempts=3,
+        ),
+    )
+    controller = GameController(match_parameters)
+    controller.start_game()
+
+    cli = CLIApp()
+    cli._display_state(controller.get_state())
+    output = capsys.readouterr().out
+
+    assert "Preset: classic_skate" in output
+
+
+def test_cli_new_game_preset_flow_selects_preset_before_player_names(
+    monkeypatch,
+) -> None:
+    cli = CLIApp()
+    prompts: list[str] = []
+    answers = iter(["1", "3", "3", "Stan", "Denise", "Alex"])
+
+    def fake_input(prompt: str = "") -> str:
+        prompts.append(prompt)
+        return next(answers)
+
+    monkeypatch.setattr("builtins.input", fake_input)
+
+    controller = cli._create_new_game_controller()
+
+    assert controller.engine.match_parameters.preset_name == "battle_standard"
+    assert prompts.index("Choose a preset (1-4): ") < prompts.index(
+        "Player 1 name: "
+    )
+
+
+def test_cli_new_game_can_start_without_preset(monkeypatch) -> None:
+    cli = CLIApp()
+    answers = iter(["2", "2", "Stan", "Denise", "OUT", "3"])
+
+    monkeypatch.setattr("builtins.input", lambda prompt="": next(answers))
+
+    controller = cli._create_new_game_controller()
+    match_parameters = controller.engine.match_parameters
+
+    assert match_parameters.preset_name is None
+    assert match_parameters.mode_name == "one_vs_one"
+    assert match_parameters.rule_set.letters_word == "OUT"
+    assert match_parameters.rule_set.defense_attempts == 3
+
+
+def test_cli_join_command_can_add_player_between_turns(monkeypatch, capsys) -> None:
+    controller = GameController(MatchParameters(player_ids=["p1", "p2"]))
+    controller.start_game()
+
+    cli = CLIApp()
+    monkeypatch.setattr("builtins.input", lambda _prompt="": "Alex")
+
+    result = cli._handle_global_command(controller, "/join")
+    output = capsys.readouterr().out
+
+    assert result is None
+    assert [player.id for player in controller.get_state().players] == ["p1", "p2", "Alex"]
+    assert controller.engine.match_parameters.mode_name == "battle"
+    assert "Alex joined the game." in output

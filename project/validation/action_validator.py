@@ -43,3 +43,17 @@ class ActionValidator:
 
         if state.current_trick is not None:
             raise InvalidActionError("Cannot cancel turn after a trick has been engaged.")
+
+    def validate_add_player_between_turns(self, state: GameState, player_id: str) -> None:
+        if state.phase != Phase.TURN:
+            raise InvalidActionError(
+                "Cannot add a player outside TURN phase."
+            )
+
+        if not player_id:
+            raise InvalidActionError("A player identifier is required.")
+
+        if state.current_trick is not None:
+            raise InvalidActionError(
+                "Cannot add a player while a trick is engaged."
+            )

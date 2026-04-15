@@ -68,10 +68,10 @@ L'idee importante est de ne pas melanger ces choix avec les regles de score pure
 2. Faire des presets plutot qu'un catalogue brut d'options
 Plutot que d'exposer d'emblee dix cases a cocher, la V6 gagnerait a proposer
 quelques presets lisibles, par exemple :
-- `classic_duel`
+- `classic_skate`
+- `classic_blade`
 - `battle_standard`
-- `battle_rotation_variant`
-- `battle_no_elimination`
+- `battle_hardcore`
 
 Ces presets auraient deux avantages :
 - rendre la fonctionnalite lisible cote utilisateur

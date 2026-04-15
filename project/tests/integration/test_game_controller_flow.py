@@ -1,6 +1,7 @@
 import modes.battle as battle_module
 
 from config.match_parameters import MatchParameters
+from core.exceptions import InvalidActionError
 from controllers.game_controller import GameController
 from core.types import DefenseResolutionStatus, EventName, Phase
 
@@ -170,3 +171,29 @@ def test_battle_game_controller_can_start_a_turn(monkeypatch) -> None:
     assert state.turn_order == [1, 2, 0]
     assert state.attacker_index == 1
     assert state.defender_indices == [2, 0]
+
+
+def test_game_controller_can_add_player_between_turns() -> None:
+    controller = GameController(MatchParameters(player_ids=["p1", "p2"]))
+
+    controller.start_game()
+    controller.add_player_between_turns("p3")
+
+    state = controller.get_state()
+    assert controller.engine.match_parameters.mode_name == "battle"
+    assert [player.id for player in state.players] == ["p1", "p2", "p3"]
+    assert state.turn_order == [0, 1, 2]
+    assert state.history.events[-1].name == EventName.PLAYER_JOINED
+
+
+def test_game_controller_rejects_add_player_while_trick_is_engaged() -> None:
+    controller = GameController(MatchParameters(player_ids=["p1", "p2"]))
+
+    controller.start_game()
+    controller.start_turn("kickflip")
+
+    try:
+        controller.add_player_between_turns("p3")
+        assert False, "Expected InvalidActionError"
+    except InvalidActionError:
+        pass

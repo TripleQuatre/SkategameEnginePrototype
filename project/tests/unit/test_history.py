@@ -3,6 +3,75 @@ from core.history import History
 from core.types import EventName
 
 
+def test_build_match_context_from_game_started_event() -> None:
+    history = History()
+    history.add_event(
+        Event(
+            name=EventName.GAME_STARTED,
+            payload={
+                "mode_name": "battle",
+                "preset_name": "battle_standard",
+                "player_names": ["Stan", "Denise", "Alex"],
+                "turn_order": [2, 0, 1],
+                "starting_attacker_name": "Alex",
+                "initial_turn_order_policy": "randomized",
+                "attacker_rotation_policy": "follow_turn_order",
+                "defender_order_policy": "follow_turn_order",
+            },
+        )
+    )
+
+    context = history.build_match_context()
+
+    assert context is not None
+    assert context.mode_name == "battle"
+    assert context.preset_name == "battle_standard"
+    assert context.player_names == ["Stan", "Denise", "Alex"]
+    assert context.turn_order == [2, 0, 1]
+    assert context.starting_attacker_name == "Alex"
+    assert context.initial_turn_order_policy == "randomized"
+    assert context.attacker_rotation_policy == "follow_turn_order"
+    assert context.defender_order_policy == "follow_turn_order"
+
+
+def test_build_match_context_is_updated_after_player_join_event() -> None:
+    history = History()
+    history.add_event(
+        Event(
+            name=EventName.GAME_STARTED,
+            payload={
+                "mode_name": "one_vs_one",
+                "preset_name": "classic_skate",
+                "player_names": ["Stan", "Denise"],
+                "turn_order": [0, 1],
+                "starting_attacker_name": "Stan",
+                "initial_turn_order_policy": "fixed_player_order",
+                "attacker_rotation_policy": "follow_turn_order",
+                "defender_order_policy": "follow_turn_order",
+            },
+        )
+    )
+    history.add_event(
+        Event(
+            name=EventName.PLAYER_JOINED,
+            payload={
+                "mode_name": "battle",
+                "preset_name": None,
+                "player_names": ["Stan", "Denise", "Alex"],
+                "turn_order": [0, 1, 2],
+            },
+        )
+    )
+
+    context = history.build_match_context()
+
+    assert context is not None
+    assert context.mode_name == "battle"
+    assert context.preset_name is None
+    assert context.player_names == ["Stan", "Denise", "Alex"]
+    assert context.turn_order == [0, 1, 2]
+
+
 def test_build_turns_from_completed_one_vs_one_turn() -> None:
     history = History()
     history.add_event(

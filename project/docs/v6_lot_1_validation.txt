@@ -1,0 +1,100 @@
+SkateGame Engine Prototype - Validation Lot 1 V6
+
+Role du document
+Ce document resume ce qui a ete effectivement livre pour le lot 1 de la V6.
+
+Statut
+Lot 1 implemente.
+
+Date de validation
+2026-04-15
+
+Rappel du role du lot 1
+Le lot 1 sert a introduire les objets de configuration V6 sans encore
+deployer toute leur logique dans le moteur.
+
+Livraisons effectives
+
+1. Nouvelle couche de policies
+Le fichier `config/match_policies.py` a ete ajoute.
+Il introduit :
+- `InitialTurnOrderPolicy`
+- `AttackerRotationPolicy`
+- `DefenderOrderPolicy`
+- `MatchPolicies`
+
+2. Nouvelle couche de preset
+Le fichier `config/match_preset.py` a ete ajoute.
+Il introduit `MatchPreset` comme objet memoire de description d'un preset officiel.
+
+3. Registre des presets officiels
+Le fichier `config/preset_registry.py` a ete ajoute.
+Il centralise les presets officiels internes du moteur.
+
+4. Evolution de `MatchParameters`
+`config/match_parameters.py` a ete etendu avec :
+- `policies`
+- `preset_name`
+
+L'evolution reste non cassante grace a des valeurs par defaut.
+
+5. Presets officiels internes disponibles
+Le registre expose actuellement :
+- `classic_skate`
+- `classic_blade`
+- `battle_standard`
+- `battle_hardcore`
+
+6. Tests du lot 1
+Un nouveau fichier `tests/unit/test_config_models.py` a ete ajoute
+pour couvrir les nouveaux objets de configuration.
+
+Ce que le lot 1 ne fait pas encore
+
+1. Validation avancee
+Le lot 1 n'implemente pas encore la validation fine des combinaisons V6.
+Ce travail appartient au lot 2.
+
+2. Integration moteur
+Le moteur, les modes et la factory n'utilisent pas encore les nouvelles policies.
+Ce travail appartient au lot 3.
+
+3. Persistence complete V6
+Les nouveaux champs V6 ne sont pas encore pleinement serialises.
+Ce travail appartient au lot 4.
+
+4. Interfaces V6
+CLI et GUI ne pilotent pas encore les presets.
+Ce travail appartient au lot 6.
+
+Verification effectuee
+- `tests/unit/test_config_models.py`
+- `tests/unit/test_validation.py`
+
+Resultat
+Ces tests passent.
+
+Note sur la persistence
+Les tests `tests/unit/test_persistence.py` n'ont pas pu etre verifies proprement
+jusqu'au bout dans cet environnement a cause d'un probleme d'acces
+au repertoire temporaire utilise par `pytest`.
+
+Impact de cette limite
+Le lot 1 reste considere comme valide,
+car la persistence complete des nouveaux objets V6 n'etait de toute facon
+pas encore l'objectif de ce lot.
+
+Ce que le lot 1 debloque
+Le chantier peut maintenant entrer dans le lot 2 :
+validation de configuration V6.
+
+Points ouverts pour le lot 2
+- quelles combinaisons mode/policies sont officiellement supportees
+- quelle coherence exiger entre `preset_name` et configuration effective
+- quel niveau minimal de rejet des combinaisons non supportees
+
+Conclusion
+Le lot 1 a pose la base de configuration V6 dans `project/config/`
+sans casser l'existant.
+Le prochain travail logique est de faire comprendre ces nouveaux objets
+au validateur de configuration.

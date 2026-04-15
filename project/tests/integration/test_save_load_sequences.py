@@ -1,6 +1,7 @@
 import modes.battle as battle_module
 
 from config.match_parameters import MatchParameters
+from config.rule_set_config import RuleSetConfig
 from controllers.game_controller import GameController
 from core.types import EventName, Phase
 from engine.game_engine import GameEngine
@@ -183,3 +184,35 @@ def test_game_engine_load_relinks_match_parameters_and_state_rule_set(tmp_path) 
 
     assert final_engine.match_parameters.rule_set.letters_word == "OUT"
     assert final_engine.get_state().rule_set.letters_word == "OUT"
+
+
+def test_game_engine_can_save_and_load_reconfigured_one_vs_one_to_battle_game(
+    tmp_path,
+) -> None:
+    match_parameters = MatchParameters(
+        player_ids=["p1", "p2"],
+        preset_name="classic_skate",
+        rule_set=RuleSetConfig(
+            letters_word="SKATE",
+            elimination_enabled=True,
+            defense_attempts=3,
+        ),
+    )
+    engine = GameEngine(match_parameters)
+
+    engine.start_game()
+    engine.add_player_between_turns("p3")
+
+    filepath = tmp_path / "reconfigured_game.json"
+    engine.save_game(str(filepath))
+
+    reloaded_engine = GameEngine(MatchParameters(player_ids=["placeholder1", "placeholder2"]))
+    reloaded_engine.load_game(str(filepath))
+
+    state = reloaded_engine.get_state()
+    assert reloaded_engine.match_parameters.mode_name == "battle"
+    assert reloaded_engine.match_parameters.preset_name is None
+    assert reloaded_engine.match_parameters.player_ids == ["p1", "p2", "p3"]
+    assert [player.id for player in state.players] == ["p1", "p2", "p3"]
+    assert state.turn_order == [0, 1, 2]
+    assert state.history.events[-1].name == EventName.PLAYER_JOINED

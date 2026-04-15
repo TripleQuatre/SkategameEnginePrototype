@@ -6,6 +6,7 @@ from unittest.mock import patch
 import modes.battle as battle_module
 
 from config.match_parameters import MatchParameters
+from config.preset_registry import PresetRegistry
 from config.rule_set_config import RuleSetConfig
 from controllers.game_controller import GameController
 from core.state import GameState
@@ -25,9 +26,10 @@ class ScenarioStep:
 @dataclass
 class ScenarioDefinition:
     player_ids: list[str]
+    preset_name: str | None = None
     mode_name: str | None = None
-    letters_word: str = "SKATE"
-    defense_attempts: int = 1
+    letters_word: str | None = None
+    defense_attempts: int | None = None
     fixed_turn_order: list[int] | None = None
     steps: list[ScenarioStep] = field(default_factory=list)
 
@@ -43,6 +45,7 @@ class ScenarioResult:
 class ScenarioRunner:
     def __init__(self, base_dir: Path) -> None:
         self.base_dir = base_dir
+        self.preset_registry = PresetRegistry()
 
     def run(self, definition: ScenarioDefinition) -> ScenarioResult:
         save_paths: dict[str, Path] = {}
@@ -64,6 +67,22 @@ class ScenarioRunner:
         )
 
     def _create_controller(self, definition: ScenarioDefinition) -> GameController:
+        if definition.preset_name is not None:
+            preset = self.preset_registry.get(definition.preset_name)
+            match_parameters = MatchParameters(
+                player_ids=definition.player_ids,
+                mode_name=preset.mode_name,
+                rule_set=RuleSetConfig(
+                    letters_word=definition.letters_word or preset.rule_set.letters_word,
+                    elimination_enabled=preset.rule_set.elimination_enabled,
+                    defense_attempts=definition.defense_attempts
+                    or preset.rule_set.defense_attempts,
+                ),
+                policies=preset.policies,
+                preset_name=preset.name,
+            )
+            return GameController(match_parameters)
+
         mode_name = definition.mode_name
         if mode_name is None:
             mode_name = "one_vs_one" if len(definition.player_ids) == 2 else "battle"
@@ -72,8 +91,8 @@ class ScenarioRunner:
             player_ids=definition.player_ids,
             mode_name=mode_name,
             rule_set=RuleSetConfig(
-                letters_word=definition.letters_word,
-                defense_attempts=definition.defense_attempts,
+                letters_word=definition.letters_word or "SKATE",
+                defense_attempts=definition.defense_attempts or 1,
             ),
         )
 

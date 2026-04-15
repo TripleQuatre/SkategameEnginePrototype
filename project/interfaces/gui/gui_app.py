@@ -1,10 +1,11 @@
 from datetime import datetime
 from pathlib import Path
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, simpledialog
 from tkinter import font as tkfont
 
 from config.match_parameters import MatchParameters
+from config.preset_registry import PresetRegistry
 from config.rule_set_config import RuleSetConfig
 from controllers.game_controller import GameController
 from core.events import Event
@@ -23,11 +24,14 @@ class GUIApp:
         self.root.minsize(680, 500)
 
         self.controller: GameController | None = None
+        self.preset_registry = PresetRegistry()
 
+        self.setup_mode_var = tk.StringVar(value="preset")
         self.player_count_var = tk.IntVar(value=2)
         self.player_name_vars: list[tk.StringVar] = []
-        self.word_var = tk.StringVar(value="SKATE")
-        self.defense_attempts_var = tk.IntVar(value=1)
+        self.preset_var = tk.StringVar(value="classic_skate")
+        self.custom_word_var = tk.StringVar(value="SKATE")
+        self.custom_defense_attempts_var = tk.IntVar(value=1)
         self.trick_var = tk.StringVar()
         self.status_var = tk.StringVar(value="Configure the game to begin.")
 
@@ -56,6 +60,7 @@ class GUIApp:
         self.phase_description_label: ttk.Label | None = None
         self.attempts_label: ttk.Label | None = None
         self.status_label: ttk.Label | None = None
+        self.preset_label: ttk.Label | None = None
 
         self.score_text: tk.Text | None = None
         self.trick_entry: ttk.Entry | None = None
@@ -68,10 +73,15 @@ class GUIApp:
         self.save_button: ttk.Button | None = None
         self.load_button: ttk.Button | None = None
         self.history_button: ttk.Button | None = None
+        self.add_player_button: ttk.Button | None = None
         self.new_game_button: ttk.Button | None = None
         self.back_to_game_button: ttk.Button | None = None
 
         self.history_tree: ttk.Treeview | None = None
+        self.preset_combo: ttk.Combobox | None = None
+        self.player_count_spinbox: ttk.Spinbox | None = None
+        self.word_entry: ttk.Entry | None = None
+        self.attempts_spinbox: ttk.Spinbox | None = None
 
         self._build_setup_view()
         self._build_game_view()
@@ -129,11 +139,45 @@ class GUIApp:
 
         form.columnconfigure(1, weight=1)
 
-        ttk.Label(form, text="Number of players:", font=self.body_font).grid(
+        ttk.Label(form, text="Setup mode:", font=self.body_font).grid(
             row=0, column=0, sticky="w", pady=(0, 6)
         )
 
-        player_count_spinbox = ttk.Spinbox(
+        setup_mode_frame = ttk.Frame(form)
+        setup_mode_frame.grid(row=1, column=0, columnspan=2, sticky="w", pady=(0, 18))
+
+        ttk.Radiobutton(
+            setup_mode_frame,
+            text="Official preset",
+            variable=self.setup_mode_var,
+            value="preset",
+        ).pack(side="left", padx=(0, 10))
+
+        ttk.Radiobutton(
+            setup_mode_frame,
+            text="No preset",
+            variable=self.setup_mode_var,
+            value="custom",
+        ).pack(side="left")
+
+        ttk.Label(form, text="Preset:", font=self.body_font).grid(
+            row=2, column=0, sticky="w", pady=(0, 6)
+        )
+
+        self.preset_combo = ttk.Combobox(
+            form,
+            textvariable=self.preset_var,
+            values=self._get_official_preset_names(),
+            state="readonly",
+            width=36,
+        )
+        self.preset_combo.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(0, 18))
+
+        ttk.Label(form, text="Number of players:", font=self.body_font).grid(
+            row=4, column=0, sticky="w", pady=(0, 6)
+        )
+
+        self.player_count_spinbox = ttk.Spinbox(
             form,
             from_=2,
             to=8,
@@ -141,43 +185,85 @@ class GUIApp:
             width=6,
             command=self._rebuild_player_inputs,
         )
-        player_count_spinbox.grid(row=1, column=0, sticky="w", pady=(0, 18))
-        player_count_spinbox.bind("<FocusOut>", lambda _event: self._rebuild_player_inputs())
-        player_count_spinbox.bind("<Return>", lambda _event: self._rebuild_player_inputs())
+        self.player_count_spinbox.grid(row=5, column=0, sticky="w", pady=(0, 18))
+        self.player_count_spinbox.bind("<FocusOut>", lambda _event: self._rebuild_player_inputs())
+        self.player_count_spinbox.bind("<Return>", lambda _event: self._rebuild_player_inputs())
 
         ttk.Label(form, text="Players:", font=self.body_font).grid(
-            row=2, column=0, sticky="w", pady=(0, 6)
-        )
-
-        self.players_frame = ttk.Frame(form)
-        self.players_frame.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(0, 18))
-
-        ttk.Label(form, text="Word:", font=self.body_font).grid(
-            row=4, column=0, sticky="w", pady=(0, 6)
-        )
-        ttk.Entry(form, textvariable=self.word_var, width=36).grid(
-            row=5, column=0, columnspan=2, sticky="ew", pady=(0, 18)
-        )
-
-        ttk.Label(form, text="Defense attempts:", font=self.body_font).grid(
             row=6, column=0, sticky="w", pady=(0, 6)
         )
 
-        attempts_frame = ttk.Frame(form)
-        attempts_frame.grid(row=7, column=0, columnspan=2, sticky="w", pady=(0, 24))
+        self.players_frame = ttk.Frame(form)
+        self.players_frame.grid(row=7, column=0, columnspan=2, sticky="ew", pady=(0, 18))
 
-        ttk.Radiobutton(
-            attempts_frame, text="1", variable=self.defense_attempts_var, value=1
-        ).pack(side="left", padx=(0, 12))
-        ttk.Radiobutton(
-            attempts_frame, text="2", variable=self.defense_attempts_var, value=2
-        ).pack(side="left", padx=(0, 12))
-        ttk.Radiobutton(
-            attempts_frame, text="3", variable=self.defense_attempts_var, value=3
-        ).pack(side="left")
+        ttk.Label(form, text="Word:", font=self.body_font).grid(
+            row=8, column=0, sticky="w", pady=(0, 6)
+        )
+        self.word_entry = ttk.Entry(
+            form,
+            width=36,
+            textvariable=self.custom_word_var,
+        )
+        self.word_entry.grid(row=9, column=0, columnspan=2, sticky="ew", pady=(0, 18))
+
+        ttk.Label(form, text="Defense attempts:", font=self.body_font).grid(
+            row=10, column=0, sticky="w", pady=(0, 6)
+        )
+
+        self.attempts_spinbox = ttk.Spinbox(
+            form,
+            from_=1,
+            to=3,
+            textvariable=self.custom_defense_attempts_var,
+            width=6,
+        )
+        self.attempts_spinbox.grid(row=11, column=0, sticky="w", pady=(0, 24))
+
+        def refresh_setup_controls() -> None:
+            assert self.preset_combo is not None
+            assert self.player_count_spinbox is not None
+            assert self.word_entry is not None
+            assert self.attempts_spinbox is not None
+
+            use_preset = self.setup_mode_var.get() == "preset"
+            preset_names = self._get_official_preset_names()
+
+            if self.preset_var.get() not in preset_names:
+                self.preset_var.set(preset_names[0])
+
+            self.preset_combo.config(values=preset_names)
+
+            if use_preset:
+                preset = self.preset_registry.get(self.preset_var.get())
+                self.custom_word_var.set(preset.rule_set.letters_word)
+                self.custom_defense_attempts_var.set(preset.rule_set.defense_attempts)
+
+                if preset.mode_name == "one_vs_one":
+                    self.player_count_var.set(2)
+                    self.player_count_spinbox.config(state="disabled")
+                else:
+                    if self.player_count_var.get() < 3:
+                        self.player_count_var.set(3)
+                    self.player_count_spinbox.config(state="normal")
+
+                self.preset_combo.config(state="readonly")
+                self.word_entry.config(state="readonly")
+                self.attempts_spinbox.config(state="disabled")
+            else:
+                if self.player_count_var.get() < 2:
+                    self.player_count_var.set(2)
+                self.preset_combo.config(state="disabled")
+                self.player_count_spinbox.config(state="normal")
+                self.word_entry.config(state="normal")
+                self.attempts_spinbox.config(state="normal")
+
+            self._rebuild_player_inputs()
+
+        self.setup_mode_var.trace_add("write", lambda *_args: refresh_setup_controls())
+        self.preset_var.trace_add("write", lambda *_args: refresh_setup_controls())
 
         buttons = ttk.Frame(form)
-        buttons.grid(row=8, column=0, columnspan=2, pady=(6, 0))
+        buttons.grid(row=12, column=0, columnspan=2, pady=(6, 0))
 
         ttk.Button(
             buttons,
@@ -194,6 +280,7 @@ class GUIApp:
         ).pack(side="left", padx=6)
 
         self._rebuild_player_inputs()
+        refresh_setup_controls()
 
     def _rebuild_player_inputs(self) -> None:
         assert self.players_frame is not None
@@ -252,20 +339,23 @@ class GUIApp:
         self.score_text.tag_configure("score_active", font=self.score_active_font, foreground="black")
         self.score_text.tag_configure("score_inactive", font=self.score_inactive_font, foreground="gray")
 
+        self.preset_label = ttk.Label(frame, text="", font=self.small_font)
+        self.preset_label.grid(row=2, column=0, pady=(0, 10))
+
         self.phase_title_label = ttk.Label(frame, text="", font=self.section_font)
-        self.phase_title_label.grid(row=2, column=0, pady=(0, 14))
+        self.phase_title_label.grid(row=3, column=0, pady=(0, 14))
 
         self.trick_label = ttk.Label(frame, text="", font=self.section_font)
-        self.trick_label.grid(row=3, column=0, pady=(0, 10))
+        self.trick_label.grid(row=4, column=0, pady=(0, 10))
 
         self.phase_description_label = ttk.Label(frame, text="", font=self.body_font)
-        self.phase_description_label.grid(row=4, column=0, pady=(0, 8))
+        self.phase_description_label.grid(row=5, column=0, pady=(0, 8))
 
         self.attempts_label = ttk.Label(frame, text="", font=self.body_font)
-        self.attempts_label.grid(row=5, column=0, pady=(0, 18))
+        self.attempts_label.grid(row=6, column=0, pady=(0, 18))
 
         action_buttons = ttk.Frame(frame)
-        action_buttons.grid(row=6, column=0, pady=(0, 14))
+        action_buttons.grid(row=7, column=0, pady=(0, 14))
 
         self.success_button = ttk.Button(
             action_buttons,
@@ -284,7 +374,7 @@ class GUIApp:
         self.failure_button.pack(side="left", padx=8)
 
         session_buttons = ttk.Frame(frame)
-        session_buttons.grid(row=7, column=0, pady=(0, 20))
+        session_buttons.grid(row=8, column=0, pady=(0, 20))
 
         self.undo_button = ttk.Button(
             session_buttons,
@@ -318,6 +408,14 @@ class GUIApp:
         )
         self.history_button.pack(side="left", padx=6)
 
+        self.add_player_button = ttk.Button(
+            session_buttons,
+            text="Add player",
+            command=self._add_player_between_turns,
+            width=10,
+        )
+        self.add_player_button.pack(side="left", padx=6)
+
         self.new_game_button = ttk.Button(
             session_buttons,
             text="New game",
@@ -332,10 +430,10 @@ class GUIApp:
             font=self.small_font,
             justify="center",
         )
-        self.status_label.grid(row=8, column=0, pady=(0, 14))
+        self.status_label.grid(row=9, column=0, pady=(0, 14))
 
         trick_zone = ttk.Frame(frame)
-        trick_zone.grid(row=9, column=0)
+        trick_zone.grid(row=10, column=0)
 
         self.trick_entry = ttk.Entry(trick_zone, textvariable=self.trick_var, width=26)
         self.trick_entry.grid(row=0, column=0, pady=(0, 10))
@@ -598,25 +696,36 @@ class GUIApp:
 
     def _start_game(self) -> None:
         player_ids = [player_var.get().strip() for player_var in self.player_name_vars]
-        word = self.word_var.get().strip().upper()
-        attempts = self.defense_attempts_var.get()
 
         if any(not player_id for player_id in player_ids):
             messagebox.showerror("Invalid input", "All player names are required.")
             return
 
-        mode_name = "one_vs_one" if len(player_ids) == 2 else "battle"
-
         try:
-            rule_set = RuleSetConfig(
-                letters_word=word,
-                defense_attempts=attempts,
-            )
-            match_parameters = MatchParameters(
-                player_ids=player_ids,
-                mode_name=mode_name,
-                rule_set=rule_set,
-            )
+            if self.setup_mode_var.get() == "preset":
+                preset = self.preset_registry.get(self.preset_var.get())
+                match_parameters = MatchParameters(
+                    player_ids=player_ids,
+                    mode_name=preset.mode_name,
+                    rule_set=RuleSetConfig(
+                        letters_word=preset.rule_set.letters_word,
+                        elimination_enabled=preset.rule_set.elimination_enabled,
+                        defense_attempts=preset.rule_set.defense_attempts,
+                    ),
+                    policies=preset.policies,
+                    preset_name=preset.name,
+                )
+            else:
+                match_parameters = MatchParameters(
+                    player_ids=player_ids,
+                    mode_name="one_vs_one" if len(player_ids) == 2 else "battle",
+                    rule_set=RuleSetConfig(
+                        letters_word=self.custom_word_var.get().strip().upper(),
+                        elimination_enabled=True,
+                        defense_attempts=int(self.custom_defense_attempts_var.get()),
+                    ),
+                )
+
             self.controller = GameController(match_parameters)
             self.controller.start_game()
         except ValueError as error:
@@ -630,6 +739,9 @@ class GUIApp:
         self.status_var.set("Game started.")
         self._show_view("game")
         self._refresh_game_view()
+
+    def _get_official_preset_names(self) -> list[str]:
+        return self.preset_registry.list_preset_names()
 
     def _confirm_trick(self) -> None:
         if self.controller is None:
@@ -695,6 +807,32 @@ class GUIApp:
         if state.phase == Phase.END:
             self._show_game_over_message(state)
 
+    def _add_player_between_turns(self) -> None:
+        if self.controller is None:
+            return
+
+        player_name = simpledialog.askstring(
+            "Add player",
+            "Player name:",
+            parent=self.root,
+        )
+
+        if player_name is None:
+            return
+
+        player_name = player_name.strip()
+        if not player_name:
+            messagebox.showerror("Invalid input", "The player name cannot be empty.")
+            return
+
+        try:
+            self.controller.add_player_between_turns(player_name)
+            self.status_var.set(f"{player_name} joined the game.")
+        except InvalidActionError as error:
+            self.status_var.set(f"Invalid action: {error}")
+
+        self._refresh_game_view()
+
     # =========================
     # View refresh
     # =========================
@@ -706,6 +844,7 @@ class GUIApp:
         state = self.controller.get_state()
 
         assert self.matchup_label is not None
+        assert self.preset_label is not None
         assert self.score_text is not None
         assert self.phase_title_label is not None
         assert self.trick_label is not None
@@ -714,6 +853,11 @@ class GUIApp:
 
         self.matchup_label.config(
             text=" / ".join(player.name.upper() for player in state.players)
+        )
+        context = state.history.build_match_context()
+        preset_name = context.preset_name if context is not None else None
+        self.preset_label.config(
+            text=f"Preset: {preset_name}" if preset_name else ""
         )
 
         self._render_score_text(state)

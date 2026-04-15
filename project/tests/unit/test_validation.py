@@ -1,6 +1,7 @@
 import pytest
 
 from config.match_parameters import MatchParameters
+from config.match_policies import DefenderOrderPolicy, InitialTurnOrderPolicy, MatchPolicies
 from config.rule_set_config import RuleSetConfig
 from core.player import Player
 from core.state import GameState
@@ -23,6 +24,110 @@ def test_config_validator_rejects_less_than_two_players() -> None:
 def test_config_validator_rejects_empty_mode_name() -> None:
     validator = ConfigValidator()
     match_parameters = MatchParameters(player_ids=["p1", "p2"], mode_name="")
+
+    with pytest.raises(InvalidStateError):
+        validator.validate_match_parameters(match_parameters)
+
+
+def test_config_validator_rejects_unknown_mode_name() -> None:
+    validator = ConfigValidator()
+    match_parameters = MatchParameters(player_ids=["p1", "p2"], mode_name="weird_mode")
+
+    with pytest.raises(InvalidStateError):
+        validator.validate_match_parameters(match_parameters)
+
+
+def test_config_validator_rejects_randomized_one_vs_one_order_policy() -> None:
+    validator = ConfigValidator()
+    match_parameters = MatchParameters(
+        player_ids=["p1", "p2"],
+        mode_name="one_vs_one",
+        policies=MatchPolicies(
+            initial_turn_order=InitialTurnOrderPolicy.RANDOMIZED,
+        ),
+    )
+
+    with pytest.raises(InvalidStateError):
+        validator.validate_match_parameters(match_parameters)
+
+
+def test_config_validator_rejects_reverse_defender_order_for_one_vs_one() -> None:
+    validator = ConfigValidator()
+    match_parameters = MatchParameters(
+        player_ids=["p1", "p2"],
+        mode_name="one_vs_one",
+        policies=MatchPolicies(
+            defender_order=DefenderOrderPolicy.REVERSE_TURN_ORDER,
+        ),
+    )
+
+    with pytest.raises(InvalidStateError):
+        validator.validate_match_parameters(match_parameters)
+
+
+def test_config_validator_accepts_official_preset_configuration() -> None:
+    validator = ConfigValidator()
+    match_parameters = MatchParameters(
+        player_ids=["p1", "p2"],
+        mode_name="one_vs_one",
+        preset_name="classic_skate",
+        rule_set=RuleSetConfig(
+            letters_word="SKATE",
+            elimination_enabled=True,
+            defense_attempts=3,
+        ),
+    )
+
+    validator.validate_match_parameters(match_parameters)
+
+
+def test_config_validator_rejects_unknown_preset_name() -> None:
+    validator = ConfigValidator()
+    match_parameters = MatchParameters(
+        player_ids=["p1", "p2"],
+        mode_name="one_vs_one",
+        preset_name="unknown_preset",
+    )
+
+    with pytest.raises(InvalidStateError):
+        validator.validate_match_parameters(match_parameters)
+
+
+def test_config_validator_rejects_preset_name_mismatch_with_policies() -> None:
+    validator = ConfigValidator()
+    match_parameters = MatchParameters(
+        player_ids=["p1", "p2"],
+        mode_name="one_vs_one",
+        preset_name="classic_skate",
+        rule_set=RuleSetConfig(
+            letters_word="SKATE",
+            elimination_enabled=True,
+            defense_attempts=3,
+        ),
+        policies=MatchPolicies(
+            defender_order=DefenderOrderPolicy.REVERSE_TURN_ORDER,
+        ),
+    )
+
+    with pytest.raises(InvalidStateError):
+        validator.validate_match_parameters(match_parameters)
+
+
+def test_config_validator_rejects_preset_name_mismatch_with_rule_set() -> None:
+    validator = ConfigValidator()
+    match_parameters = MatchParameters(
+        player_ids=["p1", "p2", "p3"],
+        mode_name="battle",
+        preset_name="battle_hardcore",
+        policies=MatchPolicies(
+            initial_turn_order=InitialTurnOrderPolicy.RANDOMIZED,
+        ),
+        rule_set=RuleSetConfig(
+            letters_word="OUT",
+            elimination_enabled=True,
+            defense_attempts=3,
+        ),
+    )
 
     with pytest.raises(InvalidStateError):
         validator.validate_match_parameters(match_parameters)
