@@ -16,7 +16,9 @@ V6 coeur
 
 V6 plus
 - ajout de joueur entre deux tours
+- retrait de joueur entre deux tours
 - premier cas officiel : `one_vs_one -> battle`
+- cas miroir officiel : `battle -> one_vs_one`
 
 Regle de priorisation
 On ne commence pas `V6 plus` tant que `V6 coeur` n'est pas propre.
@@ -216,10 +218,41 @@ Statut actuel
 Lot 8 implemente.
 Voir `docs/v6_lot_8_validation.txt`.
 
+Lot 9. V6 plus - remove between turns
+
+Precondition
+Ce lot n'ouvre que si le lot 8 est propre.
+
+Objectif
+Permettre le retrait d'un joueur entre deux tours sans casser
+la coherence du match.
+
+Scope officiel
+- retrait de joueur uniquement entre deux tours
+- reattribution immediate de l'attaquant si le joueur retire etait l'attaquant
+- cas miroir cible : `battle -> one_vs_one`
+- fin immediate si un seul joueur reste
+
+Travail attendu
+- definir une operation explicite de retrait
+- reconstruire un `turn_order` valide
+- recalculer l'attaquant courant
+- conserver historique, scores et tricks valides
+- tracer l'operation
+- couvrir save/load et undo
+- exposer l'action dans CLI et GUI
+
+Critere de fin
+Une partie `battle` peut perdre un joueur proprement entre deux tours,
+y compris dans le cas ou l'attaquant courant quitte la partie.
+
+Statut actuel
+Lot 9 implemente.
+Voir `docs/v6_lot_9_validation.txt`.
+
 Ce qui reste hors lot
 - ajout en plein trick
 - rejoindre "depuis le debut"
-- retrait de joueur
 - roster dynamique generalise
 
 Ordre recommande d'execution
@@ -232,6 +265,7 @@ Ordre recommande d'execution
 7. lot 6
 8. lot 7
 9. lot 8 si la base est saine
+10. lot 9 si le lot 8 est sain
 
 Risques principaux
 

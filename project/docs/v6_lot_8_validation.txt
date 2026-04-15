@@ -86,10 +86,7 @@ Toujours hors scope.
 2. Rejoindre "depuis le debut"
 Toujours hors scope.
 
-3. Retrait de joueur
-Toujours hors scope.
-
-4. Roster dynamique generalise
+3. Roster dynamique generalise
 Le lot 8 reste une reconfiguration simple,
 pas un systeme complet de gestion dynamique du roster.
 

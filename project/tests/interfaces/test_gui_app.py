@@ -183,6 +183,81 @@ def test_gui_can_add_player_between_turns(gui_app: GUIApp, monkeypatch) -> None:
     assert gui_app.status_var.get() == "Alex joined the game."
 
 
+def test_gui_can_remove_player_between_turns(gui_app: GUIApp, monkeypatch) -> None:
+    gui_app.player_count_var.set(3)
+    gui_app._rebuild_player_inputs()
+    gui_app.player_name_vars[0].set("Stan")
+    gui_app.player_name_vars[1].set("Denise")
+    gui_app.player_name_vars[2].set("Alex")
+    gui_app.preset_var.set("battle_standard")
+    gui_app._start_game()
+
+    monkeypatch.setattr(
+        "interfaces.gui.gui_app.simpledialog.askstring",
+        lambda *args, **kwargs: "Denise",
+    )
+
+    gui_app._remove_player_between_turns()
+
+    assert gui_app.controller is not None
+    match_parameters = gui_app.controller.engine.match_parameters
+    assert match_parameters.mode_name == "one_vs_one"
+    assert [player.id for player in gui_app.controller.get_state().players] == [
+        "Stan",
+        "Alex",
+    ]
+    assert gui_app.status_var.get() == "Denise left the game."
+
+
+def test_gui_rejects_duplicate_player_join_between_turns(
+    gui_app: GUIApp, monkeypatch
+) -> None:
+    gui_app.player_name_vars[0].set("Stan")
+    gui_app.player_name_vars[1].set("Denise")
+    gui_app._start_game()
+
+    monkeypatch.setattr(
+        "interfaces.gui.gui_app.simpledialog.askstring",
+        lambda *args, **kwargs: "Denise",
+    )
+
+    gui_app._add_player_between_turns()
+
+    assert gui_app.controller is not None
+    assert [player.id for player in gui_app.controller.get_state().players] == [
+        "Stan",
+        "Denise",
+    ]
+    assert gui_app.status_var.get().startswith("Invalid action:")
+
+
+def test_gui_rejects_unknown_player_removal_between_turns(
+    gui_app: GUIApp, monkeypatch
+) -> None:
+    gui_app.player_count_var.set(3)
+    gui_app._rebuild_player_inputs()
+    gui_app.player_name_vars[0].set("Stan")
+    gui_app.player_name_vars[1].set("Denise")
+    gui_app.player_name_vars[2].set("Alex")
+    gui_app.preset_var.set("battle_standard")
+    gui_app._start_game()
+
+    monkeypatch.setattr(
+        "interfaces.gui.gui_app.simpledialog.askstring",
+        lambda *args, **kwargs: "Margaux",
+    )
+
+    gui_app._remove_player_between_turns()
+
+    assert gui_app.controller is not None
+    assert [player.id for player in gui_app.controller.get_state().players] == [
+        "Stan",
+        "Denise",
+        "Alex",
+    ]
+    assert gui_app.status_var.get().startswith("Invalid action:")
+
+
 def test_gui_return_to_setup_clears_controller_and_status(gui_app: GUIApp) -> None:
     for index, player_var in enumerate(gui_app.player_name_vars):
         player_var.set(f"Player {index + 1}")

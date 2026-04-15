@@ -1,4 +1,5 @@
 from config.match_parameters import MatchParameters
+from config.match_policies import MatchPolicies
 from core.events import Event
 from core.exceptions import InvalidActionError
 from core.player import Player
@@ -106,13 +107,11 @@ class GameEngine:
         self.state.players.append(new_player)
         self.state.turn_order.append(len(self.state.players) - 1)
 
-        self.match_parameters.player_ids = [
-            player.id for player in self.state.players
-        ]
+        self.match_parameters.player_ids = [player.id for player in self.state.players]
+        self.match_parameters.preset_name = None
 
         if self.match_parameters.mode_name == "one_vs_one":
             self.match_parameters.mode_name = "battle"
-            self.match_parameters.preset_name = None
 
         self.config_validator.validate_match_parameters(self.match_parameters)
         self.mode = self._load_mode()
@@ -124,6 +123,72 @@ class GameEngine:
                 payload={
                     "player_id": new_player.id,
                     "player_name": new_player.name,
+                    "previous_mode_name": previous_mode_name,
+                    "mode_name": self.match_parameters.mode_name,
+                    "previous_preset_name": previous_preset_name,
+                    "preset_name": self.match_parameters.preset_name,
+                    "player_names": [player.name for player in self.state.players],
+                    "turn_order": list(self.state.turn_order),
+                    "attacker_id": self.state.players[self.state.attacker_index].id,
+                    "attacker_name": self.state.players[self.state.attacker_index].name,
+                },
+            )
+        )
+
+        self.state_validator.validate(self.state)
+        self.mode.validate(self.state)
+
+    def remove_player_between_turns(self, player_id: str) -> None:
+        self.state_validator.validate(self.state)
+        self.mode.validate(self.state)
+        self.game_flow.action_validator.validate_remove_player_between_turns(
+            self.state,
+            player_id,
+        )
+
+        removed_index = self._find_player_index(player_id)
+        if removed_index is None:
+            raise InvalidActionError("This player does not exist in the game.")
+
+        if len(self.state.players) <= 2:
+            raise InvalidActionError(
+                "Cannot remove a player if fewer than two players would remain."
+            )
+
+        previous_mode_name = self.match_parameters.mode_name
+        previous_preset_name = self.match_parameters.preset_name
+        removed_player = self.state.players[removed_index]
+
+        self._save_snapshot()
+
+        new_attacker_index = self._compute_attacker_after_removal(removed_index)
+        remaining_players = [
+            player for index, player in enumerate(self.state.players) if index != removed_index
+        ]
+        remapped_turn_order = self._remap_turn_order_after_removal(removed_index)
+
+        self.state.players = remaining_players
+        self.state.turn_order = remapped_turn_order
+        self.state.attacker_index = new_attacker_index
+
+        self.match_parameters.player_ids = [player.id for player in self.state.players]
+        self.match_parameters.preset_name = None
+
+        if len(self.state.players) == 2 and self.match_parameters.mode_name == "battle":
+            self.match_parameters.mode_name = "one_vs_one"
+            self.match_parameters.policies = MatchPolicies()
+            self.state.turn_order = [0, 1]
+
+        self.config_validator.validate_match_parameters(self.match_parameters)
+        self.mode = self._load_mode()
+        self.game_flow = GameFlow(self.mode, self.match_parameters)
+
+        self.state.history.add_event(
+            Event(
+                name=EventName.PLAYER_REMOVED,
+                payload={
+                    "player_id": removed_player.id,
+                    "player_name": removed_player.name,
                     "previous_mode_name": previous_mode_name,
                     "mode_name": self.match_parameters.mode_name,
                     "previous_preset_name": previous_preset_name,
@@ -188,3 +253,61 @@ class GameEngine:
         self.game_flow = GameFlow(self.mode, self.match_parameters)
         self.state = game_save.game_state
         self.snapshot_history.clear()
+
+    def _find_player_index(self, player_id: str) -> int | None:
+        for index, player in enumerate(self.state.players):
+            if player.id == player_id:
+                return index
+        return None
+
+    def _remap_turn_order_after_removal(self, removed_index: int) -> list[int]:
+        old_to_new: dict[int, int] = {}
+        next_index = 0
+
+        for index in range(len(self.state.players)):
+            if index == removed_index:
+                continue
+            old_to_new[index] = next_index
+            next_index += 1
+
+        return [
+            old_to_new[index]
+            for index in self.state.turn_order
+            if index != removed_index
+        ]
+
+    def _compute_attacker_after_removal(self, removed_index: int) -> int:
+        if self.state.attacker_index != removed_index:
+            old_to_new = {
+                old_index: new_index
+                for new_index, old_index in enumerate(
+                    index
+                    for index in range(len(self.state.players))
+                    if index != removed_index
+                )
+            }
+            return old_to_new[self.state.attacker_index]
+
+        current_position = self.state.turn_order.index(removed_index)
+        turn_order_length = len(self.state.turn_order)
+
+        for offset in range(1, turn_order_length + 1):
+            candidate_index = self.state.turn_order[
+                (current_position + offset) % turn_order_length
+            ]
+            if candidate_index == removed_index:
+                continue
+            if not self.state.players[candidate_index].is_active:
+                continue
+
+            old_to_new = {
+                old_index: new_index
+                for new_index, old_index in enumerate(
+                    index
+                    for index in range(len(self.state.players))
+                    if index != removed_index
+                )
+            }
+            return old_to_new[candidate_index]
+
+        raise InvalidActionError("No valid attacker can be assigned after removal.")

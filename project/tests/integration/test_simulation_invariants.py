@@ -193,3 +193,22 @@ def test_battle_eliminated_previous_defender_keeps_state_valid(monkeypatch) -> N
     assert state.players[0].is_active is False
     assert state.current_defender_position == 1
     assert state.defender_indices == [0, 1]
+
+
+def test_reconfiguration_sequence_keeps_state_valid_at_each_step() -> None:
+    engine = GameEngine(MatchParameters(player_ids=["p1", "p2"]))
+
+    engine.start_game()
+    assert_valid_state(engine)
+
+    engine.add_player_between_turns("p3")
+    assert_valid_state(engine)
+
+    engine.remove_player_between_turns("p2")
+    assert_valid_state(engine)
+
+    assert engine.undo() is True
+    assert_valid_state(engine)
+
+    assert engine.undo() is True
+    assert_valid_state(engine)

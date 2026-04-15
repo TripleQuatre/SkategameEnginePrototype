@@ -216,3 +216,32 @@ def test_game_engine_can_save_and_load_reconfigured_one_vs_one_to_battle_game(
     assert [player.id for player in state.players] == ["p1", "p2", "p3"]
     assert state.turn_order == [0, 1, 2]
     assert state.history.events[-1].name == EventName.PLAYER_JOINED
+
+
+def test_game_engine_can_save_and_load_reconfigured_battle_to_one_vs_one_game(
+    tmp_path,
+) -> None:
+    match_parameters = MatchParameters(
+        player_ids=["p1", "p2", "p3"],
+        mode_name="battle",
+    )
+    engine = GameEngine(match_parameters)
+
+    engine.start_game()
+    engine.remove_player_between_turns("p2")
+
+    filepath = tmp_path / "reconfigured_one_vs_one_game.json"
+    engine.save_game(str(filepath))
+
+    reloaded_engine = GameEngine(
+        MatchParameters(player_ids=["placeholder1", "placeholder2"])
+    )
+    reloaded_engine.load_game(str(filepath))
+
+    state = reloaded_engine.get_state()
+    assert reloaded_engine.match_parameters.mode_name == "one_vs_one"
+    assert reloaded_engine.match_parameters.preset_name is None
+    assert reloaded_engine.match_parameters.player_ids == ["p1", "p3"]
+    assert [player.id for player in state.players] == ["p1", "p3"]
+    assert state.turn_order == [0, 1]
+    assert state.history.events[-1].name == EventName.PLAYER_REMOVED

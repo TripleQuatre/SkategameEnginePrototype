@@ -73,7 +73,7 @@ class History:
                 )
                 continue
 
-            if event.name == EventName.PLAYER_JOINED and context is not None:
+            if event.name in {EventName.PLAYER_JOINED, EventName.PLAYER_REMOVED} and context is not None:
                 context.mode_name = payload.get("mode_name", context.mode_name)
                 context.preset_name = payload.get("preset_name", context.preset_name)
                 context.player_names = list(

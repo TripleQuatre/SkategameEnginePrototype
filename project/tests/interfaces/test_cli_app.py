@@ -209,3 +209,57 @@ def test_cli_join_command_can_add_player_between_turns(monkeypatch, capsys) -> N
     assert [player.id for player in controller.get_state().players] == ["p1", "p2", "Alex"]
     assert controller.engine.match_parameters.mode_name == "battle"
     assert "Alex joined the game." in output
+
+
+def test_cli_remove_command_can_remove_player_between_turns(monkeypatch, capsys) -> None:
+    controller = GameController(
+        MatchParameters(player_ids=["p1", "p2", "p3"], mode_name="battle")
+    )
+    controller.start_game()
+
+    cli = CLIApp()
+    monkeypatch.setattr("builtins.input", lambda _prompt="": "p2")
+
+    result = cli._handle_global_command(controller, "/remove")
+    output = capsys.readouterr().out
+
+    assert result is None
+    assert [player.id for player in controller.get_state().players] == ["p1", "p3"]
+    assert controller.engine.match_parameters.mode_name == "one_vs_one"
+    assert "p2 left the game." in output
+
+
+def test_cli_join_command_rejects_duplicate_player(monkeypatch, capsys) -> None:
+    controller = GameController(MatchParameters(player_ids=["p1", "p2"]))
+    controller.start_game()
+
+    cli = CLIApp()
+    monkeypatch.setattr("builtins.input", lambda _prompt="": "p2")
+
+    result = cli._handle_global_command(controller, "/join")
+    output = capsys.readouterr().out
+
+    assert result is None
+    assert [player.id for player in controller.get_state().players] == ["p1", "p2"]
+    assert "Action invalide:" in output
+
+
+def test_cli_remove_command_rejects_unknown_player(monkeypatch, capsys) -> None:
+    controller = GameController(
+        MatchParameters(player_ids=["p1", "p2", "p3"], mode_name="battle")
+    )
+    controller.start_game()
+
+    cli = CLIApp()
+    monkeypatch.setattr("builtins.input", lambda _prompt="": "p4")
+
+    result = cli._handle_global_command(controller, "/remove")
+    output = capsys.readouterr().out
+
+    assert result is None
+    assert [player.id for player in controller.get_state().players] == [
+        "p1",
+        "p2",
+        "p3",
+    ]
+    assert "Action invalide:" in output

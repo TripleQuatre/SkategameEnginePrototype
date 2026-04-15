@@ -72,6 +72,44 @@ def test_build_match_context_is_updated_after_player_join_event() -> None:
     assert context.turn_order == [0, 1, 2]
 
 
+def test_build_match_context_is_updated_after_player_removed_event() -> None:
+    history = History()
+    history.add_event(
+        Event(
+            name=EventName.GAME_STARTED,
+            payload={
+                "mode_name": "battle",
+                "preset_name": "battle_standard",
+                "player_names": ["Stan", "Denise", "Alex"],
+                "turn_order": [0, 1, 2],
+                "starting_attacker_name": "Stan",
+                "initial_turn_order_policy": "randomized",
+                "attacker_rotation_policy": "follow_turn_order",
+                "defender_order_policy": "follow_turn_order",
+            },
+        )
+    )
+    history.add_event(
+        Event(
+            name=EventName.PLAYER_REMOVED,
+            payload={
+                "mode_name": "one_vs_one",
+                "preset_name": None,
+                "player_names": ["Stan", "Alex"],
+                "turn_order": [0, 1],
+            },
+        )
+    )
+
+    context = history.build_match_context()
+
+    assert context is not None
+    assert context.mode_name == "one_vs_one"
+    assert context.preset_name is None
+    assert context.player_names == ["Stan", "Alex"]
+    assert context.turn_order == [0, 1]
+
+
 def test_build_turns_from_completed_one_vs_one_turn() -> None:
     history = History()
     history.add_event(

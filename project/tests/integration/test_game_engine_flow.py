@@ -2,6 +2,7 @@ import modes.battle as battle_module
 
 from config.match_parameters import MatchParameters
 from config.rule_set_config import RuleSetConfig
+from core.exceptions import InvalidActionError
 from core.types import DefenseResolutionStatus, EventName, Phase
 from engine.game_engine import GameEngine
 
@@ -236,3 +237,98 @@ def test_game_engine_add_player_between_turns_extends_defenders_on_next_trick() 
 
     state = engine.get_state()
     assert state.defender_indices == [1, 2]
+
+
+def test_game_engine_can_remove_player_between_turns_and_switch_to_one_vs_one() -> None:
+    match_parameters = MatchParameters(
+        player_ids=["p1", "p2", "p3"],
+        mode_name="battle",
+    )
+    engine = GameEngine(match_parameters)
+
+    engine.start_game()
+    engine.remove_player_between_turns("p2")
+
+    state = engine.get_state()
+    assert engine.match_parameters.mode_name == "one_vs_one"
+    assert engine.match_parameters.preset_name is None
+    assert engine.match_parameters.player_ids == ["p1", "p3"]
+    assert [player.id for player in state.players] == ["p1", "p3"]
+    assert state.turn_order == [0, 1]
+    assert state.history.events[-1].name == EventName.PLAYER_REMOVED
+
+
+def test_game_engine_remove_attacker_between_turns_reassigns_next_attacker(
+    monkeypatch,
+) -> None:
+    def fixed_shuffle(values: list[int]) -> None:
+        values[:] = [2, 0, 1]
+
+    monkeypatch.setattr(battle_module.random, "shuffle", fixed_shuffle)
+
+    engine = GameEngine(
+        MatchParameters(
+            player_ids=["p1", "p2", "p3"],
+            mode_name="battle",
+        )
+    )
+
+    engine.start_game()
+    engine.remove_player_between_turns("p3")
+
+    state = engine.get_state()
+    assert [player.id for player in state.players] == ["p1", "p2"]
+    assert state.attacker_index == 0
+    assert state.turn_order == [0, 1]
+
+
+def test_game_engine_rejects_adding_duplicate_player_between_turns() -> None:
+    engine = GameEngine(MatchParameters(player_ids=["p1", "p2"]))
+
+    engine.start_game()
+
+    try:
+        engine.add_player_between_turns("p2")
+        assert False, "Expected InvalidActionError"
+    except InvalidActionError:
+        pass
+
+
+def test_game_engine_rejects_removing_unknown_player_between_turns() -> None:
+    engine = GameEngine(
+        MatchParameters(player_ids=["p1", "p2", "p3"], mode_name="battle")
+    )
+
+    engine.start_game()
+
+    try:
+        engine.remove_player_between_turns("p4")
+        assert False, "Expected InvalidActionError"
+    except InvalidActionError:
+        pass
+
+
+def test_game_engine_remove_player_between_turns_keeps_battle_mode_with_three_players_left(
+    monkeypatch,
+) -> None:
+    def fixed_shuffle(values: list[int]) -> None:
+        values[:] = [1, 3, 0, 2]
+
+    monkeypatch.setattr(battle_module.random, "shuffle", fixed_shuffle)
+
+    engine = GameEngine(
+        MatchParameters(
+            player_ids=["p1", "p2", "p3", "p4"],
+            mode_name="battle",
+        )
+    )
+
+    engine.start_game()
+    engine.remove_player_between_turns("p3")
+
+    state = engine.get_state()
+    assert engine.match_parameters.mode_name == "battle"
+    assert engine.match_parameters.player_ids == ["p1", "p2", "p4"]
+    assert [player.id for player in state.players] == ["p1", "p2", "p4"]
+    assert state.turn_order == [1, 2, 0]
+    assert state.attacker_index == 1

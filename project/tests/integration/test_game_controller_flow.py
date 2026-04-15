@@ -197,3 +197,18 @@ def test_game_controller_rejects_add_player_while_trick_is_engaged() -> None:
         assert False, "Expected InvalidActionError"
     except InvalidActionError:
         pass
+
+
+def test_game_controller_rejects_remove_player_while_trick_is_engaged() -> None:
+    controller = GameController(
+        MatchParameters(player_ids=["p1", "p2", "p3"], mode_name="battle")
+    )
+
+    controller.start_game()
+    controller.start_turn("kickflip")
+
+    try:
+        controller.remove_player_between_turns("p2")
+        assert False, "Expected InvalidActionError"
+    except InvalidActionError:
+        pass

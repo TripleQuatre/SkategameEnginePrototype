@@ -242,6 +242,7 @@ class CLIApp:
         print("/save    Save the current game")
         print("/load    Load a saved game")
         print("/join    Add a player between turns")
+        print("/remove  Remove a player between turns")
         print("/history Show match history")
         print("/quit    Quit the CLI")
         print()
@@ -294,6 +295,16 @@ class CLIApp:
             try:
                 controller.add_player_between_turns(player_name)
                 print(f"{player_name} joined the game.\n")
+            except InvalidActionError as error:
+                print(f"Action invalide: {error}\n")
+            return None
+
+        if command == "/remove":
+            player_name = self._ask_non_empty_input("Player name to remove: ")
+
+            try:
+                controller.remove_player_between_turns(player_name)
+                print(f"{player_name} left the game.\n")
             except InvalidActionError as error:
                 print(f"Action invalide: {error}\n")
             return None
@@ -413,6 +424,10 @@ class CLIApp:
         if name == EventName.PLAYER_JOINED:
             player_name = payload.get("player_name", payload["player_id"])
             return f"{player_name} joined the game."
+
+        if name == EventName.PLAYER_REMOVED:
+            player_name = payload.get("player_name", payload["player_id"])
+            return f"{player_name} left the game."
 
         return ""
 

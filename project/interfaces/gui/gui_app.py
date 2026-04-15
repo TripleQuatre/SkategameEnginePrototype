@@ -74,6 +74,7 @@ class GUIApp:
         self.load_button: ttk.Button | None = None
         self.history_button: ttk.Button | None = None
         self.add_player_button: ttk.Button | None = None
+        self.remove_player_button: ttk.Button | None = None
         self.new_game_button: ttk.Button | None = None
         self.back_to_game_button: ttk.Button | None = None
 
@@ -415,6 +416,14 @@ class GUIApp:
             width=10,
         )
         self.add_player_button.pack(side="left", padx=6)
+
+        self.remove_player_button = ttk.Button(
+            session_buttons,
+            text="Remove player",
+            command=self._remove_player_between_turns,
+            width=10,
+        )
+        self.remove_player_button.pack(side="left", padx=6)
 
         self.new_game_button = ttk.Button(
             session_buttons,
@@ -828,6 +837,32 @@ class GUIApp:
         try:
             self.controller.add_player_between_turns(player_name)
             self.status_var.set(f"{player_name} joined the game.")
+        except InvalidActionError as error:
+            self.status_var.set(f"Invalid action: {error}")
+
+        self._refresh_game_view()
+
+    def _remove_player_between_turns(self) -> None:
+        if self.controller is None:
+            return
+
+        player_name = simpledialog.askstring(
+            "Remove player",
+            "Player name:",
+            parent=self.root,
+        )
+
+        if player_name is None:
+            return
+
+        player_name = player_name.strip()
+        if not player_name:
+            messagebox.showerror("Invalid input", "The player name cannot be empty.")
+            return
+
+        try:
+            self.controller.remove_player_between_turns(player_name)
+            self.status_var.set(f"{player_name} left the game.")
         except InvalidActionError as error:
             self.status_var.set(f"Invalid action: {error}")
 

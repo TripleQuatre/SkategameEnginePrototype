@@ -29,6 +29,9 @@ class GameController:
     def add_player_between_turns(self, player_id: str) -> None:
         self.engine.add_player_between_turns(player_id)
 
+    def remove_player_between_turns(self, player_id: str) -> None:
+        self.engine.remove_player_between_turns(player_id)
+
     def save_game(self, filepath: str) -> None:
         self.engine.save_game(filepath)
 

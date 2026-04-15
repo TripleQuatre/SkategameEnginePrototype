@@ -176,3 +176,60 @@ def test_game_engine_undo_after_player_join_restores_one_vs_one_configuration() 
     assert [player.id for player in state.players] == ["p1", "p2"]
     assert state.turn_order == [0, 1]
     assert state.history.events[-1].name == EventName.GAME_STARTED
+
+
+def test_game_engine_undo_after_player_removal_restores_previous_battle_configuration(
+) -> None:
+    engine = GameEngine(
+        MatchParameters(
+            player_ids=["p1", "p2", "p3"],
+            mode_name="battle",
+        )
+    )
+
+    engine.start_game()
+    engine.remove_player_between_turns("p2")
+
+    assert engine.undo() is True
+
+    state = engine.get_state()
+    assert engine.match_parameters.mode_name == "battle"
+    assert engine.match_parameters.player_ids == ["p1", "p2", "p3"]
+    assert [player.id for player in state.players] == ["p1", "p2", "p3"]
+    assert state.history.events[-1].name == EventName.GAME_STARTED
+
+
+def test_game_engine_undo_can_walk_back_join_then_remove_sequence() -> None:
+    engine = GameEngine(
+        MatchParameters(
+            player_ids=["p1", "p2"],
+            preset_name="classic_skate",
+            rule_set=RuleSetConfig(
+                letters_word="SKATE",
+                elimination_enabled=True,
+                defense_attempts=3,
+            ),
+        )
+    )
+
+    engine.start_game()
+    engine.add_player_between_turns("p3")
+    engine.remove_player_between_turns("p2")
+
+    assert engine.undo() is True
+    state = engine.get_state()
+    assert engine.match_parameters.mode_name == "battle"
+    assert engine.match_parameters.preset_name is None
+    assert engine.match_parameters.player_ids == ["p1", "p2", "p3"]
+    assert [player.id for player in state.players] == ["p1", "p2", "p3"]
+    assert state.turn_order == [0, 1, 2]
+    assert state.history.events[-1].name == EventName.PLAYER_JOINED
+
+    assert engine.undo() is True
+    state = engine.get_state()
+    assert engine.match_parameters.mode_name == "one_vs_one"
+    assert engine.match_parameters.preset_name == "classic_skate"
+    assert engine.match_parameters.player_ids == ["p1", "p2"]
+    assert [player.id for player in state.players] == ["p1", "p2"]
+    assert state.turn_order == [0, 1]
+    assert state.history.events[-1].name == EventName.GAME_STARTED
