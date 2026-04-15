@@ -1,27 +1,52 @@
-Documentation V4 - Dossier `modes/`
+Documentation V5 - Dossier `modes/`
 
 Role global
-`modes/` prepare la separation entre structure de match et orchestration generale.
+`modes/` porte la structure d'une partie :
+- initialisation
+- construction de la liste des defenseurs
+- rotation des attaquants
+- validation propre au mode
 
 Fichiers
 
 `base_mode.py`
-- interface de base des modes
-- fournit un contrat simple au moteur
+- contrat commun des modes
+- expose :
+  - `initialize_game`
+  - `build_defender_indices`
+  - `get_next_attacker_index`
+  - `validate`
 
 `one_vs_one.py`
-- implemente le mode actuel
-- verifie que la partie contient exactement 2 joueurs
+- implemente le duel classique
+- exige exactement 2 joueurs
+- utilise un `turn_order` fixe `[0, 1]`
 
-Etat V4
-- le projet reste centre sur `one_vs_one`
-- la couche modes est encore legere
-- elle est conservee parce qu'elle sert deja au chargement de mode dans `GameEngine`
+`battle.py`
+- implemente le multijoueur V5
+- exige au moins 3 joueurs
+- cree un ordre initial aleatoire
+- garde cet ordre pendant toute la partie
+- construit tous les defenseurs actifs sauf l'attaquant
+- saute les joueurs elimines dans la rotation
 
-Ce que la V4 n'a pas change
-- pas de nouvelle logique de mode
-- pas de refonte multijoueur
+`mode_factory.py`
+- charge le bon mode a partir de `mode_name`
+- evite de disperser le branchement de mode dans l'engine
 
-Pourquoi cette couche reste utile
-- elle garde le moteur pret pour des evolutions futures
-- elle evite de disperser la validation de mode dans l'engine
+Etat V5
+- `modes/` n'est plus une simple couche de validation
+- la logique de rotation n'est plus codee en dur dans `game_flow`
+- `one_vs_one` et `battle` partagent le meme contrat
+
+Choix V5 importants
+- `battle` est reserve a `3+` joueurs
+- les joueurs elimines restent dans `turn_order`
+- l'ordre des defenseurs suit `turn_order` en V5
+- cet ordre reste un choix de version, pas une verite metier definitive
+
+Ouverture pour la suite
+Cette couche est preparee pour des politiques futures :
+- ordre initial configurable
+- rotation d'attaque configurable
+- variantes de structure de match

@@ -1,0 +1,258 @@
+{
+    "match_parameters": {
+        "player_ids": [
+            "Stan",
+            "Denise",
+            "Margaux"
+        ],
+        "mode_name": "battle",
+        "rule_set": {
+            "letters_word": "OUT",
+            "elimination_enabled": true,
+            "defense_attempts": 1
+        }
+    },
+    "game_state": {
+        "players": [
+            {
+                "id": "Stan",
+                "name": "Stan",
+                "internal_id": "f3828e47-79ff-4ef7-8ac7-ed06a692bc60",
+                "score": 2,
+                "is_active": true
+            },
+            {
+                "id": "Denise",
+                "name": "Denise",
+                "internal_id": "fc5780e0-e491-486c-b9c5-761ee68f33e1",
+                "score": 3,
+                "is_active": false
+            },
+            {
+                "id": "Margaux",
+                "name": "Margaux",
+                "internal_id": "ebf722f1-6bfd-4c81-9d9b-9b6c056963d9",
+                "score": 3,
+                "is_active": false
+            }
+        ],
+        "phase": "end",
+        "turn_order": [
+            1,
+            2,
+            0
+        ],
+        "attacker_index": 0,
+        "defender_indices": [],
+        "current_defender_position": 0,
+        "defense_attempts_left": 0,
+        "current_trick": null,
+        "history": {
+            "events": [
+                {
+                    "name": "game_started",
+                    "payload": {
+                        "player_ids": [
+                            "Stan",
+                            "Denise",
+                            "Margaux"
+                        ],
+                        "turn_order": [
+                            1,
+                            2,
+                            0
+                        ],
+                        "starting_attacker_id": "Denise"
+                    }
+                },
+                {
+                    "name": "turn_started",
+                    "payload": {
+                        "attacker_id": "Denise",
+                        "trick": "Soul",
+                        "defender_ids": [
+                            "Margaux",
+                            "Stan"
+                        ]
+                    }
+                },
+                {
+                    "name": "letter_received",
+                    "payload": {
+                        "player_id": "Margaux",
+                        "trick": "Soul",
+                        "new_score": 1,
+                        "penalty_display": "O"
+                    }
+                },
+                {
+                    "name": "letter_received",
+                    "payload": {
+                        "player_id": "Stan",
+                        "trick": "Soul",
+                        "new_score": 1,
+                        "penalty_display": "O"
+                    }
+                },
+                {
+                    "name": "turn_ended",
+                    "payload": {
+                        "next_attacker_id": "Margaux"
+                    }
+                },
+                {
+                    "name": "turn_started",
+                    "payload": {
+                        "attacker_id": "Margaux",
+                        "trick": "Acid",
+                        "defender_ids": [
+                            "Denise",
+                            "Stan"
+                        ]
+                    }
+                },
+                {
+                    "name": "letter_received",
+                    "payload": {
+                        "player_id": "Denise",
+                        "trick": "Acid",
+                        "new_score": 1,
+                        "penalty_display": "O"
+                    }
+                },
+                {
+                    "name": "letter_received",
+                    "payload": {
+                        "player_id": "Stan",
+                        "trick": "Acid",
+                        "new_score": 2,
+                        "penalty_display": "OU"
+                    }
+                },
+                {
+                    "name": "turn_ended",
+                    "payload": {
+                        "next_attacker_id": "Stan"
+                    }
+                },
+                {
+                    "name": "turn_started",
+                    "payload": {
+                        "attacker_id": "Stan",
+                        "trick": "Mizu",
+                        "defender_ids": [
+                            "Denise",
+                            "Margaux"
+                        ]
+                    }
+                },
+                {
+                    "name": "letter_received",
+                    "payload": {
+                        "player_id": "Denise",
+                        "trick": "Mizu",
+                        "new_score": 2,
+                        "penalty_display": "OU"
+                    }
+                },
+                {
+                    "name": "letter_received",
+                    "payload": {
+                        "player_id": "Margaux",
+                        "trick": "Mizu",
+                        "new_score": 2,
+                        "penalty_display": "OU"
+                    }
+                },
+                {
+                    "name": "turn_ended",
+                    "payload": {
+                        "next_attacker_id": "Denise"
+                    }
+                },
+                {
+                    "name": "turn_started",
+                    "payload": {
+                        "attacker_id": "Denise",
+                        "trick": "Makio",
+                        "defender_ids": [
+                            "Margaux",
+                            "Stan"
+                        ]
+                    }
+                },
+                {
+                    "name": "letter_received",
+                    "payload": {
+                        "player_id": "Margaux",
+                        "trick": "Makio",
+                        "new_score": 3,
+                        "penalty_display": "OUT"
+                    }
+                },
+                {
+                    "name": "player_eliminated",
+                    "payload": {
+                        "player_id": "Margaux"
+                    }
+                },
+                {
+                    "name": "defense_succeeded",
+                    "payload": {
+                        "player_id": "Stan",
+                        "trick": "Makio"
+                    }
+                },
+                {
+                    "name": "turn_ended",
+                    "payload": {
+                        "next_attacker_id": "Stan"
+                    }
+                },
+                {
+                    "name": "turn_started",
+                    "payload": {
+                        "attacker_id": "Stan",
+                        "trick": "Star",
+                        "defender_ids": [
+                            "Denise"
+                        ]
+                    }
+                },
+                {
+                    "name": "letter_received",
+                    "payload": {
+                        "player_id": "Denise",
+                        "trick": "Star",
+                        "new_score": 3,
+                        "penalty_display": "OUT"
+                    }
+                },
+                {
+                    "name": "player_eliminated",
+                    "payload": {
+                        "player_id": "Denise"
+                    }
+                },
+                {
+                    "name": "game_finished",
+                    "payload": {
+                        "winner_id": "Stan"
+                    }
+                }
+            ]
+        },
+        "rule_set": {
+            "letters_word": "OUT",
+            "elimination_enabled": true,
+            "defense_attempts": 1
+        },
+        "validated_tricks": [
+            "soul",
+            "acid",
+            "mizu",
+            "makio",
+            "star"
+        ]
+    }
+}

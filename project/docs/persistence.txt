@@ -1,4 +1,4 @@
-Documentation V4 - Dossier `persistence/`
+Documentation V5 - Dossier `persistence/`
 
 Role global
 `persistence/` gere la conversion et le stockage des donnees du moteur.
@@ -14,29 +14,42 @@ Fichiers
   - `RuleSetConfig`
   - `MatchParameters`
   - `GameState`
+  - `GameSave`
 
-Apport V4
-- serialization des evenements types via `EventName`
-- maintien d'un format JSON lisible avec `event.name.value`
+Apports V5
+- serialisation de `turn_order`
+- serialisation du format complet `GameSave`
+- conservation d'un format JSON lisible
 
-`snapshot_repository.py`
-- sauvegarde et recharge un `GameState` complet dans un fichier JSON
+`game_save.py`
+- enveloppe persistable du moteur
+- contient :
+  - `match_parameters`
+  - `game_state`
+
+`game_save_repository.py`
+- sauvegarde et recharge un `GameSave`
 
 `config_repository.py`
 - sauvegarde et recharge un `MatchParameters`
 
-Capacites V4
+Capacites V5
 - sauvegarde d'une partie en cours
 - sauvegarde d'une partie terminee
 - reprise d'une partie non terminee
-- reprise d'une partie terminee si souhaite
+- reprise d'une partie terminee en consultation
+- chargement adaptatif du bon mode
 
 Lien avec l'undo
 - `Snapshot` sert a la memoire interne temporaire
-- `SnapshotRepository` sert au stockage externe
+- `GameSaveRepository` sert au stockage externe
 - les deux restent separes
 
-Etat V4
-La persistence n'est plus seulement preparatoire :
-- elle est maintenant exposee par le moteur
-- elle est utilisee par les interfaces
+Choix semantique V5
+- le terme `session` n'est pas utilise pour la persistence metier
+- `GameSave` decrit un objet de sauvegarde, pas une session de ride
+
+Etat V5
+La persistence n'est plus seulement un export de `GameState` :
+- elle sait reconstituer une vraie partie
+- elle transporte le mode et la configuration de match

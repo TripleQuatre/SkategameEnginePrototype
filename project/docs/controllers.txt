@@ -1,4 +1,4 @@
-Documentation V4 - Dossier `controllers/`
+Documentation V5 - Dossier `controllers/`
 
 Role
 Le dossier `controllers/` fournit la couche de relais entre les interfaces et le moteur.
@@ -9,7 +9,7 @@ Fichier principal
 - encapsule `GameEngine`
 - expose une API simple aux interfaces
 
-Methodes exposees en V4
+Methodes exposees en V5
 - `start_game()`
 - `start_turn(trick)`
 - `resolve_defense(success)`
@@ -24,14 +24,18 @@ Pourquoi cette couche reste utile
 - l'API utilisateur reste simple
 - le moteur garde son independance
 
-Etat V4
-- le controller est volontairement fin
+Etat V5
+- le controller reste volontairement fin
 - il n'ajoute pas de logique metier
 - il suit l'evolution du moteur sans la dupliquer
 
+Capacites exposees en V5
+- duel et battle
+- undo en fin de partie
+- save/load de parties terminees
+- consultation d'une partie rechargee
+
 Point a retenir
-Dans la V4, le controller est devenu plus utile qu'en V3 car il expose maintenant
-des capacites de session :
-- undo
-- save
-- load
+Le controller est volontairement stable :
+il sert de point de contact unique pour toutes les interfaces et pour les futurs outils
+de simulation de scenarios.

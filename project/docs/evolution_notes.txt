@@ -1,0 +1,551 @@
+SkateGame Engine Prototype - Evolution Notes
+
+Role du document
+Ce fichier sert de carnet cumulatif pour noter les idees, pistes, contraintes
+et intuitions autour de l'evolution du moteur.
+
+Regle d'usage
+- ce fichier ne doit pas etre ecrase pour "remplacer" la reflexion precedente
+- on ajoute de nouvelles notes a la suite
+- on peut reformuler ou clarifier une idee existante si necessaire
+- si une idee devient obsolete, on la marque comme depassee au lieu de l'effacer
+- ce fichier peut aussi contenir des certitudes long terme deja assumees
+
+Format conseille
+- Date
+- Section
+- Sujet
+- Statut
+- Note
+
+Statuts possibles
+- idee
+- a cadrer
+- retenu plus tard
+- retenu pour version cible
+- prevu a long terme
+- depasse
+
+Sections conseillees
+- decisions version cible
+- backlog de reflexion
+- prevu a long terme
+
+Principe de la section "prevu a long terme"
+Cette section sert a noter ce qui n'est pas forcement proche en calendrier,
+mais qui parait deja structurellement certain pour le projet.
+Elle est utile pour garder une vision du moteur a long terme sans forcer
+une implementation immediate.
+
+---
+
+Date
+2026-04-15
+
+Section
+decisions version cible
+
+Sujet
+Direction generale de la V6
+
+Statut
+retenu pour version cible
+
+Note
+La V6 devrait prioriser "politiques de match + presets" avant l'ajout de nouvelles
+grosses familles de features.
+L'objectif est de rendre configurables et lisibles plusieurs choix encore implicites
+dans la V5 :
+- ordre initial
+- rotation de l'attaquant
+- ordre des defenseurs
+- futures conditions de fin
+- presets de partie
+
+---
+
+Date
+2026-04-15
+
+Section
+prevu a long terme
+
+Sujet
+Priorite differee : equipes, reseau, grosse refonte GUI
+
+Statut
+prevu a long terme
+
+Note
+Ces sujets semblent plutot relever d'une phase bien plus tardive du projet.
+Ils ne doivent pas guider le design court terme de l'alpha.
+Avant cela, le moteur doit absorber beaucoup plus de variantes de regles
+et de configurations.
+Ils doivent etre consideres comme du tres long terme.
+
+---
+
+Date
+2026-04-15
+
+Section
+backlog de reflexion
+
+Sujet
+Ajout de joueur en cours de partie
+
+Statut
+a cadrer
+
+Note
+Cas pratique credible :
+une partie commence a 2 en `one_vs_one`, puis un ou plusieurs joueurs rejoignent
+ensuite la session.
+
+Piste retenue a court terme :
+- autoriser uniquement l'ajout quand aucun trick n'est engage
+- permettre un passage `one_vs_one -> battle`
+- conserver scores, historique et tricks deja valides
+- considerer cette action comme une reconfiguration explicite du match
+
+Cette version courte semble compatible avec la V6.
+
+---
+
+Date
+2026-04-15
+
+Section
+backlog de reflexion
+
+Sujet
+Deux variantes futures pour "join in progress"
+
+Statut
+idee
+
+Note
+Il faudra probablement penser cette feature comme un sujet a part entiere,
+avec au moins deux comportements distincts :
+
+1. Rejoindre la partie en cours
+Le nouveau joueur entre dans la rotation a partir du prochain trick.
+Il accepte de rejoindre une partie deja avancee.
+
+2. Rejoindre la partie "depuis le debut"
+Le nouveau joueur tente aussi les tricks deja imposes auparavant afin de ne pas
+arriver avec un avantage structurel.
+
+La seconde variante semble beaucoup plus complexe et ne doit pas etre confondue
+avec le simple ajout de joueur entre deux tours.
+
+---
+
+Date
+2026-04-15
+
+Section
+prevu a long terme
+
+Sujet
+Feature future : rejoindre "depuis le debut"
+
+Statut
+prevu a long terme
+
+Note
+Cette idee est interessante car elle colle a une pratique reelle :
+un joueur rejoint une partie deja commencee mais choisit de "rattraper"
+les tricks deja poses pour integrer la game sans desequilibre.
+
+Questions a traiter plus tard :
+- le joueur doit-il tenter tous les tricks valides de l'historique ou seulement
+  ceux encore pertinents selon le preset actif ?
+- comment tracer cette phase dans l'historique ?
+- cette phase se joue-t-elle hors rotation normale ou comme une sequence speciale ?
+- que se passe-t-il si plusieurs joueurs rejoignent en meme temps ?
+- comment l'undo et le save/load representent-ils ce rattrapage ?
+
+Cette piste ressemble a une sous-feature specifique du moteur, pas a un simple
+parametre secondaire.
+
+---
+
+Date
+2026-04-15
+
+Section
+prevu a long terme
+
+Sujet
+Le moteur devra supporter beaucoup plus de variantes de regles
+
+Statut
+prevu a long terme
+
+Note
+Le projet ne doit pas rester limite a un seul "game of skate basique".
+A long terme, le moteur devra absorber un nombre bien plus grand de regles
+et de variantes combinables.
+
+Point important :
+il ne faudra pas seulement ajouter des regles une par une,
+mais s'assurer que l'architecture continue de supporter la polyvalence
+du moteur quand le nombre de configurations deviendra tres grand.
+
+Cette contrainte doit influencer les choix de design bien avant l'arrivee
+des features de beta comme le reseau ou les equipes.
+
+---
+
+Date
+2026-04-15
+
+Section
+prevu a long terme
+
+Sujet
+Les futures regles doivent rester pensables comme familles configurables
+
+Statut
+prevu a long terme
+
+Note
+Quand de nouvelles regles arriveront, il sera preferable de les penser
+comme des familles de comportements configurables plutot que comme une suite
+d'exceptions codees au cas par cas.
+
+Exemples de familles a garder en tete :
+- regles de defense
+- regles de score
+- regles de fin de match
+- regles de rotation
+- regles d'entree ou de reconfiguration de joueurs
+
+Les details de ces familles ne sont pas encore listes ici de maniere exhaustive.
+Ce point sert surtout a figer une direction d'architecture.
+
+---
+
+Date
+2026-04-15
+
+Section
+prevu a long terme
+
+Sujet
+Le moteur devra distinguer clairement alpha, beta et experience cible
+
+Statut
+prevu a long terme
+
+Note
+Le projet est encore dans une phase alpha.
+Certaines ambitions sont deja considerees comme legitimes a long terme,
+mais elles doivent rester hors de la pression des prochaines versions :
+- jeu en equipes
+- jeu en reseau
+- GUI beaucoup plus aboutie
+
+Cette distinction est utile pour eviter de surdesigner trop tot
+les couches qui dependent encore d'un moteur de regles en construction.
+
+---
+
+Date
+2026-04-15
+
+Section
+prevu a long terme
+
+Sujet
+Le moteur devra offrir un moyen de formaliser les futures regles certaines
+
+Statut
+prevu a long terme
+
+Note
+Certaines futures regles sont probablement deja connues ou pressenties
+par la vision produit, meme si elles ne sont pas encore detaillees ici.
+
+Ce carnet doit servir a les accumuler des qu'elles sont formulees,
+afin de donner une meilleure lecture du projet a long terme.
+
+Bonne pratique conseillee :
+- ajouter une entree par future regle ou famille de regles
+- expliquer l'intention metier
+- preciser si elle touche la defense, le score, la rotation, la fin de match
+  ou la reconfiguration de partie
+- indiquer si la regle semble compatible avec les presets ou si elle impose
+  un changement de modele plus profond
+
+---
+
+Date
+2026-04-15
+
+Section
+prevu a long terme
+
+Sujet
+Le moteur devra supporter des regles d'attaque configurables
+
+Statut
+prevu a long terme
+
+Note
+Le nombre de tentatives d'attaque devra pouvoir devenir parametrable.
+Ce sujet parait distinct du nombre de tentatives de defense deja present.
+
+Cette famille de regles devra probablement couvrir a terme :
+- nombre de tentatives autorisees pour lancer un trick
+- impact d'un echec d'attaque selon le preset actif
+- interactions avec des regles comme le clash, le redo ou l'avantage
+
+---
+
+Date
+2026-04-15
+
+Section
+prevu a long terme
+
+Sujet
+Le moteur devra supporter plusieurs systemes de score
+
+Statut
+prevu a long terme
+
+Note
+Le systeme de lettres ne doit pas rester la seule forme de scoring.
+Il est deja certain qu'un systeme de points devra pouvoir exister a la place.
+
+Contrainte importante :
+le moteur devra pouvoir distinguer proprement :
+- les regles de score
+- les conditions de victoire
+- les parametres de match
+
+Le systeme de points pourra ensuite ouvrir la voie a ses propres sous-regles
+et parametres avances.
+
+---
+
+Date
+2026-04-15
+
+Section
+prevu a long terme
+
+Sujet
+Les conditions de victoire devront devenir beaucoup plus riches
+
+Statut
+prevu a long terme
+
+Note
+La victoire ne devra pas dependre uniquement du schema actuel.
+A long terme, les conditions de victoire pourront dependre par exemple :
+- d'un nombre de manches
+- d'une limite de points
+- d'une limite de temps
+- d'un ecart de points
+
+Ce sujet devra rester separe du simple systeme de score,
+car une meme logique de score peut etre combinee a plusieurs conditions de victoire.
+
+---
+
+Date
+2026-04-15
+
+Section
+prevu a long terme
+
+Sujet
+Certaines regles de match specifiques sont deja considerees comme certaines
+
+Statut
+prevu a long terme
+
+Note
+Plusieurs regles precises sont deja considerees comme faisant partie
+du futur moteur, meme si leur definition exacte viendra plus tard :
+- repetition
+- avantage
+- clash
+- derniere chance
+- redo
+
+Elles devront etre documentees separement quand leur comportement exact sera cadre.
+
+---
+
+Date
+2026-04-15
+
+Section
+prevu a long terme
+
+Sujet
+Regle future : repetition
+
+Statut
+prevu a long terme
+
+Note
+La repetition consiste a limiter le nombre de fois qu'un attaquant peut
+retenter un trick echoue.
+
+Cette regle semble appeler des sous-parametres futurs, par exemple :
+- nombre maximal de repetitions autorisees
+- portee de la limitation
+- articulation avec les autres regles d'attaque
+
+---
+
+Date
+2026-04-15
+
+Section
+prevu a long terme
+
+Sujet
+Regle future : avantage
+
+Statut
+prevu a long terme
+
+Note
+La regle d'avantage consiste a laisser le meme attaquant lancer plusieurs
+figures a la suite sous certaines conditions.
+
+Cette regle touchera directement :
+- la rotation
+- la structure des tours
+- possiblement les conditions d'enchainement des tricks
+
+Elle devra donc etre pensee comme une vraie politique de flow,
+pas comme un simple drapeau annexe.
+
+---
+
+Date
+2026-04-15
+
+Section
+prevu a long terme
+
+Sujet
+Regle future : clash
+
+Statut
+prevu a long terme
+
+Note
+La regle du clash consiste globalement a desavantager l'attaquant
+qui rate son lance.
+
+Son effet exact devra etre formalise plus tard,
+mais elle touche deja clairement :
+- les penalites d'attaque
+- la resolution d'un tour
+- l'equilibre entre attaquant et defenseur
+
+---
+
+Date
+2026-04-15
+
+Section
+prevu a long terme
+
+Sujet
+Regle future : derniere chance
+
+Statut
+prevu a long terme
+
+Note
+La regle de la derniere chance est deja consideree comme une future
+composante du moteur.
+
+Elle devra etre definie plus tard avec precision, notamment sur :
+- son moment de declenchement
+- ses limites
+- son interaction avec le score et la fin de match
+
+---
+
+Date
+2026-04-15
+
+Section
+prevu a long terme
+
+Sujet
+Regle future : redo
+
+Statut
+prevu a long terme
+
+Note
+La regle du redo est deja consideree comme certaine pour le futur moteur.
+
+Comme d'autres regles de match fines, elle risque d'introduire
+des sous-regles importantes :
+- motifs autorisant un redo
+- nombre de redos possibles
+- effet sur la chronologie du tour ou du trick
+
+---
+
+Date
+2026-04-15
+
+Section
+prevu a long terme
+
+Sujet
+Le moteur devra supporter des regles specifiques a chaque discipline
+
+Statut
+prevu a long terme
+
+Note
+Le moteur ne devra pas rester limite a une abstraction neutre unique.
+Des regles specifiques devront exister selon la discipline pratiquee :
+- skate
+- bmx
+- scooter
+- inline
+- quad
+
+Cela impliquera probablement a terme :
+- des presets ou profils par discipline
+- des regles incompatibles entre certaines disciplines
+- des parametres avances propres a une discipline
+
+---
+
+Date
+2026-04-15
+
+Section
+prevu a long terme
+
+Sujet
+Beaucoup de futures regles ouvriront sur des sous-regles et parametres avances
+
+Statut
+prevu a long terme
+
+Note
+Une contrainte de fond est deja claire :
+beaucoup des futures regles ne seront pas de simples options binaires.
+Elles ouvriront elles-memes sur des sous-regles, variantes locales
+ou parametres avances.
+
+Cette observation renforce la direction generale du projet :
+le moteur doit etre pense pour absorber une combinatoire importante,
+pas seulement une liste plate d'options independantes.

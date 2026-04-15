@@ -15,6 +15,9 @@ class ActionValidator:
         if not trick:
             raise InvalidActionError("A trick is required to start a turn.")
 
+        if state.current_trick is not None:
+            raise InvalidActionError("Cannot start a new turn while another trick is engaged.")
+
         if not state.players[state.attacker_index].is_active:
             raise InvalidActionError("Current attacker is not active.")
 

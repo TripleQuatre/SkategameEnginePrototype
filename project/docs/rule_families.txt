@@ -1,0 +1,361 @@
+SkateGame Engine Prototype - Rule Families
+
+Objectif du document
+Ce document ne cherche pas a definir precisement chaque regle.
+Il sert a cartographier les grandes familles de regles que le moteur devra
+supporter a terme, afin d'aider les futurs choix d'architecture.
+
+Niveau de detail vise
+Ce document reste volontairement macro.
+Pour chaque famille, on veut surtout savoir :
+- ce qu'elle controle
+- quelles couches du moteur elle influence
+- si elle ressemble plutot a un simple parametre, un preset, ou un vrai
+  changement de flow
+- quelles regles futures connues semblent appartenir a cette famille
+
+Ce que ce document n'est pas
+- pas une spec d'implementation
+- pas une liste exhaustive de toutes les futures regles
+- pas un backlog de tickets
+
+Pourquoi ce document est utile maintenant
+La V6 va probablement introduire un systeme de politiques de match et de presets.
+Avant d'ajouter beaucoup de nouvelles regles, il est utile de savoir
+quelles familles de comportements le moteur devra absorber.
+
+Vision generale
+Le moteur ne doit pas seulement empiler des options.
+Il doit distinguer plusieurs couches de variabilite :
+- parametres simples
+- politiques de match
+- presets
+- regles fines
+- regles specifiques a une discipline
+
+Lecture simple de ces niveaux
+
+Parametre simple
+Valeur directe, locale, facile a serializer.
+Exemples :
+- mot de lettres
+- nombre de tentatives de defense
+- futur nombre de tentatives d'attaque
+
+Politique de match
+Choix structurel qui influence le comportement du flow.
+Exemples :
+- ordre initial
+- rotation de l'attaquant
+- ordre des defenseurs
+- certaines conditions de victoire
+
+Preset
+Assemblage coherent de plusieurs parametres et politiques.
+Le preset sert a proposer une configuration lisible cote utilisateur.
+
+Regle fine
+Comportement metier plus specifique, parfois optionnel,
+qui peut introduire ses propres sous-regles.
+Exemples :
+- repetition
+- avantage
+- clash
+- derniere chance
+- redo
+
+Regle de discipline
+Comportement ou contrainte propre a un univers de pratique.
+Exemples :
+- skate
+- bmx
+- scooter
+- inline
+- quad
+
+Familles principales
+
+1. Regles d'attaque
+
+Role
+Cette famille regroupe ce qui encadre la tentative de l'attaquant
+au moment de lancer un trick.
+
+Exemples connus ou certains
+- nombre de tentatives d'attaque
+- repetition
+- clash
+- redo
+
+Zones du moteur probablement touchees
+- validation d'action
+- flow de tour
+- historique
+- score ou penalites eventuelles
+
+Nature architecturale
+Cette famille peut contenir a la fois :
+- des parametres simples
+- des regles fines
+- des sous-regles avancees
+
+Risque de complexite
+Eleve.
+Les regles d'attaque semblent susceptibles d'interagir entre elles.
+
+2. Regles de defense
+
+Role
+Cette famille regroupe ce qui encadre la reponse des defenseurs
+face au trick engage.
+
+Exemples connus ou certains
+- nombre de tentatives de defense
+- derniere chance
+- redo
+
+Zones du moteur probablement touchees
+- validation
+- resolution de defense
+- historique
+- conditions de fin de tour
+
+Nature architecturale
+Cette famille semble melanger des parametres simples et des regles fines.
+
+Risque de complexite
+Moyen a eleve.
+Certaines regles de defense peuvent aussi modifier la structure d'un tour.
+
+3. Regles de score
+
+Role
+Cette famille regroupe la facon dont le moteur calcule et affiche
+la sanction ou la progression d'un joueur.
+
+Exemples connus ou certains
+- systeme de lettres
+- futur systeme de points
+
+Zones du moteur probablement touchees
+- structures de score dans `Player` ou dans le state
+- historique
+- affichage CLI et GUI
+- persistence
+
+Nature architecturale
+Cette famille doit rester separee des conditions de victoire.
+
+Risque de complexite
+Moyen.
+La difficulte principale sera d'eviter de coupler trop fort score et victoire.
+
+4. Conditions de victoire
+
+Role
+Cette famille regroupe la facon dont le moteur determine
+quand une partie ou une sequence de match est gagnee.
+
+Exemples connus ou certains
+- victoire par elimination
+- nombre de manches
+- limite de points
+- limite de temps
+- ecart de points
+
+Zones du moteur probablement touchees
+- end conditions
+- flow global de la partie
+- affichage de fin
+- persistence
+
+Nature architecturale
+Cette famille ressemble souvent a une politique de match,
+mais peut aussi dependre fortement du systeme de score choisi.
+
+Risque de complexite
+Eleve.
+Une meme logique de score pourra etre combinee a plusieurs fins de match.
+
+5. Regles de rotation et de structure de tour
+
+Role
+Cette famille regroupe ce qui determine qui joue, dans quel ordre,
+et comment s'enchainent les tours.
+
+Exemples connus ou certains
+- ordre initial
+- rotation de l'attaquant
+- ordre des defenseurs
+- avantage
+
+Zones du moteur probablement touchees
+- `modes/`
+- `engine/game_flow.py`
+- validation d'etat
+- historique
+
+Nature architecturale
+C'est une famille centrale pour la V6.
+Elle ressemble surtout a des politiques de match.
+
+Risque de complexite
+Tres eleve.
+Ces choix structurent le moteur plus qu'ils ne l'ajustent.
+
+6. Regles de reconfiguration de match
+
+Role
+Cette famille regroupe les regles qui permettent de faire evoluer
+une partie deja lancee sans simplement la redemarrer.
+
+Exemples connus ou certains
+- ajout de joueur entre deux tours
+- passage `one_vs_one -> battle`
+- futur "join from start"
+
+Zones du moteur probablement touchees
+- state
+- match parameters
+- modes
+- persistence
+- undo
+- historique
+
+Nature architecturale
+Cette famille ressemble a de la meta-structure de match.
+Elle ne doit pas etre confondue avec une simple regle locale.
+
+Risque de complexite
+Tres eleve.
+Ces regles touchent a l'identite meme de la partie en cours.
+
+7. Regles specifiques a une discipline
+
+Role
+Cette famille regroupe les comportements qui dependent
+du sport ou de la pratique visee.
+
+Exemples connus ou certains
+- skate
+- bmx
+- scooter
+- inline
+- quad
+
+Zones du moteur probablement touchees
+- presets
+- validation
+- certaines regles d'attaque ou de defense
+- terminologie et affichage
+
+Nature architecturale
+Cette famille ne doit pas obligatoirement redefinir tout le moteur.
+Idealement, une discipline doit surtout activer ou contraindre
+un ensemble coherent de regles.
+
+Risque de complexite
+Eleve.
+Le danger serait de dupliquer le moteur par discipline.
+
+Familles transversales
+
+Historique
+Certaines regles ne changent pas seulement le resultat d'une action.
+Elles changent aussi ce qu'il faut raconter de la partie.
+Le moteur devra garder un historique relisible meme quand :
+- le flow devient plus complexe
+- les conditions de victoire se diversifient
+- le roster change en cours de partie
+
+Persistence
+Le save/load devra encoder non seulement l'etat courant,
+mais aussi les parametres, politiques et regles actives
+de facon non ambigue.
+
+Validation
+Plus le moteur acceptera de combinaisons,
+plus il faudra distinguer :
+- configuration invalide
+- etat invalide
+- action invalide
+- combinaison de regles non supportee
+
+Presets
+Les presets ne doivent pas devenir un simple sac de drapeaux.
+Ils doivent rester des configurations lisibles,
+composees a partir de familles de regles bien separees.
+
+Principes d'architecture recommandes
+
+1. Garder separes score, victoire et structure de match
+Ce sont trois choses differentes, meme si elles interagissent.
+
+2. Eviter de modeler chaque future regle comme un bool simple
+Beaucoup de regles ouvriront sur des sous-parametres.
+
+3. Privilegier des familles coherentes plutot qu'une liste plate d'options
+Cela aidera la lisibilite, la validation et les presets.
+
+4. Faire attention aux regles qui changent le flow
+Les regles comme `avantage` ou certaines reconfigurations de match
+touchent plus profondement le moteur que de simples options de score.
+
+5. Ne pas coupler trop tot le moteur a une discipline precise
+Le support de plusieurs disciplines doit idealement reutiliser
+les memes briques structurelles.
+
+Regles futures deja identifiees et leur famille dominante
+
+`defense_attempts`
+- famille dominante : defense
+- type probable : parametre simple
+
+Futur `attack_attempts`
+- famille dominante : attaque
+- type probable : parametre simple
+
+`letters_word`
+- famille dominante : score
+- type probable : parametre simple
+
+Systeme de points
+- famille dominante : score
+- type probable : politique ou famille de scoring
+
+`repetition`
+- famille dominante : attaque
+- type probable : regle fine avec sous-parametres
+
+`avantage`
+- famille dominante : rotation et structure de tour
+- type probable : politique de flow
+
+`clash`
+- famille dominante : attaque
+- type probable : regle fine de penalite ou d'equilibrage
+
+`derniere chance`
+- famille dominante : defense ou victoire selon sa definition finale
+- type probable : regle fine
+
+`redo`
+- famille dominante : attaque ou defense selon son cadre final
+- type probable : regle fine
+
+Ajout de joueur en cours de partie
+- famille dominante : reconfiguration de match
+- type probable : politique structurelle
+
+Join from start
+- famille dominante : reconfiguration de match
+- type probable : sous-systeme specifique
+
+Conclusion
+Le moteur a deja depasse le simple stade d'un duel fixe.
+La suite du projet dependra surtout de sa capacite a absorber proprement
+des familles de regles de plus en plus nombreuses, combinables
+et parfois dependantes d'une discipline.
+
+Ce document doit aider a garder un design lisible avant meme
+que chaque regle soit definie dans le detail.

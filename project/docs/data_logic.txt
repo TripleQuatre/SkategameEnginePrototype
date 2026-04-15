@@ -1,4 +1,4 @@
-Documentation V4 - Logique des donnees
+Documentation V5 - Logique des donnees
 
 But
 Ce document decrit la logique de donnees la plus importante du moteur, independamment
@@ -8,8 +8,9 @@ Source de verite
 - `GameState` est la source de verite principale
 - `History` est une trace exploitable du passe
 - `Snapshot` est une image restaurable de l'etat
+- `GameSave` est une enveloppe persistable de partie
 
-Distinction cle V4
+Distinction cle V5
 
 1. Etat courant
 - ce que le moteur est en train de vivre
@@ -20,8 +21,12 @@ Distinction cle V4
 - porte par `History`
 
 3. Snapshot
-- ce qui peut etre restaure
+- ce qui peut etre restaure rapidement
 - porte par `Snapshot` et `SnapshotHistory`
+
+4. Sauvegarde
+- ce qui peut etre stocke et recharge
+- porte par `GameSave`
 
 Cycle de tour
 - tour ouvert : `current_trick is None`
@@ -29,6 +34,7 @@ Cycle de tour
 - tour termine : resultat terminal produit
 
 Donnees sensibles du state
+- `turn_order`
 - `attacker_index`
 - `defender_indices`
 - `current_defender_position`
@@ -42,8 +48,15 @@ Semantique des tricks
 - il devient alors `current_trick`
 - il n'entre dans `validated_tricks` qu'en fin terminale du tour
 
+Semantique du multijoueur
+- `turn_order` porte l'ordre complet du match
+- `defender_indices` porte les defenseurs du tour courant
+- un defenseur deja resolu peut devenir inactif sans invalider l'etat
+- les defenseurs restants doivent rester actifs
+
 Pourquoi c'est important
-Cette separation a permis a la V4 de rendre coherents :
+Cette separation permet a la V5 de garder coherents :
+- le battle
 - l'annulation de tour
 - l'undo
 - le save/load
@@ -53,6 +66,8 @@ Persistence
 - la serialisation conserve la difference entre :
   - un trick engage
   - un trick deja consomme
+  - un ordre de rotation actif
+  - une partie complete sauvegardee
 
 Conclusion
-La V4 a renforce non seulement le code, mais aussi le modele de donnees du moteur.
+La V5 a etendu le modele de donnees sans perdre la clarte apportee par la V4.

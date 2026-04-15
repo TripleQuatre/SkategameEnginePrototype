@@ -318,31 +318,42 @@ class CLIApp:
         payload = event.payload
 
         if name == EventName.DEFENSE_SUCCEEDED:
-            return f"{payload['player_id']} landed '{payload['trick']}'."
+            player_name = payload.get("player_name", payload["player_id"])
+            return f"{player_name} landed '{payload['trick']}'."
 
         if name == EventName.DEFENSE_FAILED_ATTEMPT:
+            player_name = payload.get("player_name", payload["player_id"])
             return (
-                f"{payload['player_id']} missed '{payload['trick']}' "
+                f"{player_name} missed '{payload['trick']}' "
                 f"({payload['attempts_left']} left)."
             )
 
         if name == EventName.LETTER_RECEIVED:
-            return f"{payload['player_id']} gets a letter: {payload['penalty_display']}"
+            player_name = payload.get("player_name", payload["player_id"])
+            return f"{player_name} gets a letter: {payload['penalty_display']}"
 
         if name == EventName.PLAYER_ELIMINATED:
-            return f"{payload['player_id']} is eliminated."
+            player_name = payload.get("player_name", payload["player_id"])
+            return f"{player_name} is eliminated."
 
         if name == EventName.TURN_ENDED:
-            return f"Next attacker: {payload['next_attacker_id']}"
+            next_attacker_name = payload.get(
+                "next_attacker_name", payload["next_attacker_id"]
+            )
+            return f"Next attacker: {next_attacker_name}"
 
         if name == EventName.TURN_FAILED:
-            return f"Turn failed. Next attacker: {payload['next_attacker_id']}"
+            next_attacker_name = payload.get(
+                "next_attacker_name", payload["next_attacker_id"]
+            )
+            return f"Turn failed. Next attacker: {next_attacker_name}"
 
         if name == EventName.GAME_FINISHED:
             winner_id = payload["winner_id"]
             if winner_id is None:
                 return "Game finished."
-            return f"Game finished. Winner: {winner_id}"
+            winner_name = payload.get("winner_name", winner_id)
+            return f"Game finished. Winner: {winner_name}"
 
         return ""
 
@@ -585,11 +596,11 @@ class CLIApp:
                     )
 
     def _format_letters(self, letters: str, word: str) -> str:
-      if not letters:
-          return "-"
-      if len(letters) >= len(word):
-          return f"[{letters}]"
-      return letters
+        if not letters:
+            return "-"
+        if len(letters) >= len(word):
+            return f"[{letters}]"
+        return letters
 
     def _format_defender_names(
         self, state: GameState, defender_indices: list[int]

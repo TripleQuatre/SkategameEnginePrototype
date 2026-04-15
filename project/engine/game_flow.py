@@ -24,8 +24,10 @@ class GameFlow:
                 name=EventName.GAME_STARTED,
                 payload={
                     "player_ids": [player.id for player in state.players],
+                    "player_names": [player.name for player in state.players],
                     "turn_order": state.turn_order,
                     "starting_attacker_id": state.players[state.attacker_index].id,
+                    "starting_attacker_name": state.players[state.attacker_index].name,
                 },
             )
         )
@@ -45,9 +47,13 @@ class GameFlow:
                 name=EventName.TURN_STARTED,
                 payload={
                     "attacker_id": attacker.id,
+                    "attacker_name": attacker.name,
                     "trick": trick,
                     "defender_ids": [
                         state.players[index].id for index in state.defender_indices
+                    ],
+                    "defender_names": [
+                        state.players[index].name for index in state.defender_indices
                     ],
                 },
             )
@@ -67,6 +73,7 @@ class GameFlow:
                     name=EventName.PLAYER_ELIMINATED,
                     payload={
                         "player_id": player.id,
+                        "player_name": player.name,
                     },
                 )
             )
@@ -80,6 +87,7 @@ class GameFlow:
                     name=EventName.GAME_FINISHED,
                     payload={
                         "winner_id": winner.id if winner else None,
+                        "winner_name": winner.name if winner else None,
                     },
                 )
             )
@@ -131,6 +139,7 @@ class GameFlow:
                     name=EventName.TURN_ENDED,
                     payload={
                         "next_attacker_id": state.players[state.attacker_index].id,
+                        "next_attacker_name": state.players[state.attacker_index].name,
                     },
                 )
             )
@@ -147,8 +156,10 @@ class GameFlow:
                 name=EventName.TURN_FAILED,
                 payload={
                     "attacker_id": attacker.id,
+                    "attacker_name": attacker.name,
                     "trick": trick,
                     "next_attacker_id": state.players[state.attacker_index].id,
+                    "next_attacker_name": state.players[state.attacker_index].name,
                 },
             )
         )

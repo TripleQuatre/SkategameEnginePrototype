@@ -1,0 +1,235 @@
+SkateGame Engine Prototype - Preparation V6
+
+Lecture de la V5
+La V5 a surtout consolide la structure du moteur.
+Le projet dispose maintenant :
+- d'un moteur multi-mode reelement utilisable
+- d'un mode `battle`
+- d'un save/load multi-mode
+- d'un undo robuste
+- d'un historique relisible
+- d'une premiere base de tests complete, y compris interfaces et scenarios
+
+En clair, la V5 a reussi a separer la structure du match de l'orchestration centrale.
+Le moteur n'est plus seulement un duel stabilise : c'est un arbitre multi-mode
+persistable et testable.
+
+Question directrice pour la V6
+La bonne question n'est probablement pas :
+"Quel nouveau mode ajouter ?"
+
+La bonne question semble plutot etre :
+"Quels choix V5 doivent devenir configurables avant d'empiler de nouveaux modes ?"
+
+Recommendation principale
+La V6 devrait etre une version de configuration explicite des politiques de match.
+
+Autrement dit :
+- transformer certains choix V5 en options de configuration assumee
+- introduire des presets de match clairs
+- renforcer les tests de combinaisons
+- garder les interfaces simples, mais capables d'exposer ces variantes
+
+Pourquoi cette direction est la plus saine
+La V5 a volontairement laisse plusieurs choix comme decisions de version :
+- ordre initial de `battle`
+- rotation des attaquants
+- ordre des defenseurs
+- futures variantes de scoring
+- futures end conditions
+
+Si la V6 ajoute directement les equipes, le reseau, ou une grosse couche GUI,
+on risque de figer ces choix implicites avant d'avoir clarifie le modele.
+
+Au contraire, une V6 orientee "politiques + presets" :
+- capitalise directement sur l'architecture V5
+- reste compatible avec `one_vs_one` et `battle`
+- prepare proprement les variantes futures
+- reduit le risque de refonte laterale en V7
+
+Ce que la V6 pourrait contenir
+
+1. Distinguer plus clairement structure de match et regles de score
+Aujourd'hui `MatchParameters` contient `player_ids`, `mode_name` et `rule_set`.
+`RuleSetConfig` contient surtout :
+- `letters_word`
+- `elimination_enabled`
+- `defense_attempts`
+
+La V6 pourrait introduire un niveau de configuration supplementaire pour les
+politiques de match, par exemple :
+- politique d'ordre initial
+- politique de rotation de l'attaquant
+- politique d'ordre des defenseurs
+- politique de fin de match
+
+L'idee importante est de ne pas melanger ces choix avec les regles de score pures.
+
+2. Faire des presets plutot qu'un catalogue brut d'options
+Plutot que d'exposer d'emblee dix cases a cocher, la V6 gagnerait a proposer
+quelques presets lisibles, par exemple :
+- `classic_duel`
+- `battle_standard`
+- `battle_rotation_variant`
+- `battle_no_elimination`
+
+Ces presets auraient deux avantages :
+- rendre la fonctionnalite lisible cote utilisateur
+- servir de base stable pour les tests et pour le save/load
+
+3. Enrichir le contrat des modes sans casser leur role
+Le contrat V5 de `BaseMode` fonctionne bien pour :
+- initialiser la partie
+- construire les defenseurs
+- choisir le prochain attaquant
+- valider l'etat
+
+Mais si la V6 ajoute plusieurs variantes structurelles, le contrat risque de devenir
+trop etroit ou trop implicite.
+
+La V6 pourrait soit :
+- garder `BaseMode` mais lui fournir des objets de politique configures
+- soit enrichir legerement son contrat pour expliciter davantage les decisions de structure
+
+La premiere option semble la plus propre a ce stade :
+un meme mode pourrait alors supporter plusieurs variantes sans duplication lourde.
+
+4. Faire evoluer l'historique pour expliquer les choix structurels
+La V5 reconstruit deja bien les tours.
+La V6 pourrait aller un cran plus loin en rendant plus explicites :
+- pourquoi tel joueur attaque ensuite
+- selon quelle variante les defenseurs sont ordonnes
+- quel preset ou quelle politique etait active
+
+Ce point est important pour :
+- la lisibilite utilisateur
+- le debug
+- la confiance dans le save/load
+
+5. Passer d'un `ScenarioRunner` utile a une vraie matrice de regression
+La V5 dispose deja d'un bon premier runner.
+La V6 devrait s'en servir pour valider les nouvelles combinaisons au lieu de
+multiplier uniquement les tests manuels ou les tests interfaces.
+
+Cap recommande :
+- scenarios parametrables par preset
+- verification d'invariants sur plusieurs variantes
+- protection du save/load entre presets
+- protection de l'historique et de l'undo sur variantes structurelles
+
+Ce que la V6 ne devrait probablement pas viser en premier
+- systeme reseau
+- couche sociale ou application mere
+- grosse refonte visuelle GUI
+- systeme d'equipes complet
+
+Pourquoi repousser les equipes
+Les equipes sont une idee naturelle, mais elles semblent demander un changement de modele
+plus profond :
+- representation des joueurs
+- victoire et defaite
+- score et elimination
+- lecture de l'historique
+- affichage CLI/GUI
+
+Ce n'est pas un mauvais sujet de futur, mais il parait plus sain apres une V6
+qui rend la structure du match plus explicite.
+
+Formulation simple de la V6
+Si on devait donner une phrase claire a la V6 :
+
+"La V6 transforme le moteur multi-mode V5 en moteur de variantes testables."
+
+Proposition de scope concret
+- introduire une configuration explicite des politiques de match
+- definir 2 a 4 presets officiels
+- faire evoluer save/load pour ces presets
+- adapter CLI et GUI pour choisir et afficher le preset actif
+- etendre le `ScenarioRunner` pour couvrir ces variantes
+
+Sujet supplementaire a considerer des la V6
+Un besoin tres credible est apparu avec la V5 :
+commencer une partie a 2, puis laisser d'autres joueurs rejoindre la partie,
+ce qui implique un passage de `one_vs_one` vers `battle`.
+
+Recommendation sur ce point
+Cette fonctionnalite peut raisonnablement entrer en V6 si elle reste cadree comme :
+- ajout de joueur entre deux tours uniquement
+- reconfiguration explicite du match
+- bascule atomique de `mode_name` et de `turn_order`
+- conservation de l'historique, des scores et des tricks deja valides
+
+Pourquoi ce sujet est compatible avec l'axe V6
+Ce n'est pas seulement "un nouveau mode".
+C'est un vrai cas de figure ou le match doit devenir reconfigurable.
+Il s'aligne donc bien avec une V6 orientee configuration et politiques explicites.
+
+Pourquoi il ne faut pas viser plus large tout de suite
+Autoriser une arrivee en plein trick serait beaucoup plus couteux, car il faudrait decider :
+- si le nouveau joueur defend le trick deja engage
+- comment recalculer `defender_indices`
+- comment garder l'historique parfaitement lisible
+- comment exposer ce comportement clairement dans CLI et GUI
+
+Cap prudent recommande
+V6 peut viser :
+- `join between turns`
+- `one_vs_one -> battle`
+- conservation du score des joueurs deja presents
+- nouveau joueur ajoute avec score initial neutre
+- nouvel evenement d'historique de reconfiguration ou d'ajout de joueur
+
+V6 ne devrait probablement pas viser :
+- ajout de joueur pendant un trick engage
+- retrait libre de joueur dans tous les cas
+- fusion, split ou reequilibrage complexe de roster
+
+Plan de travail conseille
+
+1. Cadrage du modele
+- separer ce qui releve :
+  - du mode
+  - des politiques de structure
+  - des regles de score
+
+2. Configuration
+- faire evoluer `MatchParameters`
+- garder `RuleSetConfig` focalise sur les regles pures
+- introduire une structure pour les policies ou presets
+
+3. Engine et modes
+- brancher les politiques dans `modes/` et `engine/`
+- conserver les invariants V5
+- prevoir une operation de reconfiguration de match entre deux tours
+
+4. Persistence et historique
+- serialiser clairement le preset ou les policies actives
+- garantir un rechargement non ambigu
+- tracer clairement les changements de roster ou de mode si la fonctionnalite est retenue
+
+5. Tests
+- renforcer la matrice de scenarios
+- proteger undo, save/load, fin de partie et historique sur chaque preset
+- couvrir explicitement le cas `one_vs_one -> battle`
+
+Decision de produit a prendre avant implementation
+Avant de lancer la V6, il faudrait figer une intention simple :
+
+Option A
+V6 = "presets et variantes structurelles"
+
+Option B
+V6 = "premier grand mode supplementaire"
+
+Option C
+V6 = "focus interface et experience"
+
+Recommendation
+L'option A semble la plus rentable.
+Elle cree de la valeur technique immediate, clarifie le modele, et prepare mieux
+les options B et C ensuite.
+
+Bilan
+La V5 a rendu le moteur assez solide pour arreter d'empiler des exceptions.
+La V6 devrait exploiter cette avance pour rendre la structure du match configurable,
+testable et lisible, plutot que sauter trop tot vers les equipes ou le reseau.

@@ -95,6 +95,7 @@ class GameEngine:
     def save_game(self, filepath: str) -> None:
         self.state_validator.validate(self.state)
         self.mode.validate(self.state)
+        self.match_parameters.rule_set = self.state.rule_set
 
         game_save = GameSave(
             match_parameters=self.match_parameters,
@@ -104,6 +105,7 @@ class GameEngine:
 
     def load_game(self, filepath: str) -> None:
         game_save = self.save_repository.load(filepath)
+        game_save.game_state.rule_set = game_save.match_parameters.rule_set
 
         self.config_validator.validate_match_parameters(game_save.match_parameters)
         self.config_validator.validate_rule_set(game_save.match_parameters.rule_set)

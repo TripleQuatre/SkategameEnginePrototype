@@ -1,14 +1,14 @@
-Documentation V4 - Dossier `engine/`
+Documentation V5 - Dossier `engine/`
 
 Role global
-`engine/` contient l'orchestration active du match.
+`engine/` orchestre activement le match sans porter lui-meme les politiques de mode.
 
 Fichiers
 
 `game_engine.py`
 - facade principale du moteur
-- initialise validation, flow, mode, snapshots et persistence
-- expose en V4 :
+- initialise validation, mode, flow, snapshots et persistence
+- expose :
   - `start_game`
   - `start_turn`
   - `resolve_defense`
@@ -19,35 +19,45 @@ Fichiers
 
 `game_flow.py`
 - coeur de l'orchestration
-- gere les transitions de partie
+- demarre la partie
+- engage un trick
+- resout la fin de tour
+- nettoie l'etat courant
 - produit les evenements
 
-Decisions V4 importantes dans `game_flow.py`
+Decisions V5 importantes dans `game_flow.py`
+- `start_game()` delegue l'initialisation au mode
 - `start_turn(trick)` engage le trick mais ne le consomme pas
-- `cancel_turn(trick)` est possible seulement si aucun trick n'est engage
+- `cancel_turn(trick)` produit `TURN_FAILED`
+- les defenseurs sont fournis par le mode
+- le prochain attaquant est fourni par le mode
 - le trick est consomme en fin terminale de tour
-- la fin de partie nettoie correctement l'etat du tour courant
+- la fin de partie nettoie correctement l'etat courant
 
 `turn_resolver.py`
 - gere une tentative de defense
 - succes
 - echec avec essais restants
 - echec final avec penalite
+- progression defenseur par defenseur
 
 `end_conditions.py`
 - determine les eliminations
 - determine la fin de partie
 - retourne le gagnant si applicable
 
-Undo V4
-- snapshots pris avant chaque action mutante du moteur
+Undo V5
+- snapshots pris avant chaque action mutante
 - restauration complete d'etat
-- pas de rollback evenementiel manuel
+- undo possible apres une fin de partie tant que la session courante existe
+- l'historique d'undo est vide apres `load_game`
 
-Save / Load V4
-- sauvegarde d'un etat complet
-- rechargement valide et revalidation du mode
-- remise a zero de l'historique d'undo apres chargement
+Save / Load V5
+- sauvegarde via un `GameSave`
+- `GameSave` contient `match_parameters + game_state`
+- `load_game()` recharge le bon mode a partir de la sauvegarde
+- plus de dependance a un placeholder de mode pour les vraies sauvegardes
 
-Etat V4
-Le dossier `engine/` est maintenant le vrai coeur stabilise du projet.
+Etat V5
+Le dossier `engine/` reste le coeur actif du moteur, mais sa logique de structure de match
+est maintenant proprement deleguee a `modes/`.

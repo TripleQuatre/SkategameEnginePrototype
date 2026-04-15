@@ -1,4 +1,4 @@
-Documentation V4 - Dossier `validation/`
+Documentation V5 - Dossier `validation/`
 
 Role global
 `validation/` protege la coherence des donnees, des etats et des actions.
@@ -7,19 +7,25 @@ Fichiers
 
 `config_validator.py`
 - verifie les parametres de match et le ruleset
+- en V5, connait `one_vs_one` et `battle`
 
 `action_validator.py`
 - verifie si une action peut etre executee
-- en V4, il distingue clairement :
+- distingue :
   - validation d'entree du trick
   - possibilite d'annuler un tour
   - possibilite de resoudre une defense
 
 `state_validator.py`
 - verifie la coherence interne de `GameState`
-- en V4, il est plus metier qu'en V3
+- en V5, prend en compte le multijoueur et `turn_order`
 
-Invariants V4 importants
+Invariants V5 importants
+- `turn_order` :
+  - contient un index par joueur
+  - ne contient pas de doublons
+  - ne contient pas d'index hors borne
+
 - si `current_trick is None` :
   - `defender_indices` doit etre vide
   - `current_defender_position` doit etre 0
@@ -34,15 +40,19 @@ Invariants V4 importants
 - `defender_indices` :
   - ne contient pas l'attaquant
   - ne contient pas de doublons
-  - ne contient pas de joueurs inactifs
+  - autorise un defenseur deja resolu a etre inactif
+  - exige que le defenseur courant et les suivants soient actifs
 
-Effet V4
-Ces validateurs ont permis de verrouiller :
-- la nouvelle semantique du tour
+Validation de configuration V5
+- `one_vs_one` exige exactement 2 joueurs
+- `battle` exige au moins 3 joueurs
+
+Effet V5
+Ces validateurs verrouillent :
+- la nouvelle semantique multijoueur
 - l'undo
 - la reprise de partie
-- la robustesse des transitions
+- les parcours de fin de partie
 
 Point a retenir
-La V4 ne s'est pas contente d'ajouter des tests. Elle a aussi rendu les validateurs
-plus proches du modele metier reel.
+La validation suit maintenant plus fidelement le modele metier reel d'un tour `battle`.

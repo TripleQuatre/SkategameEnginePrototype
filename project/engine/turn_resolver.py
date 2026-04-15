@@ -24,6 +24,7 @@ class TurnResolver:
                     name=EventName.DEFENSE_SUCCEEDED,
                     payload={
                         "player_id": defender.id,
+                        "player_name": defender.name,
                         "trick": state.current_trick,
                     },
                 )
@@ -38,6 +39,7 @@ class TurnResolver:
                     name=EventName.DEFENSE_FAILED_ATTEMPT,
                     payload={
                         "player_id": defender.id,
+                        "player_name": defender.name,
                         "trick": state.current_trick,
                         "attempts_left": state.defense_attempts_left,
                     },
@@ -51,6 +53,7 @@ class TurnResolver:
                 name=EventName.LETTER_RECEIVED,
                 payload={
                     "player_id": defender.id,
+                    "player_name": defender.name,
                     "trick": state.current_trick,
                     "new_score": defender.score,
                     "penalty_display": self.rules_registry.scoring.get_penalty_display(

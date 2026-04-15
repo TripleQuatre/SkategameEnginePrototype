@@ -100,6 +100,24 @@ def test_action_validator_rejects_empty_trick() -> None:
         validator.validate_start_turn(state, "")
 
 
+def test_action_validator_rejects_start_turn_when_a_trick_is_already_engaged() -> None:
+    validator = ActionValidator(RulesRegistry())
+    state = GameState(
+        players=[
+            Player(id="p1", name="Player 1"),
+            Player(id="p2", name="Player 2"),
+        ],
+        phase=Phase.TURN,
+        current_trick="soul",
+        defender_indices=[1],
+        current_defender_position=0,
+        defense_attempts_left=1,
+    )
+
+    with pytest.raises(InvalidActionError):
+        validator.validate_start_turn(state, "kickflip")
+
+
 def test_action_validator_rejects_resolve_defense_without_current_trick() -> None:
     validator = ActionValidator(RulesRegistry())
     state = GameState(

@@ -1,0 +1,236 @@
+SkateGame Engine Prototype - Planification V6
+
+But du document
+Cette planification transforme la specification V6 en ordre de travail concret.
+
+Strategie generale
+Traiter la V6 en deux blocs :
+
+V6 coeur
+- base de configuration
+- presets officiels
+- integration moteur
+- persistence
+- interfaces
+- tests
+
+V6 plus
+- ajout de joueur entre deux tours
+- premier cas officiel : `one_vs_one -> battle`
+
+Regle de priorisation
+On ne commence pas `V6 plus` tant que `V6 coeur` n'est pas propre.
+
+Lot 0. Decisions a figer avant implementation
+
+Objectif
+Verrouiller les decisions qui evitent les demi-retours pendant le dev.
+
+Decisions a figer
+- pas de nouveau dossier pour la V6
+- presets officiels internes uniquement
+- pas de JSON de presets en V6
+- `RuleSetConfig` reste centre sur les regles pures
+- nouvelle couche `MatchPolicies`
+- `join between turns` est un lot secondaire
+
+Livrable
+- spec V6 validee
+
+Sortie de lot
+On sait exactement ce que la V6 cherche a faire et a ne pas faire.
+
+Lot 1. Base de configuration
+
+Objectif
+Introduire les objets V6 sans casser l'entree actuelle du moteur.
+
+Travail attendu
+- creer `config/match_policies.py`
+- creer `config/match_preset.py`
+- creer `config/preset_registry.py`
+- faire evoluer `config/match_parameters.py`
+- garder `config/rule_set_config.py` simple
+
+Points d'attention
+- conserver une API lisible
+- ne pas surcharger `MatchParameters`
+- garder la serialisation simple
+
+Critere de fin
+Une configuration V6 complete peut etre construite en memoire proprement.
+
+Lot 2. Validation de configuration
+
+Objectif
+Verifier que les combinaisons V6 supportees sont coherentes.
+
+Travail attendu
+- faire evoluer `ConfigValidator`
+- valider la coherence mode/policies
+- valider la coherence preset/config effective si necessaire
+- rejeter les combinaisons explicitement non supportees
+
+Critere de fin
+Une partie invalide echoue des la configuration,
+pas plus tard dans le flow.
+
+Lot 3. Integration moteur et modes
+
+Objectif
+Faire vivre les policies V6 dans le moteur reel.
+
+Travail attendu
+- faire evoluer `ModeFactory`
+- brancher les policies dans les modes
+- ajuster `BaseMode` si necessaire
+- faire fonctionner plusieurs variantes officielles sans duplication lourde
+
+Points d'attention
+- proteger les invariants V5
+- ne pas eparpiller la logique de policies dans trop de couches
+
+Critere de fin
+Le moteur sait jouer plusieurs presets officiels V6.
+
+Lot 4. Persistence
+
+Objectif
+Rendre la V6 stable dans le temps.
+
+Travail attendu
+- faire evoluer `GameSave`
+- faire evoluer les serializers
+- sauvegarder `preset_name` si present
+- sauvegarder surtout la configuration effective
+
+Points d'attention
+- ne pas rendre le rechargement dependant d'un catalogue externe
+- garder un format lisible
+
+Critere de fin
+Une partie V6 sauvegardee se recharge sans ambiguite.
+
+Lot 5. Historique
+
+Objectif
+Faire apparaitre la variante active sans alourdir trop tot le systeme.
+
+Travail attendu
+- definir le niveau minimal de tracage du preset ou des policies
+- ajuster les evenements si necessaire
+- verifier que `build_turns()` reste lisible
+
+Critere de fin
+On peut comprendre la variante active d'une partie V6 sans lire le code.
+
+Lot 6. Interfaces
+
+Objectif
+Permettre de lancer et relire une partie V6 depuis CLI et GUI.
+
+Travail attendu
+- ajouter le choix de preset dans le CLI
+- ajouter l'affichage du preset actif dans le CLI
+- ajouter le choix de preset dans le GUI
+- ajouter l'affichage du preset actif dans le GUI
+
+Points d'attention
+- garder les interfaces simples
+- ne pas transformer la V6 en chantier UX
+
+Critere de fin
+Les presets V6 sont pilotables depuis les deux interfaces.
+
+Lot 7. Tests
+
+Objectif
+Stabiliser la V6 reellement.
+
+Travail attendu
+- adapter `ScenarioRunner` aux presets
+- ajouter des tests d'integration multi-presets
+- ajouter des tests save/load V6
+- ajouter des tests interfaces cibles
+- proteger les invariants d'etat
+
+Critere de fin
+Chaque preset officiel V6 est couvert sur ses parcours critiques.
+
+Lot 8. V6 plus - join between turns
+
+Precondition
+Ce lot n'ouvre que si les lots 1 a 7 sont propres.
+
+Objectif
+Permettre une reconfiguration simple du match entre deux tours.
+
+Premier scope officiel
+- ajout de joueur uniquement entre deux tours
+- premier cas cible : `one_vs_one -> battle`
+
+Travail attendu
+- definir une operation explicite de reconfiguration
+- faire evoluer `MatchParameters` et/ou l'etat si necessaire
+- reconstruire un `turn_order` valide
+- conserver historique, scores et tricks valides
+- tracer l'operation
+- couvrir save/load et undo
+
+Critere de fin
+Une partie `one_vs_one` peut devenir `battle` proprement entre deux tours.
+
+Ce qui reste hors lot
+- ajout en plein trick
+- rejoindre "depuis le debut"
+- retrait de joueur
+- roster dynamique generalise
+
+Ordre recommande d'execution
+1. lot 0
+2. lot 1
+3. lot 2
+4. lot 3
+5. lot 4
+6. lot 5
+7. lot 6
+8. lot 7
+9. lot 8 si la base est saine
+
+Risques principaux
+
+Risque 1
+Les presets deviennent juste un habillage de choix flous.
+
+Parade
+- separer nettement `RuleSetConfig`, `MatchPolicies` et `MatchPreset`
+
+Risque 2
+Chaque variante force la creation d'un nouveau mode.
+
+Parade
+- injecter les policies dans les modes existants
+
+Risque 3
+Le save/load devient fragile si la config effective n'est pas serialisee.
+
+Parade
+- sauvegarder la configuration effective et pas seulement le nom du preset
+
+Risque 4
+Le lot `join between turns` arrive trop tot et pollue le coeur V6.
+
+Parade
+- le traiter explicitement comme un lot secondaire
+
+Definition pratique d'une V6 livrable
+- presets officiels internes fonctionnels
+- moteur compatible multi-variantes simples
+- persistence fiable
+- interfaces compatibles
+- matrice de tests en place
+
+Conclusion
+La V6 doit etre construite comme une fondation.
+Si le coeur est propre, le lot `join between turns` pourra venir s'ajouter
+sans deformer l'architecture naissante.

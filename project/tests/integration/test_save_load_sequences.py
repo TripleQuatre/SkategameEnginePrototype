@@ -157,3 +157,29 @@ def test_game_engine_can_load_battle_save_from_one_vs_one_placeholder(
     assert state.attacker_index == 2
     assert state.defender_indices == [0, 1]
     assert state.current_trick == "kickflip"
+
+
+def test_game_engine_load_relinks_match_parameters_and_state_rule_set(tmp_path) -> None:
+    match_parameters = MatchParameters(player_ids=["p1", "p2"])
+    engine = GameEngine(match_parameters)
+
+    engine.start_game()
+
+    filepath = tmp_path / "saved_game.json"
+    engine.save_game(str(filepath))
+
+    reloaded_engine = GameEngine(match_parameters)
+    reloaded_engine.load_game(str(filepath))
+
+    assert reloaded_engine.match_parameters.rule_set is reloaded_engine.get_state().rule_set
+
+    reloaded_engine.get_state().rule_set.letters_word = "OUT"
+
+    updated_filepath = tmp_path / "updated_saved_game.json"
+    reloaded_engine.save_game(str(updated_filepath))
+
+    final_engine = GameEngine(match_parameters)
+    final_engine.load_game(str(updated_filepath))
+
+    assert final_engine.match_parameters.rule_set.letters_word == "OUT"
+    assert final_engine.get_state().rule_set.letters_word == "OUT"

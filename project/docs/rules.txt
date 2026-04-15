@@ -1,4 +1,4 @@
-Documentation V4 - Dossier `rules/`
+Documentation V5 - Dossier `rules/`
 
 Role global
 `rules/` contient la logique metier pure du jeu, separee du flow.
@@ -17,15 +17,18 @@ Fichiers
 `rules_registry.py`
 - centralise l'acces aux groupes de regles
 
-Lien avec la V4
+Lien avec la V5
 - `normalize_trick()` reste central
-- `is_trick_already_validated()` s'appuie maintenant sur la nouvelle semantique :
-  `validated_tricks` = tricks definitivement consommes
+- `is_trick_already_validated()` s'appuie sur `validated_tricks`
+- les regles de score et d'elimination restent reutilisables par `one_vs_one` et `battle`
 
-Ce que la V4 n'a pas change
+Ce que la V5 n'a pas change en profondeur
 - pas de refonte profonde des regles
 - pas d'enum de tricks
-- pas de systeme de variantes complexes
+- pas encore de systeme de variantes complexes
+- pas encore de mode points
 
 Point a retenir
-La V4 a clarifie le sens des donnees autour des tricks, sans alourdir `rules/`.
+La V5 a surtout etendu la structure des matchs.
+La couche `rules/` reste volontairement compacte en attendant de futures variantes
+de scoring et de conditions de victoire.

@@ -1,4 +1,4 @@
-Documentation V4 - Dossier `core/`
+Documentation V5 - Dossier `core/`
 
 Role global
 `core/` contient les structures fondamentales du moteur.
@@ -14,6 +14,7 @@ Fichiers importants
 - contient :
   - joueurs
   - phase
+  - `turn_order`
   - attaquant courant
   - defenseurs courants
   - trick courant
@@ -21,27 +22,29 @@ Fichiers importants
   - ruleset
   - tricks consommes
 
-Semantique V4 de `GameState`
+Semantique V5 de `GameState`
 - `current_trick is None` : tour ouvert
 - `current_trick is not None` : tour engage
 - `validated_tricks` : tricks definitivement consommes par la partie
+- `turn_order` : ordre de rotation de la partie, persistant
 
 `events.py`
 - structure des evenements moteur
-- `Event.name` est maintenant un `EventName`
+- `Event.name` est un `EventName`
 
 `history.py`
 - stocke la liste brute des evenements
-- reconstruit des lignes lisibles via `build_rows()`
-- ne depend plus de strings d'evenements disperses
+- reconstruit maintenant :
+  - `build_turns()`
+  - `build_rows()` pour compatibilite temporaire
+- modele V5 :
+  - `HistoryTurn`
+  - `HistoryDefenseRow`
 
 `snapshots.py`
 - `Snapshot` capture un etat complet
 - `SnapshotHistory` gere une pile de snapshots pour l'undo
-- ajoute en V4 :
-  - `peek()`
-  - `clear()`
-  - `max_size` optionnel
+- reste la base de l'undo interne
 
 `types.py`
 - enums partages
@@ -50,17 +53,10 @@ Semantique V4 de `GameState`
   - `DefenseResolutionStatus`
   - `EventName`
 
-`exceptions.py`
-- erreurs metier du moteur
-
-Apports V4 majeurs
-- typage des evenements via `EventName`
-- sens clarifie de `validated_tricks`
-- snapshots rendus plus robustes
-- socle d'undo completement branche
+Vocabulaire V5 important
+- `TURN_FAILED` remplace `TURN_CANCELLED`
+- un tour rate reste un vrai evenement de partie
 
 Point a retenir
-La V4 a clarifie le vocabulaire du coeur moteur :
-- trick accepte pour entrer dans le tour
-- trick engage comme `current_trick`
-- trick consomme dans `validated_tricks`
+La V5 a fait evoluer le coeur moteur pour supporter le multijoueur sans abandonner
+la lisibilite de l'etat ni la reconstruction d'historique.

@@ -1,4 +1,4 @@
-Documentation V4 - Dossier `config/`
+Documentation V5 - Dossier `config/`
 
 Role
 Le dossier `config/` regroupe les structures de configuration necessaires au lancement
@@ -8,7 +8,10 @@ Fichiers
 
 `match_parameters.py`
 - decrit les parametres d'une partie
-- contient `player_ids`, `mode_name`, `rule_set`
+- contient :
+  - `player_ids`
+  - `mode_name`
+  - `rule_set`
 - sert de point d'entree au `GameEngine`
 
 `rule_set_config.py`
@@ -20,26 +23,29 @@ Fichiers
 
 `game_config.py`
 - reste un emplacement de configuration plus globale
-- pas central dans la V4 actuelle
+- pas central dans la V5 actuelle
 
 Validation
 - `ConfigValidator` verifie les parametres avant lancement
 - nombre minimum de joueurs
 - mode present
+- compatibilite entre `mode_name` et nombre de joueurs
 - mot de lettres non vide et borne
 - nombre d'essais coherent
 
-Etat V4
-- la couche config est simple et stable
-- elle suffit pour le mode `one_vs_one`
-- elle n'a pas eu besoin d'une refonte dans la V4
+Etat V5
+- la couche config reste simple
+- elle supporte maintenant `one_vs_one` et `battle`
+- elle reste volontairement legere
 
 Ou la config intervient
 - creation du moteur
 - creation du controller
 - lancement d'une nouvelle partie via CLI ou GUI
+- sauvegarde et rechargement via `GameSave`
 
 Points pour la suite
 - presets de configuration
 - options de match plus riches
-- validation plus dependante du mode si plusieurs modes arrivent
+- parametres de mode plus detailes
+- futures variantes de scoring / end conditions

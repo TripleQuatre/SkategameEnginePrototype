@@ -1,0 +1,267 @@
+SkateGame Engine Prototype - Chantier V6
+
+Intention de la version
+La V6 doit transformer le moteur V5 en moteur de variantes configurables,
+sans encore entrer dans les grandes features de tres long terme.
+
+Phrase simple
+La V6 est la version ou les choix structurels du match deviennent explicites,
+configurables et testables.
+
+Cap principal
+Avant d'ajouter de nouvelles regles fines, la V6 doit d'abord installer
+la base qui permettra de les absorber proprement.
+
+Cela veut dire :
+- sortir certains choix implicites de la V5
+- creer un systeme lisible de presets
+- separer plus clairement score, structure de match et conditions de victoire
+- renforcer la couverture de tests sur les combinaisons supportees
+
+Ce qui entre dans la V6
+
+Bloc 1. Base de configuration V6
+- introduire une structure de configuration dediee aux politiques de match
+- garder `RuleSetConfig` focalise sur les regles pures
+- conserver `MatchParameters` comme point d'entree principal
+- permettre a un preset de composer mode + policies + rule set
+
+Bloc 2. Presets officiels
+- definir 2 a 4 presets initiaux maximum
+- garder des presets simples, lisibles et faciles a tester
+- faire en sorte que CLI, GUI et save/load manipulent un vocabulaire commun
+
+Bloc 3. Engine et modes
+- brancher les politiques de match dans `modes/`
+- eviter de dupliquer des modes juste pour changer une variante de rotation
+- faire en sorte qu'un meme mode puisse vivre avec plusieurs policies
+
+Bloc 4. Persistence et historique
+- sauvegarder les presets ou les policies actives sans ambiguite
+- afficher ou tracer la variante active de facon lisible
+- preparer l'historique a raconter des decisions structurelles
+
+Bloc 5. Tests V6
+- scenarios parametrables par preset
+- save/load sur presets differents
+- invariants d'etat sur plusieurs variantes
+- protection de l'undo et de l'historique
+
+Ce qui ne doit pas entrer dans la V6 de base
+- equipes
+- reseau
+- grosse refonte GUI
+- systemes de discipline complets
+- nouvelle grosse vague de regles fines
+
+Principe de priorisation
+Pour la V6, il vaut mieux :
+- poser la charpente
+- brancher quelques variantes simples
+- tester fortement
+
+plutot que :
+- ajouter beaucoup de regles nouvelles trop tot
+- multiplier les exceptions locales
+- ouvrir trop vite des cas de flow difficiles
+
+Decision recommande sur les futures regles
+La V6 ne doit pas chercher a implementer tout de suite :
+- `repetition`
+- `avantage`
+- `clash`
+- `derniere chance`
+- `redo`
+- systeme de points
+- conditions de victoire avancees
+
+En revanche, la V6 doit etre construite pour que ces sujets puissent arriver
+plus tard sans refonte laterale.
+
+Architecture cible recommandee
+
+1. `MatchParameters`
+Conserve le role de point d'entree d'une partie.
+Il devra porter ou referencer :
+- les joueurs
+- le mode
+- le preset selectionne ou equivalent
+- le `RuleSetConfig`
+- la configuration structurelle du match
+
+2. `RuleSetConfig`
+Doit rester centre sur les regles pures.
+En V6, il peut rester simple.
+L'objectif principal n'est pas encore de le grossir,
+mais de ne plus lui faire porter des choix de structure qui ne sont pas les siens.
+
+3. Nouvelle couche de policies
+La V6 a besoin d'une couche dediee aux choix structurels, par exemple :
+- ordre initial
+- rotation de l'attaquant
+- ordre des defenseurs
+- politique de fin de match si necessaire
+
+Le nom exact importe moins que la separation des responsabilites.
+
+4. Presets
+Un preset doit etre vu comme une composition stable de :
+- mode
+- policies
+- rule set
+
+Le preset doit servir a la fois :
+- a l'utilisateur
+- au save/load
+- aux tests
+
+Presets V6 recommandes
+
+`classic_duel`
+- base `one_vs_one`
+- comportement le plus proche du jeu actuel a 2
+
+`battle_standard`
+- base `battle`
+- ordre et rotation compatibles avec la V5
+
+`battle_rotation_variant`
+- base `battle`
+- meme socle mais avec au moins une politique de rotation differente
+
+`battle_no_elimination`
+- base `battle`
+- meme socle avec une condition de fin ou d'elimination differente
+
+Note
+Ces noms sont des pistes de travail.
+Ils pourront etre ajustes plus tard,
+mais il faut garder un petit nombre de presets au debut.
+
+Ordre de chantier recommande
+
+Phase 1. Cadrage du modele
+Objectif :
+figer les objets de configuration V6 avant de toucher partout.
+
+Livrables attendus :
+- choix de la structure de policies
+- decision sur la place exacte du preset
+- liste courte des presets V6 initiaux
+
+Condition de sortie :
+on sait serializer sans ambiguite la configuration d'un match V6.
+
+Phase 2. Integration moteur
+Objectif :
+faire fonctionner le moteur avec des policies explicites.
+
+Livrables attendus :
+- `ModeFactory` capable d'utiliser les choix V6
+- `BaseMode` ou ses collaborateurs adaptes
+- validation de configuration mise a jour
+- invariants d'etat preserves
+
+Condition de sortie :
+le moteur peut lancer et jouer une partie V6 sur plusieurs presets.
+
+Phase 3. Persistence et historique
+Objectif :
+rendre les variantes stables et lisibles dans le temps.
+
+Livrables attendus :
+- save/load V6
+- historique qui garde le contexte de la variante active
+- format de sauvegarde clair
+
+Condition de sortie :
+une partie V6 sauvegardee et rechargee repart sans ambiguite.
+
+Phase 4. Interfaces
+Objectif :
+exposer les presets de facon simple sans transformer les interfaces en usine a gaz.
+
+Livrables attendus :
+- CLI : choix du preset et affichage du preset actif
+- GUI : choix du preset et affichage du preset actif
+
+Condition de sortie :
+les interfaces savent lancer et relire une partie V6 de facon fiable.
+
+Phase 5. Matrice de tests
+Objectif :
+faire de la V6 une base robuste plutot qu'une version seulement "possible".
+
+Livrables attendus :
+- `ScenarioRunner` parametre par preset
+- tests integration multi-presets
+- tests save/load V6
+- tests interface cibles
+
+Condition de sortie :
+les variantes V6 sont protegees contre les regressions majeures.
+
+Lot optionnel V6
+`join between turns`
+
+Recommendation
+Ce lot peut entrer dans la V6 seulement apres la base presets/policies.
+
+Pourquoi
+Cette feature depend d'une vraie capacite de reconfiguration du match.
+Elle doit donc se brancher sur la nouvelle architecture,
+pas sur une serie de patchs localises.
+
+Version V6 acceptable de cette feature
+- ajout de joueur uniquement entre deux tours
+- pas d'ajout pendant un trick engage
+- support cible prioritaire : `one_vs_one -> battle`
+- conservation des scores, de l'historique et des tricks valides
+- tracage explicite de la reconfiguration
+
+Ce qui reste hors V6 meme si ce lot est pris
+- rejoindre "depuis le debut"
+- ajout de joueur en plein trick
+- retrait libre de joueur
+- reequilibrage complexe du roster
+
+Ordre recommande si le lot est retenu
+1. finaliser la base presets/policies
+2. ajouter une operation explicite de reconfiguration du match
+3. tracer cette operation dans l'historique
+4. couvrir save/load, undo et interfaces sur ce cas
+
+Definition pratique de la reussite V6
+La V6 est reussie si :
+- un match peut etre lance via un preset lisible
+- la structure active du match est claire dans le moteur et dans la sauvegarde
+- plusieurs variantes simples vivent sans duplication lourde
+- les tests couvrent les presets supportes
+- l'architecture ouvre proprement la voie aux futures regles
+
+Definition pratique de l'echec V6
+La V6 rate sa cible si :
+- les presets ne sont qu'un habillage d'options confuses
+- les choices structurels restent disperses dans `engine/` et `modes/`
+- chaque nouvelle variante force a creer un quasi nouveau mode
+- save/load devient ambigu
+- les tests ne couvrent pas les combinaisons officielles
+
+Decision de chantier recommandee maintenant
+Traiter la V6 en deux temps :
+
+V6 coeur
+- base de configuration
+- presets
+- moteur
+- persistence
+- interfaces
+- tests
+
+V6 plus
+- `join between turns` si la base est propre et le cout reste raisonnable
+
+Conclusion
+Le bon chantier V6 n'est pas d'ajouter beaucoup de contenu metier.
+Le bon chantier V6 est de construire le cadre qui permettra d'ajouter
+beaucoup plus de contenu metier ensuite, sans casser le moteur.

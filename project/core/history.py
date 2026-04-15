@@ -54,13 +54,15 @@ class History:
                 turn_number += 1
                 current_turn = HistoryTurn(
                     turn_number=turn_number,
-                    attacker_name=payload["attacker_id"],
+                    attacker_name=payload.get("attacker_name", payload["attacker_id"]),
                     trick_name=payload["trick"],
                     trick_status="validated",
                 )
                 turns.append(current_turn)
 
-                remaining_defender_ids = list(payload.get("defender_ids", []))
+                remaining_defender_ids = list(
+                    payload.get("defender_names", payload.get("defender_ids", []))
+                )
                 current_defense = None
 
                 if remaining_defender_ids:
@@ -121,7 +123,7 @@ class History:
                 turns.append(
                     HistoryTurn(
                         turn_number=turn_number,
-                        attacker_name=payload["attacker_id"],
+                        attacker_name=payload.get("attacker_name", payload["attacker_id"]),
                         trick_name=payload["trick"],
                         trick_status="failed",
                     )

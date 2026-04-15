@@ -209,3 +209,44 @@ def test_build_rows_keeps_flat_compatibility() -> None:
     assert rows[1].defender_name == "Alex"
     assert rows[1].defense_result == "X"
     assert rows[1].letters == "S"
+
+
+def test_build_turns_prefers_display_names_over_ids() -> None:
+    history = History()
+    history.add_event(
+        Event(
+            name=EventName.TURN_STARTED,
+            payload={
+                "attacker_id": "user_1",
+                "attacker_name": "Stan",
+                "trick": "Soul",
+                "defender_ids": ["user_2"],
+                "defender_names": ["Denise"],
+            },
+        )
+    )
+    history.add_event(
+        Event(
+            name=EventName.DEFENSE_SUCCEEDED,
+            payload={
+                "player_id": "user_2",
+                "player_name": "Denise",
+                "trick": "Soul",
+            },
+        )
+    )
+    history.add_event(
+        Event(
+            name=EventName.TURN_ENDED,
+            payload={
+                "next_attacker_id": "user_2",
+                "next_attacker_name": "Denise",
+            },
+        )
+    )
+
+    turns = history.build_turns()
+
+    assert len(turns) == 1
+    assert turns[0].attacker_name == "Stan"
+    assert turns[0].defenses[0].defender_name == "Denise"

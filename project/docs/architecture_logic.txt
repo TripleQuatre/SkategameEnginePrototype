@@ -1,22 +1,26 @@
-SkateGame Engine Prototype - Architecture V4
+SkateGame Engine Prototype - Architecture V5
 
 Objectif
-Cette documentation decrit l'architecture reelle du projet apres la V4 de stabilisation.
-Le but de la V4 etait de verrouiller le moteur sans changer lourdement le gameplay.
+Cette documentation decrit l'architecture reelle du projet apres la V5.
+Le but de la V5 etait d'etendre le moteur vers le multijoueur sans casser
+la robustesse acquise en V4.
 
 Principe general
-Le projet repose sur un moteur central simple et testable :
+Le projet repose sur un moteur central testable :
 
-Interfaces -> Controller -> Engine -> Rules -> Core
+Interfaces -> Controller -> Engine -> Modes
+                         -> Rules
                          -> Validation
                          -> Persistence
+                         -> Core
 
-Idees fortes de la V4
+Idees fortes de la V5
 - `GameState` reste la source de verite principale.
-- `History` garde la trace des evenements du match.
+- `History` garde la trace brute du match et reconstruit des tours lisibles.
 - `SnapshotHistory` sert a l'undo par restauration complete d'etat.
-- les noms d'evenements sont maintenant centralises via `EventName`.
+- les noms d'evenements restent centralises via `EventName`.
 - les invariants d'etat sont verifies explicitement.
+- la structure d'un match n'est plus codee en dur dans `game_flow`.
 
 Blocs principaux
 
@@ -24,36 +28,47 @@ Blocs principaux
 - contient les structures fondamentales du moteur
 - `GameState`, `Event`, `History`, `Snapshot`, `Player`, `EventName`, `Phase`
 
-2. `rules/`
+2. `modes/`
+- definit la structure d'une partie
+- initialise le match
+- construit les defenseurs
+- determine le prochain attaquant
+
+3. `rules/`
 - contient la logique metier pure
 - pas d'orchestration de match
 
-3. `engine/`
+4. `engine/`
 - orchestre la partie
 - applique les transitions
 - gere l'undo et le save/load au niveau moteur
 
-4. `validation/`
+5. `validation/`
 - verifie config, etat et actions
 - protege les invariants les plus importants
 
-5. `controllers/`
+6. `controllers/`
 - relais fin entre interfaces et moteur
 - expose une API simple aux interfaces
 
-6. `persistence/`
-- serialization, sauvegarde et rechargement d'etat
+7. `persistence/`
+- serialization, sauvegarde et rechargement de partie
 
-7. `interfaces/`
-- CLI et GUI minimales
-- pas de logique metier
+8. `interfaces/`
+- CLI et GUI utilitaires
+- pas de logique metier critique
 
-Decisions V4 importantes
+Decisions V5 importantes
 
 Etat du tour
 - tour ouvert : l'attaquant a la main et `current_trick is None`
 - tour engage : `current_trick is not None`
 - tour termine : le tour a produit un resultat terminal
+
+Rotation
+- `turn_order` porte l'ordre persistant du match
+- les modes l'interpretent pour la rotation
+- les joueurs elimines peuvent rester dans `turn_order`
 
 Tricks
 - `validated_tricks` contient uniquement les tricks definitivement consommes
@@ -62,30 +77,33 @@ Tricks
   - `TURN_FINISHED`
   - `GAME_FINISHED`
 
-Annulation
-- `cancel_turn(trick)` est autorise seulement quand aucun trick n'est engage
-- `turn_cancelled` est un evenement metier, mais pas un tour normal complet
+Tour rate
+- `cancel_turn(trick)` produit `TURN_FAILED`
+- un tour rate reste un evenement metier normal de la partie
 
 Undo
 - l'undo repose uniquement sur des snapshots complets
 - un snapshot est pris avant chaque action mutante exposee par le moteur
 - l'undo restaure un etat entier valide, sans suppression manuelle d'evenements
+- l'undo reste possible apres une fin de partie dans la session courante
 
 Save / Load
-- le moteur peut sauvegarder et recharger une partie en cours ou terminee
+- le moteur sauvegarde et recharge un `GameSave`
+- un `GameSave` contient :
+  - `match_parameters`
+  - `game_state`
 - un chargement remet l'historique d'undo a zero
+- le mode est recharge a partir de la sauvegarde
 
-Etat actuel de la V4
-- moteur stabilise
-- invariants renforces
-- evenements types
-- save/load disponibles
-- undo disponible
-- interfaces minimalistes mais alignees avec le moteur
+Etat actuel de la V5
+- moteur multi-mode stabilise
+- `battle` present
+- fin de partie consultable
+- save/load multi-mode
+- interfaces testees sur les parcours critiques
 
 Points volontairement laisses pour la suite
-- ergonomie avancee des interfaces
-- gestion post-game plus riche
-- multijoueur
-- refonte UX
-- simulations plus avancees via outils d'interface
+- variantes de rotation configurables
+- systemes de points alternatifs
+- gestion d'equipes
+- outillage encore plus riche de simulation de configurations
