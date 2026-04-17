@@ -14,6 +14,7 @@ from core.types import EventName, Phase
 from persistence.config_repository import ConfigRepository
 from persistence.game_save import GameSave
 from persistence.game_save_repository import GameSaveRepository
+from persistence.game_session_repository import GameSessionRepository
 from persistence.serializers import Serializer
 
 
@@ -360,6 +361,39 @@ def test_game_save_repository_writes_valid_json(tmp_path) -> None:
     assert "policies" in data["match_parameters"]
     assert "preset_name" in data["match_parameters"]
     assert data["game_state"]["players"][0]["name"] == "Stan"
+
+
+def test_game_session_repository_is_backward_compatible_with_game_save_repository(
+    tmp_path,
+) -> None:
+    repository = GameSessionRepository()
+
+    game_save = GameSave(
+        match_parameters=MatchParameters(
+            player_ids=["p1", "p2"],
+            mode_name="one_vs_one",
+            preset_name="classic_skate",
+            rule_set=RuleSetConfig(
+                letters_word="SKATE",
+                elimination_enabled=True,
+                defense_attempts=3,
+            ),
+        ),
+        game_state=GameState(
+            players=[
+                Player(id="p1", name="Stan"),
+                Player(id="p2", name="Denise"),
+            ]
+        ),
+    )
+
+    filepath = tmp_path / "session.json"
+    repository.save(game_save, str(filepath))
+    loaded_game_save = repository.load(str(filepath))
+
+    assert filepath.exists()
+    assert loaded_game_save.match_parameters.preset_name == "classic_skate"
+    assert loaded_game_save.game_state.players[0].name == "Stan"
 
 
 def test_serializer_can_read_legacy_match_parameters_without_v6_fields() -> None:
