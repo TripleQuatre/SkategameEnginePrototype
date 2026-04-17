@@ -1,0 +1,366 @@
+SkateGame Engine Prototype - Audit V6
+
+Date
+2026-04-17
+
+But du document
+Faire un audit reel de la V6 pour distinguer :
+- ce qui est deja solide
+- ce qui reste fragile
+- ce qui bloque une V7 ambitieuse
+- la meilleure direction de travail pour la suite
+
+Methode
+Audit realise a partir de :
+- lecture de la documentation V6
+- lecture du code des couches `config/`, `core/`, `engine/`, `modes/`,
+  `validation/`, `persistence/`, `interfaces/`
+- execution de la suite de tests
+- verification manuelle de scenarios V6 critiques
+
+Resume executif
+La V6 a bien rempli son objectif principal de fondation :
+- presets officiels en place
+- separation initiale entre `rule_set` et `policies`
+- moteur multi-variantes simple fonctionnel
+- undo, save/load et reconfiguration entre tours deja presents
+- couverture de tests globalement tres correcte
+
+Mais la V6 n'est pas encore une base "pret a encaisser la combinatoire V7"
+sans tension.
+
+Constat central
+La V6 est une bonne fondation alpha,
+pas encore une architecture de familles de regles pleinement extensible.
+
+Autrement dit :
+- la V6 est exploitable
+- la V6 est lisible
+- la V6 est deja testee
+- mais la V6 reste encore assez coupee "a la main"
+  sur les points que la V7 voudra generaliser
+
+---
+
+Etat reel de la V6
+
+1. Ce qui est solide
+
+Separation de couches
+Le projet garde une structure saine :
+- `config/` pour la configuration de match
+- `modes/` pour la structure de partie
+- `engine/` pour l'orchestration
+- `rules/` pour la logique metier pure
+- `validation/` pour les garde-fous
+- `persistence/` pour la serialisation
+- `interfaces/` comme couche fine
+
+Cette separation reste un vrai point fort.
+
+Presets V6
+La V6 implemente bien son petit catalogue officiel :
+- `classic_skate`
+- `classic_blade`
+- `battle_standard`
+- `battle_hardcore`
+
+Le preset est bien transporte jusqu'au moteur, a l'historique,
+aux interfaces et a la persistence.
+
+Save / Load / Undo
+La logique principale est en place et coherente :
+- snapshot avant action mutante
+- restauration complete d'etat
+- sauvegarde de la configuration effective
+- rechargement du mode a partir de la sauvegarde
+
+Les verifications manuelles realisees pendant cet audit confirment que :
+- le roundtrip save/load d'un preset V6 fonctionne
+- le roundtrip save/load apres `one_vs_one -> battle` fonctionne
+- le roundtrip save/load apres `battle -> one_vs_one` fonctionne
+- l'undo des reconfigurations restaure correctement le contexte precedent
+
+Historique
+L'historique raconte correctement :
+- le lancement de partie
+- les tours
+- les defenses
+- les penalites
+- les reconfigurations de roster
+
+Pour une V6 alpha, c'est deja un bon niveau de lisibilite.
+
+Tests
+Le coeur metier est largement couvert.
+Execution de reference confirmee sur la machine de travail :
+- `pytest tests`
+- 173 tests passes
+- 0 echec
+- temps observe : 1.47s
+
+Cela confirme que la base metier est non seulement couverte,
+mais actuellement verte sur l'ensemble de la suite ciblee.
+
+2. Ce qui est fragile
+
+Fragilite 1. La fiabilite des tests depend encore du contexte d'execution
+
+Constat
+La suite de reference `pytest tests` passe integralement sur la machine de travail.
+En revanche, pendant l'audit, un environnement plus contraint a fait apparaitre
+des problemes de permissions autour de dossiers temporaires et de `tmp_path`.
+
+Conclusion pratique :
+- la suite ciblee du projet est saine
+- mais l'environnement d'execution peut encore perturber un audit automatise
+  si on sort du parcours normal
+
+Impact
+- le moteur n'est pas en faute ici
+- mais il reste utile de mieux cadrer le perimetre de test pour des audits
+  plus robustes et reproductibles
+
+Lecture
+Ce n'est pas un probleme metier bloquant de la V6.
+C'est plutot un sujet d'hygiene et de reproductibilite.
+
+Fragilite 2. Une partie de la persistence est morte ou incoherente
+
+Constat
+`persistence/game_session_repository.py` appelle :
+- `serialize_game_session()`
+- `deserialize_game_session()`
+
+Ces methodes n'existent pas dans `Serializer`.
+
+Impact
+Cette classe plante immediatement si elle est utilisee.
+
+Lecture
+Cela ressemble a un reliquat de chantier.
+Tant que le fichier reste dans le projet,
+il brouille la confiance dans la couche persistence.
+
+Fragilite 3. La couche `MatchPolicies` reste trop mince pour porter la V7
+
+Constat
+La separation conceptuelle est bonne,
+mais l'implementation reste minimale :
+- un seul choix de rotation attaquant
+- deux choix d'ordre de defense
+- ordre initial limite
+- pas de famille explicite pour score, victoire, attaque, defense ou reconfiguration
+
+En pratique, le moteur reste encore fortement couple aux modes actuels.
+Exemples :
+- `one_vs_one` force `turn_order = [0, 1]`
+- `battle` gere surtout la taille du roster
+- la variabilite reelle reste faible
+
+Impact
+La V6 sait gerer quelques variantes officielles,
+mais pas encore une vraie montee en puissance du catalogue de regles.
+
+Lecture
+La V6 a pose le bon vocabulaire,
+pas encore le bon niveau d'abstraction pour la V7.
+
+Fragilite 4. La reconfiguration de match est encore codee en dur dans `GameEngine`
+
+Constat
+Les transitions :
+- ajout de joueur
+- retrait de joueur
+- bascule `one_vs_one <-> battle`
+
+sont gerees directement dans `GameEngine`
+avec mutations explicites du state et des `match_parameters`.
+
+Impact
+Cette logique marche aujourd'hui,
+mais elle melange dans une meme zone :
+- orchestration moteur
+- politique de reconfiguration
+- reconstruction du roster
+- invalidation de preset
+- adaptation de mode
+
+Lecture
+C'est acceptable en V6.
+Ce sera vite une zone de dette si la V7 ajoute :
+- plusieurs politiques de rotation
+- des regles d'entree plus riches
+- des contraintes de discipline
+- des variants de scoring/victoire lies au roster
+
+Fragilite 5. La validation des combinaisons futures reste partielle
+
+Constat
+La validation est bonne sur :
+- nombre de joueurs
+- mode connu
+- coherence preset / policies / rule_set
+- quelques interdictions `one_vs_one`
+
+Mais elle reste encore assez legere sur la matrice des combinaisons supportees,
+en particulier cote `battle` et futures variantes.
+
+Impact
+La V7 risque sinon d'accepter des combinaisons "structurellement invalides"
+tant qu'elles ne cassent pas immediatement les invariants de base.
+
+Lecture
+La V7 devra assumer une couche explicite de compatibilite,
+pas seulement des verifications locales.
+
+Fragilite 6. L'historique trace le contexte, pas encore les decisions structurelles profondes
+
+Constat
+L'historique expose bien :
+- mode
+- preset
+- player_names
+- turn_order
+
+Il sait aussi suivre `PLAYER_JOINED` et `PLAYER_REMOVED`.
+
+Mais il ne raconte pas encore proprement :
+- les deltas de policies
+- les deltas de rule families
+- la raison structurelle d'une reconfiguration
+- une vraie identite de variante au-dela du preset
+
+Impact
+Pour la V6, c'est suffisant.
+Pour la V7, ce sera trop court si on veut auditer des parties plus complexes.
+
+---
+
+Lecture globale
+
+Ce que la V6 reussit vraiment
+La V6 a transforme le moteur d'un systeme a choix implicites
+vers un systeme a variantes explicites.
+
+Ce que la V6 ne reussit pas encore totalement
+La V6 n'a pas encore transforme ces variantes explicites
+en veritables familles de regles combinables.
+
+Donc :
+- la V6 est une bonne version de transition
+- la V6 n'est pas encore la bonne base finale pour accumuler beaucoup de regles
+
+---
+
+Orientation recommandee pour la V7
+
+Principe directeur
+La V7 ne doit pas etre "une nouvelle vague de regles ajoutees au moteur V6".
+La V7 doit etre la version qui transforme les premieres briques V6
+en systeme d'architecture de familles de regles.
+
+Priorite V7.1
+Nettoyer la fiabilite projet avant d'elargir la combinatoire.
+
+Travail recommande
+- rendre `pytest` runnable proprement dans le repo
+- declarer `testpaths`
+- declarer des `norecursedirs`
+- fixer ou supprimer les reliquats morts de persistence
+
+Pourquoi
+Sans cela, chaque iteration V7 sera plus couteuse a verifier.
+
+Priorite V7.2
+Passer de `MatchPolicies` minimal a un vrai modele de structure de match.
+
+Direction recommandee
+Au lieu d'ajouter des bools ou enums a plat,
+organiser la V7 autour de familles explicites, par exemple :
+- structure de rotation
+- structure de defense
+- scoring
+- victoire
+- reconfiguration de roster
+
+Le point important n'est pas le nom exact des objets.
+Le point important est d'eviter qu'une future regle structurelle
+retombe directement dans `GameEngine` ou dans un mode ad hoc.
+
+Priorite V7.3
+Extraire la logique de reconfiguration hors du moteur principal.
+
+Direction recommandee
+Creer une vraie couche de reconfiguration de match,
+capable de gerer explicitement :
+- preconditions
+- transformation du roster
+- recalcul du turn order
+- recalcul de l'attaquant
+- invalidation ou conservation de preset
+- tracage historique
+
+Pourquoi
+Cette zone est deja la plus proche de la dette future.
+
+Priorite V7.4
+Introduire une matrice de compatibilite des variantes
+
+Direction recommandee
+Formaliser ce qui est :
+- supporte
+- interdit
+- supporte seulement dans certains modes
+- supporte seulement pour certaines disciplines
+
+Pourquoi
+La V7 ajoutera probablement plus de variantes
+qu'un simple validateur local ne pourra exprimer proprement.
+
+Priorite V7.5
+Faire de l'historique un support de lecture structurelle
+
+Direction recommandee
+L'historique V7 devrait pouvoir raconter :
+- quelle famille de configuration etait active
+- quelle transformation de match a eu lieu
+- quelles politiques ont change
+- quel cadre de victoire / score / rotation s'applique
+
+---
+
+Positionnement clair de la V7
+
+La meilleure V7 n'est probablement pas :
+- "ajoutons d'abord repetition, avantage, clash, redo"
+
+La meilleure V7 est plutot :
+- "stabilisons le cadre qui permettra ensuite d'ajouter repetition,
+  avantage, clash, redo, score alternatif et conditions de victoire riches
+  sans reencombrer le moteur"
+
+Formulation simple
+V6 a rendu les variantes visibles.
+V7 doit rendre les familles de regles composables.
+
+---
+
+Conclusion finale
+
+Diagnostic
+La V6 est globalement reussie comme fondation alpha.
+
+Niveau de confiance
+- confiance correcte sur le coeur moteur
+- confiance forte sur presets / save-load / undo / reconfiguration simple
+- confiance correcte sur l'hygiene de test et la dette de persistence
+- confiance limitee sur la capacite de la V6 a absorber seule une grosse V7
+
+Decision recommandee
+Orienter la V7 d'abord vers :
+1. durcissement de la base
+2. extraction des responsabilites structurelles
+3. formalisation des familles de regles
+
+Puis seulement ouvrir la nouvelle vague de regles metier.

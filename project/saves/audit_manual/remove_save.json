@@ -1,0 +1,106 @@
+{
+    "match_parameters": {
+        "player_ids": [
+            "p1",
+            "p3"
+        ],
+        "mode_name": "one_vs_one",
+        "rule_set": {
+            "letters_word": "SKATE",
+            "elimination_enabled": true,
+            "defense_attempts": 1
+        },
+        "policies": {
+            "initial_turn_order": "fixed_player_order",
+            "attacker_rotation": "follow_turn_order",
+            "defender_order": "follow_turn_order"
+        },
+        "preset_name": null
+    },
+    "game_state": {
+        "players": [
+            {
+                "id": "p1",
+                "name": "p1",
+                "internal_id": "38be5b5c-e2ec-4672-9744-1d90dbdaac8e",
+                "score": 0,
+                "is_active": true
+            },
+            {
+                "id": "p3",
+                "name": "p3",
+                "internal_id": "683fb357-d778-45a0-a8c2-589abe1cf8a6",
+                "score": 0,
+                "is_active": true
+            }
+        ],
+        "phase": "turn",
+        "turn_order": [
+            0,
+            1
+        ],
+        "attacker_index": 0,
+        "defender_indices": [],
+        "current_defender_position": 0,
+        "defense_attempts_left": 0,
+        "current_trick": null,
+        "history": {
+            "events": [
+                {
+                    "name": "game_started",
+                    "payload": {
+                        "player_ids": [
+                            "p1",
+                            "p2",
+                            "p3"
+                        ],
+                        "player_names": [
+                            "p1",
+                            "p2",
+                            "p3"
+                        ],
+                        "turn_order": [
+                            0,
+                            1,
+                            2
+                        ],
+                        "starting_attacker_id": "p1",
+                        "starting_attacker_name": "p1",
+                        "mode_name": "battle",
+                        "preset_name": null,
+                        "initial_turn_order_policy": "randomized",
+                        "attacker_rotation_policy": "follow_turn_order",
+                        "defender_order_policy": "follow_turn_order"
+                    }
+                },
+                {
+                    "name": "player_removed",
+                    "payload": {
+                        "player_id": "p2",
+                        "player_name": "p2",
+                        "previous_mode_name": "battle",
+                        "mode_name": "one_vs_one",
+                        "previous_preset_name": null,
+                        "preset_name": null,
+                        "player_names": [
+                            "p1",
+                            "p3"
+                        ],
+                        "turn_order": [
+                            0,
+                            1
+                        ],
+                        "attacker_id": "p1",
+                        "attacker_name": "p1"
+                    }
+                }
+            ]
+        },
+        "rule_set": {
+            "letters_word": "SKATE",
+            "elimination_enabled": true,
+            "defense_attempts": 1
+        },
+        "validated_tricks": []
+    }
+}

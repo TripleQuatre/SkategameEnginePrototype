@@ -1,0 +1,94 @@
+{
+    "match_parameters": {
+        "player_ids": [
+            "p1",
+            "p2",
+            "p3"
+        ],
+        "mode_name": "battle",
+        "rule_set": {
+            "letters_word": "SKATE",
+            "elimination_enabled": true,
+            "defense_attempts": 1
+        },
+        "policies": {
+            "initial_turn_order": "randomized",
+            "attacker_rotation": "follow_turn_order",
+            "defender_order": "follow_turn_order"
+        },
+        "preset_name": "battle_hardcore"
+    },
+    "game_state": {
+        "players": [
+            {
+                "id": "p1",
+                "name": "p1",
+                "internal_id": "172477f9-7c15-434d-9e96-f2a5aec710e3",
+                "score": 0,
+                "is_active": true
+            },
+            {
+                "id": "p2",
+                "name": "p2",
+                "internal_id": "734abcb2-5274-470a-a748-4bbfbd6c4de2",
+                "score": 0,
+                "is_active": true
+            },
+            {
+                "id": "p3",
+                "name": "p3",
+                "internal_id": "f3529c08-a814-4540-b213-845c469c5d4f",
+                "score": 0,
+                "is_active": true
+            }
+        ],
+        "phase": "turn",
+        "turn_order": [
+            0,
+            2,
+            1
+        ],
+        "attacker_index": 0,
+        "defender_indices": [],
+        "current_defender_position": 0,
+        "defense_attempts_left": 0,
+        "current_trick": null,
+        "history": {
+            "events": [
+                {
+                    "name": "game_started",
+                    "payload": {
+                        "player_ids": [
+                            "p1",
+                            "p2",
+                            "p3"
+                        ],
+                        "player_names": [
+                            "p1",
+                            "p2",
+                            "p3"
+                        ],
+                        "turn_order": [
+                            0,
+                            2,
+                            1
+                        ],
+                        "starting_attacker_id": "p1",
+                        "starting_attacker_name": "p1",
+                        "mode_name": "battle",
+                        "preset_name": "battle_hardcore",
+                        "initial_turn_order_policy": "randomized",
+                        "attacker_rotation_policy": "follow_turn_order",
+                        "defender_order_policy": "follow_turn_order"
+                    }
+                }
+            ]
+        },
+        "rule_set": {
+            "letters_word": "SKATE",
+            "elimination_enabled": true,
+            "defense_attempts": 1
+        },
+        "validated_tricks": []
+    }
+}
