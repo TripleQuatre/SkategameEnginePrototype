@@ -1,0 +1,248 @@
+SkateGame Engine Prototype - Validation Lot 5 V7
+
+But du document
+Ce document fige les decisions du lot 5 sur le sous-systeme
+de transitions de match dans la V7.
+
+Statut du lot
+Lot 5 considere comme valide.
+
+Rappel du role du lot 5
+Le lot 5 ne cherche pas encore a implementer toutes les transitions
+possibles du moteur, mais a donner une vraie place metier
+a la reconfiguration du match.
+
+Conclusion generale
+La V7 adopte un domaine explicite de `match transitions`.
+Ce domaine est pense plus largement que les seuls changements de roster,
+mais la portee concrete de la V7 reste centree sur :
+- l'ajout de joueur entre deux tours
+- le retrait de joueur entre deux tours
+
+Les transitions sortent ainsi du `GameEngine` et deviennent
+un sous-systeme metier lisible, testable et extensible.
+
+Decision 1. Le domaine V7 s'appelle `match transitions`
+
+Decision retenue
+La V7 adopte un vocabulaire general de `match transitions`.
+
+Pourquoi
+La reconfiguration ne doit plus etre pensee comme une simple operation
+technique ou un cas special du moteur.
+
+Effet attendu
+Le moteur dispose d'un vrai domaine pour porter les evolutions
+structurelles d'une partie en cours.
+
+Decision 2. La portee reelle V7 reste centree sur le roster
+
+Decision retenue
+Les seules transitions reellement implementees en V7 sont :
+- l'ajout de joueur entre deux tours
+- le retrait de joueur entre deux tours
+
+Pourquoi
+La V7 doit rester concrete et maitrisee,
+sans ouvrir trop tot un cadre trop large.
+
+Effet attendu
+Le domaine est pense de maniere generale,
+mais la version reste focalisee sur ses besoins reels.
+
+Decision 3. Une transition n'est autorisee qu'en `tour ouvert`
+
+Decision retenue
+Les transitions de match V7 ne sont autorisees
+que dans l'etat inter-tour.
+
+Donc :
+- jamais en phase d'attaque
+- jamais en phase de defense
+- jamais dans une resolution terminale locale
+
+Pourquoi
+Le moteur doit garder un moment clair et stable
+pour accepter une mutation structurelle.
+
+Effet attendu
+Les transitions restent coherentes avec le flow V7
+et n'introduisent pas d'ambiguite pendant un tour actif.
+
+Decision 4. Le sous-systeme de transitions porte toute la logique
+structurelle de reconfiguration
+
+Decision retenue
+Le systeme de transitions est responsable de :
+- valider qu'une transition est autorisee
+- transformer le roster
+- recalculer la structure effective si necessaire
+- recalculer le `turn_order` si necessaire
+- recalculer l'attaquant courant si necessaire
+- invalider le preset si necessaire
+- produire les evenements d'historique lies a la transition
+
+Pourquoi
+La logique de reconfiguration ne doit plus etre dispersee
+dans `GameEngine` ou entre plusieurs couches.
+
+Effet attendu
+La reconfiguration devient une responsabilite claire,
+testable et extensible.
+
+Decision 5. Une transition de roster peut entrainer
+une transition de structure
+
+Decision retenue
+Une transition de roster peut provoquer une evolution structurelle
+du match, par exemple :
+- `1v1 -> battle`
+- `battle -> 1v1`
+
+Ce changement est traite comme une consequence structuree
+de la transition, et non comme un effet secondaire bricole.
+
+Pourquoi
+Dans les faits, ajout ou retrait de joueur ne changent deja pas
+seulement le roster.
+
+Effet attendu
+Le moteur V7 assume explicitement le lien entre roster
+et structure active du match.
+
+Decision 6. Une transition doit preserver la continuite de la partie
+
+Decision retenue
+Une transition de match doit preserver autant que possible :
+- les scores
+- l'historique
+- les tricks deja valides
+- la coherence generale de l'etat
+
+Et elle ne redemarre pas la partie sauf si une future regle
+l'exige explicitement.
+
+Pourquoi
+La V7 traite les transitions comme une evolution de partie en cours,
+pas comme un redemarrage masque.
+
+Effet attendu
+Le moteur reste fidele a l'experience metier
+d'une partie qui continue malgre une reconfiguration.
+
+Decision 7. Le preset peut etre invalide par transition
+
+Decision retenue
+Si une transition rend la configuration incompatible
+avec le preset d'origine, le preset est invalide.
+
+La configuration effective et l'historique restent conserves.
+
+Pourquoi
+Le preset reste une metadonnee utile,
+mais il ne doit jamais primer sur la verite moteur.
+
+Effet attendu
+La V7 garde un vocabulaire lisible sans sacrifier
+la coherence reelle du match.
+
+Decision 8. Le lot 5 suit une logique `B oriente C`
+
+Decision retenue
+Le domaine est bien celui des `match transitions`,
+mais l'implementation concrete V7 reste centree
+sur les `roster transitions`.
+
+Pourquoi
+C'est le meilleur compromis entre preparation du futur
+et realisme du scope.
+
+Effet attendu
+Le moteur pourra accueillir plus tard d'autres transitions
+sans reconstruire totalement ce domaine.
+
+Decision 9. Les transitions deviennent un point d'ancrage
+de l'historique structurel
+
+Decision retenue
+Une transition doit produire un evenement lisible
+qui raconte :
+- ce qui a change
+- quel effet structurel cela a eu
+- quel etat de match en resulte
+
+Pourquoi
+La V7 veut conserver un historique comprehensible
+dans un moteur plus riche.
+
+Effet attendu
+Les transitions ne sont pas seulement correctes techniquement,
+elles sont aussi racontables.
+
+Decision 10. Le lot 5 ne prend pas encore les transitions futures
+
+Decision retenue
+La V7 ne prend pas encore :
+- les changements de sport
+- les changements libres de scoring
+- les changements libres de victory
+- les transformations structurelles plus larges
+- les transitions en pleine attaque ou defense
+
+Pourquoi
+Le lot 5 doit construire le cadre sans surcharger le perimetre
+de la V7.
+
+Effet attendu
+Le domaine reste extensible sans diluer le chantier present.
+
+Decision 11. Coherence avec les lots precedents
+
+Decision retenue
+Le lot 5 est explicitement aligne avec :
+- le lot 0 sur le role de `tour ouvert`
+- le lot 1 sur la creation d'un domaine `transitions`
+  dans le coeur `match`
+- le lot 2 sur la separation entre metadonnees produit
+  et configuration moteur effective
+- le lot 4 sur le fait que les transitions appartiennent
+  au temps inter-tour
+
+Pourquoi
+Le sous-systeme de transitions doit s'inserer naturellement
+dans le cadre deja valide de la V7.
+
+Effet attendu
+Le lot 5 consolide la coherence globale de l'architecture.
+
+Ce qui est officiellement hors lot 5
+- le changement de sport
+- le changement libre de systeme de score
+- le changement libre de condition de victoire
+- les transitions pendant une phase d'attaque
+- les transitions pendant une phase de defense
+- un cadre ultra-generique pour toutes les transformations futures
+
+Definition de succes du lot 5
+Le lot 5 est reussi si :
+- la reconfiguration sort clairement du `GameEngine`
+- le domaine `match transitions` existe explicitement
+- la portee concrete V7 reste maitrisee autour du roster
+- les transitions sont liees a `tour ouvert`
+- le moteur preserve la continuite de partie
+- l'historique structurel reste lisible
+
+Definition pratique de la sortie de lot
+On peut entamer les lots suivants en sachant deja :
+- quand une transition est autorisee
+- ce que doit recalculer une transition
+- comment une transition peut modifier la structure du match
+- comment elle preserve la partie en cours
+- comment elle doit se raconter dans l'historique
+
+Conclusion
+Le lot 5 valide la sortie definitive de la reconfiguration
+hors du centre moteur V6.
+La V7 dispose maintenant d'un vrai domaine de transitions,
+pret a accueillir les operations de roster
+et a servir de base aux evolutions futures.

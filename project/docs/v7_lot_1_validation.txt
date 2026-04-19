@@ -1,0 +1,268 @@
+SkateGame Engine Prototype - Validation Lot 1 V7
+
+But du document
+Ce document fige les decisions d'architecture cible et d'arborescence
+de la V7 avant migration du code.
+
+Statut du lot
+Lot 1 considere comme valide.
+
+Rappel du role du lot 1
+Le lot 1 ne cherche pas encore a migrer le moteur.
+Il cherche a figer :
+- le nouveau centre de gravite du projet
+- les grandes frontieres de responsabilites
+- la place des nouvelles couches V7
+- la disparition des anciennes abstractions devenues trop centrales
+
+Conclusion generale
+La V7 n'est pas une simple evolution du centre `engine/`.
+La V7 assume un nouveau centre moteur organise autour de :
+- `config/`
+- `match/`
+- `application/`
+
+Le coeur metier du match sort officiellement d'un centre technique unique
+et devient visible dans l'arborescence elle-meme.
+
+Decision 1. `engine/` cesse d'etre le centre du moteur
+
+Decision retenue
+`engine/` ne reste pas le centre de la V7.
+Le centre du projet V7 est deplace vers un espace metier explicite,
+principalement `match/`, complete par `application/`.
+
+Pourquoi
+Conserver `engine/` comme centre principal reviendrait a reconstruire
+la V6 sous une autre forme.
+
+Effet attendu
+La V7 gagne un centre moteur plus conforme a son nouveau langage metier.
+
+Decision 2. `modes/` a vocation a disparaitre
+
+Decision retenue
+`modes/` n'est plus une abstraction forte de la V7
+et a vocation a disparaitre.
+
+Pourquoi
+Le poids central des modes dans la V6 freine la generalisation
+vers des structures de match et des familles de regles plus explicites.
+
+Decision complementaire retenue
+Si c'est proprement tenable, `modes/` peut disparaitre des la V7.
+
+Point important
+La disparition de `modes/` ne doit pas diluer sa logique.
+Elle doit la redistribuer plus proprement entre :
+- structure
+- flow
+- configuration
+- orchestration si necessaire
+
+Effet attendu
+La V7 cesse de faire porter l'architecture interne par le concept de mode moteur.
+
+Decision 3. Separation forte `config / match / application`
+
+Decision retenue
+La V7 valide une separation forte entre :
+- `config`
+- `match`
+- `application`
+
+Pourquoi
+Le moteur a besoin d'une arborescence qui distingue clairement :
+- ce qui decrit
+- ce qui execute
+- ce qui orchestre
+
+Effet attendu
+L'architecture devient plus lisible et plus stable face a la croissance du moteur.
+
+Decision 4. Statut de `config/`
+
+Decision retenue
+`config/` reste une couche dediee et gagne en importance.
+
+Role retenu
+`config/` porte les objets de configuration du match V7.
+
+Pourquoi
+La V7 veut separer clairement configuration et runtime.
+
+Effet attendu
+Le moteur dispose d'une porte d'entree declarative forte,
+sans faire de `config/` une simple annexe de l'ancien moteur.
+
+Decision 5. Statut de `match/`
+
+Decision retenue
+`match/` devient le coeur metier runtime explicite du projet.
+
+Role retenu
+`match/` porte la logique metier propre au match,
+et non une simple couche technique de support.
+
+Pourquoi
+Le centre de gravite de la V7 est maintenant la logique de structure,
+de flow, de familles de regles et de transitions.
+
+Effet attendu
+La V7 gagne un vrai centre metier lisible dans le code.
+
+Decision 6. Statut de `application/`
+
+Decision retenue
+`application/` devient la couche de coordination de haut niveau.
+
+Role retenu
+`application/` porte :
+- les cas d'usage
+- la coordination entre interfaces, persistence et coeur moteur
+- les facades de session ou de commande si necessaire
+
+Limite explicitement retenue
+`application/` ne doit pas redevenir un gros centre de logique metier.
+
+Pourquoi
+Sans cette limite, un nouveau "super moteur" reapparaitrait
+dans une autre couche.
+
+Effet attendu
+La V7 garde une orchestration claire,
+sans reconstruire le poids central de l'ancien `GameEngine`.
+
+Decision 7. Domaines runtime visibles
+
+Decision retenue
+Les domaines runtime V7 doivent etre visibles dans l'arborescence.
+
+Domaines retenus
+- `structure`
+- `flow`
+- `attack`
+- `defense`
+- `scoring`
+- `victory`
+- `transitions`
+
+Pourquoi
+La V7 veut rendre visibles les vrais domaines moteur,
+et non les cacher dans une arborescence purement technique.
+
+Effet attendu
+Le projet refletera plus directement la grammaire metier de la V7.
+
+Decision 8. Statut de `core/`
+
+Decision retenue
+`core/` est conserve,
+mais avec un role plus strict.
+
+Role retenu
+`core/` ne garde que les elements vraiment transverses et fondamentaux.
+
+Exemples vises
+- types communs
+- exceptions
+- evenements
+- objets stables transverses
+
+Pourquoi
+Sans cette discipline, `core/` risque de devenir un fourre-tout pendant la migration.
+
+Effet attendu
+`core/` reste utile sans absorber de nouveaux domaines moteur par habitude.
+
+Decision 9. Couches conservees
+
+Decision retenue
+`validation/`, `persistence/`, `interfaces/` et `tests/` restent
+des couches dediees dans la V7.
+
+Pourquoi
+Ces separations ont encore du sens
+et peuvent survivre a la refonte centrale.
+
+Condition explicite
+Elles doivent s'aligner sur le nouveau modele V7
+et non tenter de prolonger l'ancien centre moteur.
+
+Effet attendu
+La V7 garde les bonnes separations de la V6
+tout en changeant reellement de centre.
+
+Decision 10. Arborescence cible conceptuelle
+
+Decision retenue
+L'arborescence cible conceptuelle de la V7 est validee.
+
+Cible retenue
+- `project/config`
+- `project/core`
+- `project/match`
+- `project/application`
+- `project/persistence`
+- `project/validation`
+- `project/interfaces`
+- `project/tests`
+
+Et a l'interieur de `match`
+la cible conceptuelle validee est :
+- `structure`
+- `flow`
+- `attack`
+- `defense`
+- `scoring`
+- `victory`
+- `transitions`
+
+Pourquoi
+La V7 doit assumer une image cible claire avant migration.
+
+Effet attendu
+Les deplacements a venir pourront etre juges sur leur coherence,
+et non au cas par cas.
+
+Decision 11. Migration forte acceptee
+
+Decision retenue
+La V7 accepte une migration forte si elle reste lisible et sure.
+
+Pourquoi
+Garder trop longtemps des centres herites comme `engine/` ou `modes/`
+affaiblirait la refonte et prolongerait une architecture hybride.
+
+Effet attendu
+La V7 peut aller au bout de sa logique structurelle,
+au lieu de la repousser a plus tard.
+
+Ce qui est officiellement hors lot 1
+- le detail exact des classes et objets runtime
+- la migration effective de tous les fichiers
+- la disparition effective de `modes/`
+- le decoupage fin a l'interieur de chaque domaine
+- l'implementation des nouvelles configurations
+- l'implementation du nouveau flow
+
+Definition de succes du lot 1
+Le lot 1 est reussi si :
+- le nouveau centre du projet est fige
+- les couches principales de la V7 sont claires
+- les domaines runtime sont visibles conceptuellement
+- la future disparition de `modes/` est assumee
+- la V7 ne peut plus retomber par inertie sur `engine/` comme centre moteur
+
+Definition pratique de la sortie de lot
+On peut entamer le lot 2 en sachant deja :
+- ou doivent vivre les nouvelles configurations
+- ou doit vivre la logique runtime du match
+- ou doit vivre l'orchestration
+- quelles couches restent pertinentes
+- quels anciens centres ne doivent plus structurer la suite
+
+Conclusion
+Le lot 1 valide la V7 comme une vraie refonte d'architecture.
+Le projet peut maintenant entrer dans la construction du nouveau modele
+sans ambiguite sur sa forme cible.

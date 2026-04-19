@@ -4,14 +4,12 @@ import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
 from tkinter import font as tkfont
 
-from config.match_parameters import MatchParameters
-from config.preset_registry import PresetRegistry
-from config.rule_set_config import RuleSetConfig
+from application.game_setup_service import GameSetupService
 from controllers.game_controller import GameController
 from core.events import Event
 from core.history import HistoryTurn
 from core.state import GameState
-from core.types import DefenseResolutionStatus, EventName, Phase
+from core.types import AttackResolutionStatus, DefenseResolutionStatus, EventName, Phase, TurnPhase
 from core.exceptions import InvalidActionError, InvalidStateError
 
 
@@ -24,13 +22,14 @@ class GUIApp:
         self.root.minsize(680, 500)
 
         self.controller: GameController | None = None
-        self.preset_registry = PresetRegistry()
+        self.setup_service = GameSetupService()
 
         self.setup_mode_var = tk.StringVar(value="preset")
         self.player_count_var = tk.IntVar(value=2)
         self.player_name_vars: list[tk.StringVar] = []
         self.preset_var = tk.StringVar(value="classic_skate")
         self.custom_word_var = tk.StringVar(value="SKATE")
+        self.custom_attack_attempts_var = tk.IntVar(value=1)
         self.custom_defense_attempts_var = tk.IntVar(value=1)
         self.trick_var = tk.StringVar()
         self.status_var = tk.StringVar(value="Configure the game to begin.")
@@ -82,6 +81,7 @@ class GUIApp:
         self.preset_combo: ttk.Combobox | None = None
         self.player_count_spinbox: ttk.Spinbox | None = None
         self.word_entry: ttk.Entry | None = None
+        self.attack_attempts_spinbox: ttk.Spinbox | None = None
         self.attempts_spinbox: ttk.Spinbox | None = None
 
         self._build_setup_view()
@@ -207,8 +207,21 @@ class GUIApp:
         )
         self.word_entry.grid(row=9, column=0, columnspan=2, sticky="ew", pady=(0, 18))
 
-        ttk.Label(form, text="Defense attempts:", font=self.body_font).grid(
+        ttk.Label(form, text="Attack attempts:", font=self.body_font).grid(
             row=10, column=0, sticky="w", pady=(0, 6)
+        )
+
+        self.attack_attempts_spinbox = ttk.Spinbox(
+            form,
+            from_=1,
+            to=3,
+            textvariable=self.custom_attack_attempts_var,
+            width=6,
+        )
+        self.attack_attempts_spinbox.grid(row=11, column=0, sticky="w", pady=(0, 18))
+
+        ttk.Label(form, text="Defense attempts:", font=self.body_font).grid(
+            row=12, column=0, sticky="w", pady=(0, 6)
         )
 
         self.attempts_spinbox = ttk.Spinbox(
@@ -218,12 +231,13 @@ class GUIApp:
             textvariable=self.custom_defense_attempts_var,
             width=6,
         )
-        self.attempts_spinbox.grid(row=11, column=0, sticky="w", pady=(0, 24))
+        self.attempts_spinbox.grid(row=13, column=0, sticky="w", pady=(0, 24))
 
         def refresh_setup_controls() -> None:
             assert self.preset_combo is not None
             assert self.player_count_spinbox is not None
             assert self.word_entry is not None
+            assert self.attack_attempts_spinbox is not None
             assert self.attempts_spinbox is not None
 
             use_preset = self.setup_mode_var.get() == "preset"
@@ -235,11 +249,12 @@ class GUIApp:
             self.preset_combo.config(values=preset_names)
 
             if use_preset:
-                preset = self.preset_registry.get(self.preset_var.get())
+                preset = self.setup_service.get_preset(self.preset_var.get())
                 self.custom_word_var.set(preset.rule_set.letters_word)
+                self.custom_attack_attempts_var.set(preset.rule_set.attack_attempts)
                 self.custom_defense_attempts_var.set(preset.rule_set.defense_attempts)
 
-                if preset.mode_name == "one_vs_one":
+                if preset.structure_name == "one_vs_one":
                     self.player_count_var.set(2)
                     self.player_count_spinbox.config(state="disabled")
                 else:
@@ -249,6 +264,7 @@ class GUIApp:
 
                 self.preset_combo.config(state="readonly")
                 self.word_entry.config(state="readonly")
+                self.attack_attempts_spinbox.config(state="disabled")
                 self.attempts_spinbox.config(state="disabled")
             else:
                 if self.player_count_var.get() < 2:
@@ -256,6 +272,7 @@ class GUIApp:
                 self.preset_combo.config(state="disabled")
                 self.player_count_spinbox.config(state="normal")
                 self.word_entry.config(state="normal")
+                self.attack_attempts_spinbox.config(state="normal")
                 self.attempts_spinbox.config(state="normal")
 
             self._rebuild_player_inputs()
@@ -264,7 +281,7 @@ class GUIApp:
         self.preset_var.trace_add("write", lambda *_args: refresh_setup_controls())
 
         buttons = ttk.Frame(form)
-        buttons.grid(row=12, column=0, columnspan=2, pady=(6, 0))
+        buttons.grid(row=14, column=0, columnspan=2, pady=(6, 0))
 
         ttk.Button(
             buttons,
@@ -515,15 +532,7 @@ class GUIApp:
     # =========================
 
     def _load_game_into_controller(self, selected_path: Path) -> None:
-        placeholder_match_parameters = MatchParameters(
-            player_ids=["Player 1", "Player 2"],
-            mode_name="one_vs_one",
-            rule_set=RuleSetConfig(),
-        )
-
-        controller = GameController(placeholder_match_parameters)
-        controller.load_game(str(selected_path))
-        self.controller = controller
+        self.controller = self.setup_service.load_controller(str(selected_path))
         self.trick_var.set("")
 
     def _load_game_from_setup(self) -> None:
@@ -712,31 +721,18 @@ class GUIApp:
 
         try:
             if self.setup_mode_var.get() == "preset":
-                preset = self.preset_registry.get(self.preset_var.get())
-                match_parameters = MatchParameters(
-                    player_ids=player_ids,
-                    mode_name=preset.mode_name,
-                    rule_set=RuleSetConfig(
-                        letters_word=preset.rule_set.letters_word,
-                        elimination_enabled=preset.rule_set.elimination_enabled,
-                        defense_attempts=preset.rule_set.defense_attempts,
-                    ),
-                    policies=preset.policies,
-                    preset_name=preset.name,
+                self.controller = self.setup_service.create_started_controller_from_preset(
+                    self.preset_var.get(),
+                    player_ids,
                 )
             else:
-                match_parameters = MatchParameters(
+                self.controller = self.setup_service.create_started_controller_from_custom_setup(
                     player_ids=player_ids,
-                    mode_name="one_vs_one" if len(player_ids) == 2 else "battle",
-                    rule_set=RuleSetConfig(
-                        letters_word=self.custom_word_var.get().strip().upper(),
-                        elimination_enabled=True,
-                        defense_attempts=int(self.custom_defense_attempts_var.get()),
-                    ),
+                    letters_word=self.custom_word_var.get(),
+                    attack_attempts=int(self.custom_attack_attempts_var.get()),
+                    defense_attempts=int(self.custom_defense_attempts_var.get()),
+                    elimination_enabled=True,
                 )
-
-            self.controller = GameController(match_parameters)
-            self.controller.start_game()
         except ValueError as error:
             messagebox.showerror("Invalid setup", str(error))
             return
@@ -750,7 +746,7 @@ class GUIApp:
         self._refresh_game_view()
 
     def _get_official_preset_names(self) -> list[str]:
-        return self.preset_registry.list_preset_names()
+        return self.setup_service.list_preset_names()
 
     def _confirm_trick(self) -> None:
         if self.controller is None:
@@ -795,18 +791,31 @@ class GUIApp:
             state_before = self.controller.get_state()
             events_before = len(state_before.history.events)
 
-            resolution_status = self.controller.resolve_defense(success)
+            if state_before.turn_phase == TurnPhase.ATTACK:
+                resolution_status = self.controller.resolve_attack(success)
+            else:
+                resolution_status = self.controller.resolve_defense(success)
+
             state_after = self.controller.get_state()
             message = self._format_new_events(state_after, events_before)
 
-            if resolution_status == DefenseResolutionStatus.DEFENSE_CONTINUES:
-                self.status_var.set(message or "Defense continues.")
-            elif resolution_status == DefenseResolutionStatus.TURN_FINISHED:
-                self.trick_var.set("")
-                self.status_var.set(message or "Turn finished.")
-            elif resolution_status == DefenseResolutionStatus.GAME_FINISHED:
-                self.trick_var.set("")
-                self.status_var.set(message or "Game finished.")
+            if isinstance(resolution_status, AttackResolutionStatus):
+                if resolution_status == AttackResolutionStatus.ATTACK_CONTINUES:
+                    self.status_var.set(message or "Attack continues.")
+                elif resolution_status == AttackResolutionStatus.DEFENSE_READY:
+                    self.status_var.set(message or "Attack succeeded. Defense begins.")
+                elif resolution_status == AttackResolutionStatus.TURN_FAILED:
+                    self.trick_var.set("")
+                    self.status_var.set(message or "Turn failed.")
+            else:
+                if resolution_status == DefenseResolutionStatus.DEFENSE_CONTINUES:
+                    self.status_var.set(message or "Defense continues.")
+                elif resolution_status == DefenseResolutionStatus.TURN_FINISHED:
+                    self.trick_var.set("")
+                    self.status_var.set(message or "Turn finished.")
+                elif resolution_status == DefenseResolutionStatus.GAME_FINISHED:
+                    self.trick_var.set("")
+                    self.status_var.set(message or "Game finished.")
         except InvalidActionError as error:
             self.status_var.set(f"Invalid action: {error}")
 
@@ -835,8 +844,13 @@ class GUIApp:
             return
 
         try:
+            state_before = self.controller.get_state()
+            events_before = len(state_before.history.events)
             self.controller.add_player_between_turns(player_name)
-            self.status_var.set(f"{player_name} joined the game.")
+            self.status_var.set(
+                self._format_new_events(self.controller.get_state(), events_before)
+                or f"{player_name} joined the game."
+            )
         except InvalidActionError as error:
             self.status_var.set(f"Invalid action: {error}")
 
@@ -861,8 +875,13 @@ class GUIApp:
             return
 
         try:
+            state_before = self.controller.get_state()
+            events_before = len(state_before.history.events)
             self.controller.remove_player_between_turns(player_name)
-            self.status_var.set(f"{player_name} left the game.")
+            self.status_var.set(
+                self._format_new_events(self.controller.get_state(), events_before)
+                or f"{player_name} left the game."
+            )
         except InvalidActionError as error:
             self.status_var.set(f"Invalid action: {error}")
 
@@ -922,6 +941,18 @@ class GUIApp:
             self.attempts_label.config(text="")
             self._set_trick_controls_enabled(True)
             self._set_defense_controls_enabled(False)
+        elif state.turn_phase == TurnPhase.ATTACK:
+            pending_defenders = self._format_active_defender_names(state)
+            self.phase_title_label.config(text=f"{attacker.name} attacks")
+            self.trick_label.config(text=f"Trick: {state.current_trick}")
+            self.phase_description_label.config(
+                text=f"Pending defenders: {pending_defenders}"
+            )
+            self.attempts_label.config(
+                text=f"{attacker.name} has {state.attack_attempts_left} attack attempt(s) left"
+            )
+            self._set_trick_controls_enabled(False)
+            self._set_defense_controls_enabled(True)
         else:
             defender = self._get_current_defender(state)
             defender_name = defender.name if defender is not None else "-"
@@ -1016,7 +1047,9 @@ class GUIApp:
             self.history_tree.delete(item)
 
         for turn in turns:
-            trick_validated = "V" if turn.trick_status == "validated" else "X"
+            trick_validated = turn.attack_trace or (
+                "V" if turn.trick_status == "validated" else "X"
+            )
 
             if not turn.defenses:
                 self.history_tree.insert(
@@ -1117,6 +1150,17 @@ class GUIApp:
             player_name = self._get_player_name(state, payload["player_id"])
             return f"{player_name} landed '{payload['trick']}'."
 
+        if name == EventName.ATTACK_FAILED_ATTEMPT:
+            attacker_name = self._get_player_name(state, payload["attacker_id"])
+            return (
+                f"{attacker_name} missed '{payload['trick']}' "
+                f"({payload['attempts_left']} attack attempt(s) left)."
+            )
+
+        if name == EventName.ATTACK_SUCCEEDED:
+            attacker_name = self._get_player_name(state, payload["attacker_id"])
+            return f"{attacker_name} landed '{payload['trick']}' to set the trick."
+
         if name == EventName.DEFENSE_FAILED_ATTEMPT:
             player_name = self._get_player_name(state, payload["player_id"])
             return (
@@ -1147,7 +1191,65 @@ class GUIApp:
             winner_name = self._get_player_name(state, winner_id)
             return f"Game finished. Winner: {winner_name}"
 
+        if name == EventName.PLAYER_JOINED:
+            player_name = payload.get(
+                "player_name",
+                self._get_player_name(state, payload["player_id"]),
+            )
+            return self._format_transition_event(
+                base_message=f"{player_name} joined the game.",
+                payload=payload,
+            )
+
+        if name == EventName.PLAYER_REMOVED:
+            player_name = payload.get(
+                "player_name",
+                payload["player_id"],
+            )
+            return self._format_transition_event(
+                base_message=f"{player_name} left the game.",
+                payload=payload,
+            )
+
         return ""
+
+    @staticmethod
+    def _get_transition_structure_name(
+        payload: dict[str, object],
+        primary_key: str,
+        legacy_key: str,
+    ) -> object:
+        return payload.get(primary_key, payload.get(legacy_key))
+
+    def _format_transition_event(
+        self, base_message: str, payload: dict[str, object]
+    ) -> str:
+        message = base_message
+
+        if payload.get("structure_changed"):
+            previous_structure = self._get_transition_structure_name(
+                payload,
+                "previous_structure_name",
+                "previous_mode_name",
+            )
+            next_structure = self._get_transition_structure_name(
+                payload,
+                "structure_name",
+                "mode_name",
+            )
+            if previous_structure and next_structure:
+                message = (
+                    f"{base_message} Structure changed: "
+                    f"{previous_structure} -> {next_structure}."
+                )
+
+        if payload.get("preset_invalidated") or (
+            payload.get("previous_preset_name") is not None
+            and payload.get("preset_name") is None
+        ):
+            return f"{message} Preset cleared."
+
+        return message
 
     def _show_game_over_message(self, state: GameState) -> None:
         active_players = [player for player in state.players if player.is_active]

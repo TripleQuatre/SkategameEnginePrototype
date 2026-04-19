@@ -125,7 +125,7 @@ Lecture
 Ce n'est pas un probleme metier bloquant de la V6.
 C'est plutot un sujet d'hygiene et de reproductibilite.
 
-Fragilite 2. Une partie de la persistence est morte ou incoherente
+Fragilite 2. Une partie de la persistence etait morte ou incoherente
 
 Constat
 `persistence/game_session_repository.py` appelle :
@@ -138,9 +138,12 @@ Impact
 Cette classe plante immediatement si elle est utilisee.
 
 Lecture
-Cela ressemble a un reliquat de chantier.
-Tant que le fichier reste dans le projet,
-il brouille la confiance dans la couche persistence.
+Cela ressemblait a un reliquat de chantier.
+
+Statut
+Nettoye le 2026-04-17 :
+- le fichier mort a ete retire
+- la persistence officielle reste centree sur `GameSaveRepository`
 
 Fragilite 3. La couche `MatchPolicies` reste trop mince pour porter la V7
 

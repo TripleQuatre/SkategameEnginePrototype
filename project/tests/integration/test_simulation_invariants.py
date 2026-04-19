@@ -1,8 +1,8 @@
-import modes.battle as battle_module
+from application.game_session import GameSession as GameEngine
+import match.structure.battle_structure as battle_structure_module
 
 from config.match_parameters import MatchParameters
 from core.types import DefenseResolutionStatus, Phase
-from engine.game_engine import GameEngine
 from validation.state_validator import StateValidator
 
 
@@ -139,11 +139,11 @@ def test_battle_simulation_sequence_keeps_state_valid(monkeypatch) -> None:
     def fixed_shuffle(values: list[int]) -> None:
         values[:] = [2, 0, 1]
 
-    monkeypatch.setattr(battle_module.random, "shuffle", fixed_shuffle)
+    monkeypatch.setattr(battle_structure_module.random, "shuffle", fixed_shuffle)
 
     match_parameters = MatchParameters(
         player_ids=["p1", "p2", "p3"],
-        mode_name="battle",
+        structure_name="battle",
     )
     engine = GameEngine(match_parameters)
 
@@ -170,11 +170,11 @@ def test_battle_eliminated_previous_defender_keeps_state_valid(monkeypatch) -> N
     def fixed_shuffle(values: list[int]) -> None:
         values[:] = [2, 0, 1]
 
-    monkeypatch.setattr(battle_module.random, "shuffle", fixed_shuffle)
+    monkeypatch.setattr(battle_structure_module.random, "shuffle", fixed_shuffle)
 
     match_parameters = MatchParameters(
         player_ids=["p1", "p2", "p3"],
-        mode_name="battle",
+        structure_name="battle",
     )
     engine = GameEngine(match_parameters)
     engine.get_state().rule_set.letters_word = "S"

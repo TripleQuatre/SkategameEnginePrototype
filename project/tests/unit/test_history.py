@@ -9,6 +9,7 @@ def test_build_match_context_from_game_started_event() -> None:
         Event(
             name=EventName.GAME_STARTED,
             payload={
+                "structure_name": "battle",
                 "mode_name": "battle",
                 "preset_name": "battle_standard",
                 "player_names": ["Stan", "Denise", "Alex"],
@@ -24,6 +25,7 @@ def test_build_match_context_from_game_started_event() -> None:
     context = history.build_match_context()
 
     assert context is not None
+    assert context.structure_name == "battle"
     assert context.mode_name == "battle"
     assert context.preset_name == "battle_standard"
     assert context.player_names == ["Stan", "Denise", "Alex"]
@@ -34,12 +36,37 @@ def test_build_match_context_from_game_started_event() -> None:
     assert context.defender_order_policy == "follow_turn_order"
 
 
+def test_build_match_context_accepts_v7_structure_only_payload() -> None:
+    history = History()
+    history.add_event(
+        Event(
+            name=EventName.GAME_STARTED,
+            payload={
+                "structure_name": "battle",
+                "player_names": ["Stan", "Denise", "Alex"],
+                "turn_order": [2, 0, 1],
+                "starting_attacker_name": "Alex",
+            },
+        )
+    )
+
+    context = history.build_match_context()
+
+    assert context is not None
+    assert context.structure_name == "battle"
+    assert context.mode_name == "battle"
+    assert context.player_names == ["Stan", "Denise", "Alex"]
+    assert context.turn_order == [2, 0, 1]
+    assert context.starting_attacker_name == "Alex"
+
+
 def test_build_match_context_is_updated_after_player_join_event() -> None:
     history = History()
     history.add_event(
         Event(
             name=EventName.GAME_STARTED,
             payload={
+                "structure_name": "one_vs_one",
                 "mode_name": "one_vs_one",
                 "preset_name": "classic_skate",
                 "player_names": ["Stan", "Denise"],
@@ -55,6 +82,7 @@ def test_build_match_context_is_updated_after_player_join_event() -> None:
         Event(
             name=EventName.PLAYER_JOINED,
             payload={
+                "structure_name": "battle",
                 "mode_name": "battle",
                 "preset_name": None,
                 "player_names": ["Stan", "Denise", "Alex"],
@@ -66,6 +94,7 @@ def test_build_match_context_is_updated_after_player_join_event() -> None:
     context = history.build_match_context()
 
     assert context is not None
+    assert context.structure_name == "battle"
     assert context.mode_name == "battle"
     assert context.preset_name is None
     assert context.player_names == ["Stan", "Denise", "Alex"]
@@ -78,6 +107,7 @@ def test_build_match_context_is_updated_after_player_removed_event() -> None:
         Event(
             name=EventName.GAME_STARTED,
             payload={
+                "structure_name": "battle",
                 "mode_name": "battle",
                 "preset_name": "battle_standard",
                 "player_names": ["Stan", "Denise", "Alex"],
@@ -93,6 +123,7 @@ def test_build_match_context_is_updated_after_player_removed_event() -> None:
         Event(
             name=EventName.PLAYER_REMOVED,
             payload={
+                "structure_name": "one_vs_one",
                 "mode_name": "one_vs_one",
                 "preset_name": None,
                 "player_names": ["Stan", "Alex"],
@@ -104,6 +135,7 @@ def test_build_match_context_is_updated_after_player_removed_event() -> None:
     context = history.build_match_context()
 
     assert context is not None
+    assert context.structure_name == "one_vs_one"
     assert context.mode_name == "one_vs_one"
     assert context.preset_name is None
     assert context.player_names == ["Stan", "Alex"]
@@ -167,6 +199,7 @@ def test_build_turns_from_completed_one_vs_one_turn() -> None:
     assert turns[0].attacker_name == "Stan"
     assert turns[0].trick_name == "Soul"
     assert turns[0].trick_status == "validated"
+    assert turns[0].attack_trace == "V"
     assert len(turns[0].defenses) == 1
     assert turns[0].defenses[0].defender_name == "Denise"
     assert turns[0].defenses[0].attempts_trace == "XXX"
@@ -194,6 +227,7 @@ def test_build_turns_from_failed_turn() -> None:
     assert turns[0].attacker_name == "Stan"
     assert turns[0].trick_name == "Soul"
     assert turns[0].trick_status == "failed"
+    assert turns[0].attack_trace == "X"
     assert turns[0].defenses == []
 
 
@@ -253,6 +287,7 @@ def test_build_turns_from_battle_turn_with_multiple_defenders() -> None:
     assert turns[0].attacker_name == "Stan"
     assert turns[0].trick_name == "Kickflip"
     assert turns[0].trick_status == "validated"
+    assert turns[0].attack_trace == "V"
     assert len(turns[0].defenses) == 2
 
     assert turns[0].defenses[0].defender_name == "Denise"
@@ -309,10 +344,12 @@ def test_build_rows_keeps_flat_compatibility() -> None:
 
     assert len(rows) == 2
     assert rows[0].attacker_name == "Stan"
+    assert rows[0].trick_validated == "V"
     assert rows[0].defender_name == "Denise"
     assert rows[0].defense_result == "V"
 
     assert rows[1].attacker_name == "Stan"
+    assert rows[1].trick_validated == "V"
     assert rows[1].defender_name == "Alex"
     assert rows[1].defense_result == "X"
     assert rows[1].letters == "S"
@@ -357,3 +394,114 @@ def test_build_turns_prefers_display_names_over_ids() -> None:
     assert len(turns) == 1
     assert turns[0].attacker_name == "Stan"
     assert turns[0].defenses[0].defender_name == "Denise"
+    assert turns[0].attack_trace == "V"
+
+
+def test_build_turns_keeps_attack_trace_before_defense() -> None:
+    history = History()
+    history.add_event(
+        Event(
+            name=EventName.TURN_STARTED,
+            payload={
+                "attacker_id": "Stan",
+                "trick": "Soul",
+                "defender_ids": ["Denise"],
+            },
+        )
+    )
+    history.add_event(
+        Event(
+            name=EventName.ATTACK_FAILED_ATTEMPT,
+            payload={
+                "attacker_id": "Stan",
+                "trick": "Soul",
+                "attempts_left": 1,
+            },
+        )
+    )
+    history.add_event(
+        Event(
+            name=EventName.ATTACK_SUCCEEDED,
+            payload={
+                "attacker_id": "Stan",
+                "trick": "Soul",
+            },
+        )
+    )
+    history.add_event(
+        Event(
+            name=EventName.DEFENSE_SUCCEEDED,
+            payload={
+                "player_id": "Denise",
+                "trick": "Soul",
+            },
+        )
+    )
+    history.add_event(
+        Event(
+            name=EventName.TURN_ENDED,
+            payload={"next_attacker_id": "Denise"},
+        )
+    )
+
+    turns = history.build_turns()
+    rows = history.build_rows()
+
+    assert len(turns) == 1
+    assert turns[0].trick_status == "validated"
+    assert turns[0].attack_trace == "XV"
+    assert len(rows) == 1
+    assert rows[0].trick_validated == "XV"
+
+
+def test_build_turns_does_not_duplicate_started_turn_when_attack_fails() -> None:
+    history = History()
+    history.add_event(
+        Event(
+            name=EventName.TURN_STARTED,
+            payload={
+                "attacker_id": "Stan",
+                "trick": "Soul",
+                "defender_ids": ["Denise"],
+            },
+        )
+    )
+    history.add_event(
+        Event(
+            name=EventName.ATTACK_FAILED_ATTEMPT,
+            payload={
+                "attacker_id": "Stan",
+                "trick": "Soul",
+                "attempts_left": 1,
+            },
+        )
+    )
+    history.add_event(
+        Event(
+            name=EventName.ATTACK_FAILED_ATTEMPT,
+            payload={
+                "attacker_id": "Stan",
+                "trick": "Soul",
+                "attempts_left": 0,
+            },
+        )
+    )
+    history.add_event(
+        Event(
+            name=EventName.TURN_FAILED,
+            payload={
+                "attacker_id": "Stan",
+                "trick": "Soul",
+                "next_attacker_id": "Denise",
+            },
+        )
+    )
+
+    turns = history.build_turns()
+    rows = history.build_rows()
+
+    assert len(turns) == 1
+    assert turns[0].trick_status == "failed"
+    assert turns[0].attack_trace == "XX"
+    assert len(rows) == 1
+    assert rows[0].trick_validated == "XX"

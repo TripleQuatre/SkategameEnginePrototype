@@ -1,8 +1,8 @@
+from application.game_session import GameSession as GameEngine
 from config.match_parameters import MatchParameters
 from config.rule_set_config import RuleSetConfig
 from controllers.game_controller import GameController
 from core.types import DefenseResolutionStatus, EventName, Phase
-from engine.game_engine import GameEngine
 
 
 def test_game_engine_can_undo_multiple_steps_back_to_setup() -> None:
@@ -170,7 +170,7 @@ def test_game_engine_undo_after_player_join_restores_one_vs_one_configuration() 
     assert engine.undo() is True
 
     state = engine.get_state()
-    assert engine.match_parameters.mode_name == "one_vs_one"
+    assert engine.structure_name == "one_vs_one"
     assert engine.match_parameters.preset_name == "classic_skate"
     assert engine.match_parameters.player_ids == ["p1", "p2"]
     assert [player.id for player in state.players] == ["p1", "p2"]
@@ -183,7 +183,7 @@ def test_game_engine_undo_after_player_removal_restores_previous_battle_configur
     engine = GameEngine(
         MatchParameters(
             player_ids=["p1", "p2", "p3"],
-            mode_name="battle",
+            structure_name="battle",
         )
     )
 
@@ -193,7 +193,7 @@ def test_game_engine_undo_after_player_removal_restores_previous_battle_configur
     assert engine.undo() is True
 
     state = engine.get_state()
-    assert engine.match_parameters.mode_name == "battle"
+    assert engine.structure_name == "battle"
     assert engine.match_parameters.player_ids == ["p1", "p2", "p3"]
     assert [player.id for player in state.players] == ["p1", "p2", "p3"]
     assert state.history.events[-1].name == EventName.GAME_STARTED
@@ -218,7 +218,7 @@ def test_game_engine_undo_can_walk_back_join_then_remove_sequence() -> None:
 
     assert engine.undo() is True
     state = engine.get_state()
-    assert engine.match_parameters.mode_name == "battle"
+    assert engine.structure_name == "battle"
     assert engine.match_parameters.preset_name is None
     assert engine.match_parameters.player_ids == ["p1", "p2", "p3"]
     assert [player.id for player in state.players] == ["p1", "p2", "p3"]
@@ -227,7 +227,7 @@ def test_game_engine_undo_can_walk_back_join_then_remove_sequence() -> None:
 
     assert engine.undo() is True
     state = engine.get_state()
-    assert engine.match_parameters.mode_name == "one_vs_one"
+    assert engine.structure_name == "one_vs_one"
     assert engine.match_parameters.preset_name == "classic_skate"
     assert engine.match_parameters.player_ids == ["p1", "p2"]
     assert [player.id for player in state.players] == ["p1", "p2"]

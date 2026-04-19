@@ -1,0 +1,8 @@
+.pytest_cache/
+project/.pytest_cache/
+project/local_tmp/
+project/tmp_pytest/
+project/tmp_test/
+project/saves/
+**/__pycache__/
+*.pyc

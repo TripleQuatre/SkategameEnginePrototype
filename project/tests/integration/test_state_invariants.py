@@ -1,8 +1,8 @@
-import modes.battle as battle_module
+from application.game_session import GameSession as GameEngine
+import match.structure.battle_structure as battle_structure_module
 
 from config.match_parameters import MatchParameters
 from core.types import DefenseResolutionStatus, EventName, Phase
-from engine.game_engine import GameEngine
 from validation.state_validator import StateValidator
 
 
@@ -151,11 +151,11 @@ def test_battle_start_game_leaves_engine_in_open_turn_state(monkeypatch) -> None
     def fixed_shuffle(values: list[int]) -> None:
         values[:] = [1, 2, 0]
 
-    monkeypatch.setattr(battle_module.random, "shuffle", fixed_shuffle)
+    monkeypatch.setattr(battle_structure_module.random, "shuffle", fixed_shuffle)
 
     match_parameters = MatchParameters(
         player_ids=["p1", "p2", "p3"],
-        mode_name="battle",
+        structure_name="battle",
     )
     engine = GameEngine(match_parameters)
 

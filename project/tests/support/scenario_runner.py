@@ -3,22 +3,25 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
-import modes.battle as battle_module
+import match.structure.battle_structure as battle_structure_module
 
-from config.match_parameters import MatchParameters
+from config.match_setup import MatchSetup
 from config.preset_registry import PresetRegistry
-from config.rule_set_config import RuleSetConfig
+from config.setup_translator import SetupTranslator
 from controllers.game_controller import GameController
 from core.state import GameState
-from core.types import DefenseResolutionStatus
+from core.types import AttackResolutionStatus, DefenseResolutionStatus
 
 
 @dataclass
 class ScenarioStep:
     action: str
     trick: str | None = None
+    player_id: str | None = None
     success: bool | None = None
+    attack_attempts: int | None = None
     expected_status: DefenseResolutionStatus | None = None
+    expected_attack_status: AttackResolutionStatus | None = None
     expected_success: bool | None = None
     save_key: str | None = None
 
@@ -27,11 +30,17 @@ class ScenarioStep:
 class ScenarioDefinition:
     player_ids: list[str]
     preset_name: str | None = None
+    structure_name: str | None = None
     mode_name: str | None = None
     letters_word: str | None = None
+    attack_attempts: int | None = None
     defense_attempts: int | None = None
     fixed_turn_order: list[int] | None = None
     steps: list[ScenarioStep] = field(default_factory=list)
+
+    @property
+    def effective_structure_name(self) -> str | None:
+        return self.structure_name or self.mode_name
 
 
 @dataclass
@@ -45,7 +54,9 @@ class ScenarioResult:
 class ScenarioRunner:
     def __init__(self, base_dir: Path) -> None:
         self.base_dir = base_dir
+        self.base_dir.mkdir(parents=True, exist_ok=True)
         self.preset_registry = PresetRegistry()
+        self.setup_translator = SetupTranslator()
 
     def run(self, definition: ScenarioDefinition) -> ScenarioResult:
         save_paths: dict[str, Path] = {}
@@ -68,35 +79,32 @@ class ScenarioRunner:
 
     def _create_controller(self, definition: ScenarioDefinition) -> GameController:
         if definition.preset_name is not None:
-            preset = self.preset_registry.get(definition.preset_name)
-            match_parameters = MatchParameters(
-                player_ids=definition.player_ids,
-                mode_name=preset.mode_name,
-                rule_set=RuleSetConfig(
-                    letters_word=definition.letters_word or preset.rule_set.letters_word,
-                    elimination_enabled=preset.rule_set.elimination_enabled,
-                    defense_attempts=definition.defense_attempts
-                    or preset.rule_set.defense_attempts,
-                ),
-                policies=preset.policies,
-                preset_name=preset.name,
+            setup = self.preset_registry.create_match_setup(
+                definition.preset_name,
+                definition.player_ids,
             )
-            return GameController(match_parameters)
+            if definition.letters_word is not None:
+                setup.letters_word = definition.letters_word
+            if definition.attack_attempts is not None:
+                setup.attack_attempts = definition.attack_attempts
+            if definition.defense_attempts is not None:
+                setup.defense_attempts = definition.defense_attempts
+            return GameController(self.setup_translator.to_match_parameters(setup))
 
-        mode_name = definition.mode_name
-        if mode_name is None:
-            mode_name = "one_vs_one" if len(definition.player_ids) == 2 else "battle"
+        structure_name = definition.effective_structure_name
+        if structure_name is None:
+            structure_name = (
+                "one_vs_one" if len(definition.player_ids) == 2 else "battle"
+            )
 
-        match_parameters = MatchParameters(
+        setup = MatchSetup(
             player_ids=definition.player_ids,
-            mode_name=mode_name,
-            rule_set=RuleSetConfig(
-                letters_word=definition.letters_word or "SKATE",
-                defense_attempts=definition.defense_attempts or 1,
-            ),
+            structure_name=structure_name,
+            letters_word=definition.letters_word or "SKATE",
+            attack_attempts=definition.attack_attempts or 1,
+            defense_attempts=definition.defense_attempts or 1,
         )
-
-        return GameController(match_parameters)
+        return GameController(self.setup_translator.to_match_parameters(setup))
 
     def _apply_step(
         self,
@@ -118,10 +126,30 @@ class ScenarioRunner:
                 assert result == step.expected_status
             return result
 
+        if step.action == "resolve_attack":
+            if step.success is None:
+                raise ValueError("resolve_attack requires a success value.")
+            result = controller.resolve_attack(step.success)
+            if step.expected_attack_status is not None:
+                assert result == step.expected_attack_status
+            return result
+
         if step.action == "cancel_turn":
             if step.trick is None:
                 raise ValueError("cancel_turn requires a trick.")
             controller.cancel_turn(step.trick)
+            return None
+
+        if step.action == "add_player":
+            if step.player_id is None:
+                raise ValueError("add_player requires a player_id.")
+            controller.add_player_between_turns(step.player_id)
+            return None
+
+        if step.action == "remove_player":
+            if step.player_id is None:
+                raise ValueError("remove_player requires a player_id.")
+            controller.remove_player_between_turns(step.player_id)
             return None
 
         if step.action == "undo":
@@ -156,7 +184,7 @@ class ScenarioRunner:
         def fixed_shuffle(values: list[int]) -> None:
             values[:] = list(fixed_turn_order)
 
-        return patch.object(battle_module.random, "shuffle", fixed_shuffle)
+        return patch.object(battle_structure_module.random, "shuffle", fixed_shuffle)
 
 
 class _NullContext:

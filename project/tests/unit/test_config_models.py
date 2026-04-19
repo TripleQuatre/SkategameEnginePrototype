@@ -12,6 +12,7 @@ def test_match_parameters_include_v6_configuration_fields() -> None:
     match_parameters = MatchParameters(player_ids=["p1", "p2"])
 
     assert match_parameters.mode_name == "one_vs_one"
+    assert match_parameters.structure_name == "one_vs_one"
     assert match_parameters.policies.initial_turn_order == (
         InitialTurnOrderPolicy.FIXED_PLAYER_ORDER
     )
@@ -22,6 +23,25 @@ def test_match_parameters_include_v6_configuration_fields() -> None:
         DefenderOrderPolicy.FOLLOW_TURN_ORDER
     )
     assert match_parameters.preset_name is None
+
+
+def test_match_parameters_structure_name_alias_tracks_mode_name() -> None:
+    match_parameters = MatchParameters(player_ids=["p1", "p2"])
+
+    match_parameters.structure_name = "battle"
+
+    assert match_parameters.mode_name == "battle"
+    assert match_parameters.structure_name == "battle"
+
+
+def test_match_parameters_accept_structure_name_as_primary_constructor_field() -> None:
+    match_parameters = MatchParameters(
+        player_ids=["p1", "p2", "p3"],
+        structure_name="battle",
+    )
+
+    assert match_parameters.structure_name == "battle"
+    assert match_parameters.mode_name == "battle"
 
 
 def test_battle_match_parameters_keep_v5_randomized_default_policy() -> None:
@@ -60,8 +80,10 @@ def test_preset_registry_returns_expected_preset_configuration() -> None:
 
     preset = registry.get("battle_hardcore")
 
+    assert preset.structure_name == "battle"
     assert preset.mode_name == "battle"
     assert preset.rule_set.letters_word == "SKATE"
+    assert preset.rule_set.attack_attempts == 1
     assert preset.rule_set.defense_attempts == 1
     assert preset.rule_set.elimination_enabled is True
     assert preset.policies.initial_turn_order == InitialTurnOrderPolicy.RANDOMIZED

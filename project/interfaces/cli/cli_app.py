@@ -1,21 +1,25 @@
 from datetime import datetime
 from pathlib import Path
 
-from config.match_parameters import MatchParameters
-from config.preset_registry import PresetRegistry
-from config.rule_set_config import RuleSetConfig
+from application.game_setup_service import GameSetupService
 from controllers.game_controller import GameController
 from core.events import Event
 from core.exceptions import InvalidActionError, InvalidStateError
 from core.history import HistoryTurn
 from core.state import GameState
-from core.types import DefenseResolutionStatus, EventName, Phase
+from core.types import (
+    AttackResolutionStatus,
+    DefenseResolutionStatus,
+    EventName,
+    Phase,
+    TurnPhase,
+)
 
 
 class CLIApp:
     SAVES_DIR = Path(__file__).resolve().parents[2] / "saves"
     def __init__(self) -> None:
-        self.preset_registry = PresetRegistry()
+        self.setup_service = GameSetupService()
 
     def run(self) -> None:
         print("=== SkateGame Engine Prototype CLI ===")
@@ -55,9 +59,35 @@ class CLIApp:
                 if state.current_trick is None:
                     break
 
+                if state.turn_phase == TurnPhase.ATTACK:
+                    attacker = state.players[state.attacker_index]
+                    print(
+                        f"{attacker.name} attacks '{state.current_trick}' "
+                        f"({state.attack_attempts_left} attempt(s) left)"
+                    )
+
+                    success = self._ask_attack_action(controller, attacker.name)
+
+                    if success is None:
+                        print()
+                        break
+
+                    events_before = len(state.history.events)
+                    resolution_status = controller.resolve_attack(success)
+                    self._display_new_events(controller, events_before)
+
+                    if resolution_status == AttackResolutionStatus.ATTACK_CONTINUES:
+                        continue
+
+                    if resolution_status == AttackResolutionStatus.DEFENSE_READY:
+                        continue
+
+                    if resolution_status == AttackResolutionStatus.TURN_FAILED:
+                        print()
+                        break
+
                 if state.current_defender_position >= len(state.defender_indices):
                     break
-
 
                 defender_index = state.defender_indices[state.current_defender_position]
                 defender = state.players[defender_index]
@@ -119,7 +149,7 @@ class CLIApp:
     def _create_preset_game_controller(self) -> GameController:
         preset = self._choose_official_preset()
 
-        if preset.mode_name == "one_vs_one":
+        if preset.structure_name == "one_vs_one":
             player_count = 2
             print("Preset mode: exactly 2 players required.")
         else:
@@ -130,21 +160,10 @@ class CLIApp:
             for index in range(1, player_count + 1)
         ]
 
-        match_parameters = MatchParameters(
-            player_ids=player_ids,
-            mode_name=preset.mode_name,
-            rule_set=RuleSetConfig(
-                letters_word=preset.rule_set.letters_word,
-                elimination_enabled=preset.rule_set.elimination_enabled,
-                defense_attempts=preset.rule_set.defense_attempts,
-            ),
-            policies=preset.policies,
-            preset_name=preset.name,
+        return self.setup_service.create_started_controller_from_preset(
+            preset.name,
+            player_ids,
         )
-
-        controller = GameController(match_parameters)
-        controller.start_game()
-        return controller
 
     def _create_custom_game_controller(self) -> GameController:
         player_count = self._ask_player_count(min_players=2)
@@ -153,38 +172,23 @@ class CLIApp:
             for index in range(1, player_count + 1)
         ]
         word = self._ask_letters_word()
+        attack_attempts = self._ask_attack_attempts()
         defense_attempts = self._ask_defense_attempts()
-        mode_name = "one_vs_one" if player_count == 2 else "battle"
-
-        match_parameters = MatchParameters(
+        return self.setup_service.create_started_controller_from_custom_setup(
             player_ids=player_ids,
-            mode_name=mode_name,
-            rule_set=RuleSetConfig(
-                letters_word=word,
-                elimination_enabled=True,
-                defense_attempts=defense_attempts,
-            ),
+            letters_word=word,
+            attack_attempts=attack_attempts,
+            defense_attempts=defense_attempts,
+            elimination_enabled=True,
         )
-
-        controller = GameController(match_parameters)
-        controller.start_game()
-        return controller
 
     def _load_saved_game_controller(self) -> GameController | None:
         filepath = self._choose_save_file()
         if filepath is None:
             return None
 
-        placeholder_match_parameters = MatchParameters(
-            player_ids=["Player 1", "Player 2"],
-            mode_name="one_vs_one",
-            rule_set=RuleSetConfig(),
-        )
-
-        controller = GameController(placeholder_match_parameters)
-
         try:
-            controller.load_game(str(filepath))
+            controller = self.setup_service.load_controller(str(filepath))
         except (OSError, ValueError, InvalidStateError) as error:
             print(f"Load failed: {error}\n")
             return None
@@ -293,8 +297,11 @@ class CLIApp:
             player_name = self._ask_non_empty_input("New player name: ")
 
             try:
+                state_before = controller.get_state()
+                events_before = len(state_before.history.events)
                 controller.add_player_between_turns(player_name)
-                print(f"{player_name} joined the game.\n")
+                self._display_new_events(controller, events_before)
+                print()
             except InvalidActionError as error:
                 print(f"Action invalide: {error}\n")
             return None
@@ -303,8 +310,11 @@ class CLIApp:
             player_name = self._ask_non_empty_input("Player name to remove: ")
 
             try:
+                state_before = controller.get_state()
+                events_before = len(state_before.history.events)
                 controller.remove_player_between_turns(player_name)
-                print(f"{player_name} left the game.\n")
+                self._display_new_events(controller, events_before)
+                print()
             except InvalidActionError as error:
                 print(f"Action invalide: {error}\n")
             return None
@@ -354,7 +364,20 @@ class CLIApp:
             print(f"Defenders: {defenders}")
             return
 
-        if state.current_defender_position < len(state.defender_indices):
+        if state.turn_phase == TurnPhase.ATTACK:
+            defenders = self._format_active_defenders_for_attacker(state)
+            print(f"\n{attacker.name} attacks")
+            print(f"Pending defenders: {defenders}")
+            print(
+                f"Current trick: {state.current_trick} "
+                f"({state.attack_attempts_left} attack attempt(s) left)"
+            )
+            return
+
+        if (
+            state.turn_phase == TurnPhase.DEFENSE
+            and state.current_defender_position < len(state.defender_indices)
+        ):
             defender_index = state.defender_indices[state.current_defender_position]
             defender = state.players[defender_index]
             remaining = self._format_remaining_defenders(state)
@@ -386,6 +409,17 @@ class CLIApp:
         if name == EventName.DEFENSE_SUCCEEDED:
             player_name = payload.get("player_name", payload["player_id"])
             return f"{player_name} landed '{payload['trick']}'."
+
+        if name == EventName.ATTACK_FAILED_ATTEMPT:
+            attacker_name = payload.get("attacker_name", payload["attacker_id"])
+            return (
+                f"{attacker_name} missed '{payload['trick']}' "
+                f"({payload['attempts_left']} attack attempt(s) left)."
+            )
+
+        if name == EventName.ATTACK_SUCCEEDED:
+            attacker_name = payload.get("attacker_name", payload["attacker_id"])
+            return f"{attacker_name} landed '{payload['trick']}' to set the trick."
 
         if name == EventName.DEFENSE_FAILED_ATTEMPT:
             player_name = payload.get("player_name", payload["player_id"])
@@ -423,13 +457,57 @@ class CLIApp:
 
         if name == EventName.PLAYER_JOINED:
             player_name = payload.get("player_name", payload["player_id"])
-            return f"{player_name} joined the game."
+            return self._format_transition_event(
+                base_message=f"{player_name} joined the game.",
+                payload=payload,
+            )
 
         if name == EventName.PLAYER_REMOVED:
             player_name = payload.get("player_name", payload["player_id"])
-            return f"{player_name} left the game."
+            return self._format_transition_event(
+                base_message=f"{player_name} left the game.",
+                payload=payload,
+            )
 
         return ""
+
+    @staticmethod
+    def _get_transition_structure_name(
+        payload: dict[str, object],
+        primary_key: str,
+        legacy_key: str,
+    ) -> object:
+        return payload.get(primary_key, payload.get(legacy_key))
+
+    def _format_transition_event(
+        self, base_message: str, payload: dict[str, object]
+    ) -> str:
+        message = base_message
+
+        if payload.get("structure_changed"):
+            previous_structure = self._get_transition_structure_name(
+                payload,
+                "previous_structure_name",
+                "previous_mode_name",
+            )
+            next_structure = self._get_transition_structure_name(
+                payload,
+                "structure_name",
+                "mode_name",
+            )
+            if previous_structure and next_structure:
+                message = (
+                    f"{base_message} Structure changed: "
+                    f"{previous_structure} -> {next_structure}."
+                )
+
+        if payload.get("preset_invalidated") or (
+            payload.get("previous_preset_name") is not None
+            and payload.get("preset_name") is None
+        ):
+            return f"{message} Preset cleared."
+
+        return message
 
     def _display_winner(self, state: GameState) -> None:
         active_players = [player for player in state.players if player.is_active]
@@ -552,6 +630,28 @@ class CLIApp:
 
             print("Type y or n.")
 
+    def _ask_attack_action(
+        self, controller: GameController, attacker_name: str
+    ) -> bool | None:
+        while True:
+            value = self._read_input_with_commands(
+                controller,
+                f"Success for {attacker_name}'s attack? (y/n): ",
+            )
+
+            if value is None:
+                return None
+
+            command = value.lower()
+
+            if command in {"y", "yes"}:
+                return True
+
+            if command in {"n", "no"}:
+                return False
+
+            print("Type y or n.")
+
     def _ask_yes_no_with_commands(
         self, controller: GameController, prompt: str
     ) -> bool | None:
@@ -608,10 +708,10 @@ class CLIApp:
             print(f"Player count must be at least {min_players}.")
 
     def _choose_official_preset(self):
-        preset_names = self.preset_registry.list_preset_names()
+        preset_names = self.setup_service.list_preset_names()
         print("Available presets:")
         for index, preset_name in enumerate(preset_names, start=1):
-            preset = self.preset_registry.get(preset_name)
+            preset = self.setup_service.get_preset(preset_name)
             print(f"{index}. {preset.name} - {preset.description}")
 
         while True:
@@ -619,7 +719,7 @@ class CLIApp:
             if value.isdigit():
                 selected_index = int(value)
                 if 1 <= selected_index <= len(preset_names):
-                    return self.preset_registry.get(preset_names[selected_index - 1])
+                    return self.setup_service.get_preset(preset_names[selected_index - 1])
             print("Invalid choice.")
 
     def _get_active_preset_name(self, state: GameState) -> str | None:
@@ -643,6 +743,15 @@ class CLIApp:
                 if 1 <= attempts <= 3:
                     return attempts
             print("Defense attempts must be between 1 and 3.")
+
+    def _ask_attack_attempts(self) -> int:
+        while True:
+            value = input("Attack attempts (1-3): ").strip()
+            if value.isdigit():
+                attempts = int(value)
+                if 1 <= attempts <= 3:
+                    return attempts
+            print("Attack attempts must be between 1 and 3.")
 
     def _ask_yes_no(self, prompt: str) -> bool:
         while True:
@@ -672,7 +781,9 @@ class CLIApp:
             print("-" * 74)
 
             for turn in turns:
-                trick_validated = "V" if turn.trick_status == "validated" else "X"
+                trick_validated = turn.attack_trace or (
+                    "V" if turn.trick_status == "validated" else "X"
+                )
 
                 if not turn.defenses:
                     print(

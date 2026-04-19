@@ -14,21 +14,22 @@ class ConfigValidator:
 
     def validate_match_parameters(self, match_parameters: MatchParameters) -> None:
         player_count = len(match_parameters.player_ids)
+        structure_name = match_parameters.structure_name
 
         if player_count < 2:
             raise InvalidStateError("At least two players are required.")
 
-        if not match_parameters.mode_name:
-            raise InvalidStateError("A mode name is required.")
+        if not structure_name:
+            raise InvalidStateError("A structure name is required.")
 
-        if match_parameters.mode_name not in {"one_vs_one", "battle"}:
-            raise InvalidStateError(f"Unknown mode: {match_parameters.mode_name}")
+        if structure_name not in {"one_vs_one", "battle"}:
+            raise InvalidStateError(f"Unknown structure: {structure_name}")
 
-        if match_parameters.mode_name == "one_vs_one" and player_count != 2:
-            raise InvalidStateError("One vs one mode requires exactly two players.")
+        if structure_name == "one_vs_one" and player_count != 2:
+            raise InvalidStateError("One vs one structure requires exactly two players.")
 
-        if match_parameters.mode_name == "battle" and player_count < 3:
-            raise InvalidStateError("Battle mode requires at least three players.")
+        if structure_name == "battle" and player_count < 3:
+            raise InvalidStateError("Battle structure requires at least three players.")
 
         self._validate_policies(match_parameters)
         self._validate_preset_coherence(match_parameters)
@@ -40,21 +41,25 @@ class ConfigValidator:
         if len(rule_set.letters_word) > 10:
             raise ValueError("letters_word cannot exceed 10 characters")
 
+        if rule_set.attack_attempts < 1:
+            raise ValueError("attack_attempts must be greater than or equal to 1")
+
         if not (1 <= rule_set.defense_attempts <= 3):
             raise ValueError("defense_attempts must be between 1 and 3")
 
     def _validate_policies(self, match_parameters: MatchParameters) -> None:
         policies = match_parameters.policies
+        structure_name = match_parameters.structure_name
 
-        if match_parameters.mode_name == "one_vs_one":
+        if structure_name == "one_vs_one":
             if policies.initial_turn_order != InitialTurnOrderPolicy.FIXED_PLAYER_ORDER:
                 raise InvalidStateError(
-                    "One vs one mode requires a fixed initial turn order policy."
+                    "One vs one structure requires a fixed initial turn order policy."
                 )
 
             if policies.defender_order != DefenderOrderPolicy.FOLLOW_TURN_ORDER:
                 raise InvalidStateError(
-                    "One vs one mode requires defenders to follow turn order."
+                    "One vs one structure requires defenders to follow turn order."
                 )
 
     def _validate_preset_coherence(self, match_parameters: MatchParameters) -> None:
@@ -67,9 +72,9 @@ class ConfigValidator:
 
         preset = self.preset_registry.get(preset_name)
 
-        if match_parameters.mode_name != preset.mode_name:
+        if match_parameters.structure_name != preset.structure_name:
             raise InvalidStateError(
-                "preset_name does not match the configured mode_name."
+                "preset_name does not match the configured structure_name."
             )
 
         if match_parameters.policies != preset.policies:

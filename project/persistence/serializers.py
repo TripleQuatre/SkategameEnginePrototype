@@ -12,7 +12,7 @@ from core.events import Event
 from core.history import History
 from core.player import Player
 from core.state import GameState
-from core.types import EventName, Phase
+from core.types import EventName, Phase, TurnPhase
 from persistence.game_save import GameSave
 
 
@@ -65,6 +65,7 @@ class Serializer:
         return RuleSetConfig(
             letters_word=data["letters_word"],
             elimination_enabled=data["elimination_enabled"],
+            attack_attempts=data.get("attack_attempts", 1),
             defense_attempts=data["defense_attempts"],
         )
 
@@ -88,16 +89,19 @@ class Serializer:
     def serialize_match_parameters(self, match_parameters: MatchParameters) -> dict:
         return {
             "player_ids": match_parameters.player_ids,
-            "mode_name": match_parameters.mode_name,
+            "structure_name": match_parameters.structure_name,
+            "mode_name": match_parameters.structure_name,
             "rule_set": self.serialize_rule_set(match_parameters.rule_set),
             "policies": self.serialize_match_policies(match_parameters.policies),
             "preset_name": match_parameters.preset_name,
         }
 
     def deserialize_match_parameters(self, data: dict) -> MatchParameters:
+        structure_name = data.get("structure_name", data["mode_name"])
+
         return MatchParameters(
             player_ids=data["player_ids"],
-            mode_name=data["mode_name"],
+            structure_name=structure_name,
             rule_set=self.deserialize_rule_set(data["rule_set"]),
             policies=self.deserialize_match_policies(data.get("policies")),
             preset_name=data.get("preset_name"),
@@ -107,8 +111,10 @@ class Serializer:
         return {
             "players": [self.serialize_player(player) for player in state.players],
             "phase": state.phase.value,
+            "turn_phase": state.turn_phase.value,
             "turn_order": state.turn_order,
             "attacker_index": state.attacker_index,
+            "attack_attempts_left": state.attack_attempts_left,
             "defender_indices": state.defender_indices,
             "current_defender_position": state.current_defender_position,
             "defense_attempts_left": state.defense_attempts_left,
@@ -119,11 +125,23 @@ class Serializer:
         }
 
     def deserialize_game_state(self, data: dict) -> GameState:
+        turn_phase_value = data.get("turn_phase")
+        if turn_phase_value is None:
+            turn_phase = (
+                TurnPhase.DEFENSE
+                if data.get("current_trick") is not None
+                else TurnPhase.TURN_OPEN
+            )
+        else:
+            turn_phase = TurnPhase(turn_phase_value)
+
         return GameState(
             players=[self.deserialize_player(player) for player in data["players"]],
             phase=Phase(data["phase"]),
+            turn_phase=turn_phase,
             turn_order=data.get("turn_order", []),
             attacker_index=data["attacker_index"],
+            attack_attempts_left=data.get("attack_attempts_left", 0),
             defender_indices=data["defender_indices"],
             current_defender_position=data["current_defender_position"],
             defense_attempts_left=data["defense_attempts_left"],

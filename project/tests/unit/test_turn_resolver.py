@@ -3,13 +3,13 @@ import pytest
 from core.player import Player
 from core.state import GameState
 from core.types import EventName, Phase
-from engine.turn_resolver import TurnResolver
-from rules.rules_registry import RulesRegistry
+from match.defense.defense_attempt_resolver import DefenseAttemptResolver as TurnResolver
+from match.scoring.letters_scoring import LettersScoring
 
 
 @pytest.fixture
 def resolver() -> TurnResolver:
-    return TurnResolver(RulesRegistry())
+    return TurnResolver(LettersScoring())
 
 
 @pytest.fixture

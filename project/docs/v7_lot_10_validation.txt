@@ -1,0 +1,153 @@
+SkateGame Engine Prototype - Validation Lot 10 V7
+
+But du document
+Ce document fige les decisions du lot 10
+sur la stabilisation, le nettoyage et la finalisation de la V7.
+
+Statut du lot
+Lot 10 considere comme valide.
+
+Rappel du role du lot 10
+Le lot 10 sert a refermer proprement la V7.
+Il ne rouvre pas de nouveaux gros chantiers metier.
+
+Conclusion generale
+La V7 doit se terminer comme une vraie version livrable :
+- architecture assumee
+- acquis fonctionnels preserves
+- anciens reliquats nettoyes
+- documentation finale propre
+
+Decision 1. Le lot 10 sert a refermer proprement la V7
+
+Decision retenue
+Le lot 10 sert a :
+- nettoyer les reliquats obsoletes
+- consolider l'arborescence finale
+- verifier les parcours critiques
+- refermer proprement la V7
+
+Il ne sert pas a rouvrir de nouveaux gros chantiers metier.
+
+Pourquoi
+Une fin de version doit etre un moment de consolidation,
+pas une relance du scope.
+
+Effet attendu
+La V7 se termine comme une version coherente
+et non comme un chantier laisse en suspension.
+
+Decision 2. Les anciens concepts reellement obsoletes
+doivent quitter le centre du projet
+
+Decision retenue
+A la fin de la V7, les anciens concepts devenus reellement obsoletes
+doivent quitter le centre du projet,
+et non rester comme couches mortes "au cas ou".
+
+Exemples vises :
+- reliquats lies a `RuleSetConfig`
+- reliquats lies a `modes/` comme centre moteur
+- anciens chemins trompeurs si `match/` et `application/`
+  ont bien pris le relais
+
+Pourquoi
+La V7 doit assumer jusqu'au bout
+sa nouvelle architecture.
+
+Effet attendu
+Le projet devient plus lisible
+et moins ambivalent pour la suite.
+
+Decision 3. Une V7 n'est livrable
+que si ses piliers sont reellement en place
+
+Decision retenue
+La V7 est consideree livrable si, au minimum :
+- l'architecture cible est reellement en place
+- `attack_attempts` fonctionne
+- `scoring` / `victory` sont separes
+- les transitions de roster fonctionnent
+- save/load, undo et historique sont toujours solides
+- CLI/GUI restent utilisables
+- la strategie de test renforcee est en place
+
+Pourquoi
+La fin de version doit se juger
+sur des acquis concrets.
+
+Effet attendu
+La V7 est evaluee comme une vraie version moteur,
+pas comme une somme d'intentions.
+
+Decision 4. La fin de V7 doit laisser
+une documentation propre
+
+Decision retenue
+Le lot 10 doit laisser au minimum
+une documentation claire sur :
+- l'architecture V7 reelle
+- les concepts centraux V7
+- les limites connues
+- les points d'appui vers une future V8
+
+Pourquoi
+Une version fondatrice doit rester transmissible
+et exploitable apres sa livraison.
+
+Effet attendu
+La V7 laisse une base propre
+pour la continuation du projet.
+
+Decision 5. Il reste normal qu'une partie du futur
+soit encore hors scope
+
+Decision retenue
+Meme a la fin de la V7,
+il est normal que restent hors scope :
+- le sport
+- plusieurs systemes de victory reellement implementes
+- un scoring points complet
+- les regles d'attaque avancees
+- une grosse refonte UX
+- un vrai moteur de fuzzing massif
+
+Pourquoi
+La V7 doit garder un perimetre sain
+et ne pas se juger a l'aune de tout ce que le moteur
+pourra faire plus tard.
+
+Effet attendu
+La fin de version reste realiste
+et correctement cadree.
+
+Coherence avec les lots precedents
+Le lot 10 est aligne avec :
+- le lot 1 sur l'architecture cible
+- le lot 2 sur le nouveau modele de configuration
+- le lot 3 sur la separation `scoring` / `victory`
+- le lot 5 sur les transitions de match
+- le lot 6 sur `Attack` et `attack_attempts`
+- le lot 7 sur les acquis critiques a conserver
+- le lot 8 sur le maintien d'interfaces utilisables
+- le lot 9 sur la strategie de test renforcee
+
+Ce qui est officiellement hors lot 10
+- l'ouverture de nouveaux domaines metier
+- de nouveaux systemes majeurs hors perimetre V7
+- une nouvelle vague de refonte architecture apres coup
+
+Definition de succes du lot 10
+Le lot 10 est reussi si :
+- la V7 est coherentement refermee
+- les anciens centres obsoletes ont quitte le coeur du projet
+- les parcours critiques sont verifies
+- les piliers fonctionnels sont toujours solides
+- la documentation finale prepare proprement la suite
+
+Conclusion
+Le lot 10 valide que la V7 doit se conclure
+comme une vraie fondation de long terme.
+La version n'est pas seulement plus propre :
+elle devient une base lisible, stable et exploitable
+pour les evolutions futures du moteur.

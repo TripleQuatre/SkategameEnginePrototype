@@ -1,6 +1,6 @@
 from core.exceptions import InvalidStateError
 from core.state import GameState
-from core.types import Phase
+from core.types import Phase, TurnPhase
 
 
 class StateValidator:
@@ -32,6 +32,9 @@ class StateValidator:
 
         if state.turn_order and state.attacker_index not in state.turn_order:
             raise InvalidStateError("attacker_index must appear in turn_order.")
+
+        if state.attack_attempts_left < 0:
+            raise InvalidStateError("attack_attempts_left cannot be negative.")
 
         if state.current_defender_position < 0:
             raise InvalidStateError("current_defender_position cannot be negative.")
@@ -65,6 +68,16 @@ class StateValidator:
             seen_defender_indices.add(defender_index)
 
         if state.current_trick is None:
+            if state.phase != Phase.END and state.turn_phase != TurnPhase.TURN_OPEN:
+                raise InvalidStateError(
+                    "turn_phase must be TURN_OPEN when no trick is engaged."
+                )
+
+            if state.attack_attempts_left != 0:
+                raise InvalidStateError(
+                    "attack_attempts_left must be 0 when no trick is engaged."
+                )
+
             if state.defender_indices:
                 raise InvalidStateError(
                     "defender_indices must be empty when no trick is engaged."
@@ -84,6 +97,38 @@ class StateValidator:
 
         if state.phase != Phase.TURN:
             raise InvalidStateError("A trick can only be engaged during TURN phase.")
+
+        if state.turn_phase not in {
+            TurnPhase.TURN_OPEN,
+            TurnPhase.ATTACK,
+            TurnPhase.DEFENSE,
+        }:
+            raise InvalidStateError(
+                "turn_phase must be TURN_OPEN, ATTACK or DEFENSE when a trick is engaged."
+            )
+
+        if state.turn_phase == TurnPhase.ATTACK:
+            if state.attack_attempts_left <= 0:
+                raise InvalidStateError(
+                    "attack_attempts_left must be positive during ATTACK phase."
+                )
+
+            if state.defender_indices:
+                raise InvalidStateError(
+                    "defender_indices must be empty during ATTACK phase."
+                )
+
+            if state.current_defender_position != 0:
+                raise InvalidStateError(
+                    "current_defender_position must be 0 during ATTACK phase."
+                )
+
+            if state.defense_attempts_left != 0:
+                raise InvalidStateError(
+                    "defense_attempts_left must be 0 during ATTACK phase."
+                )
+
+            return
 
         if not state.defender_indices:
             raise InvalidStateError(

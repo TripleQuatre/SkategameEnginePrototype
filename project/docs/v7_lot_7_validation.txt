@@ -1,0 +1,143 @@
+SkateGame Engine Prototype - Validation Lot 7 V7
+
+But du document
+Ce document fige les decisions du lot 7 sur la persistence,
+le save/load, l'undo et l'historique dans la V7.
+
+Statut du lot
+Lot 7 considere comme valide.
+
+Rappel du role du lot 7
+Le lot 7 ne reinvente pas ces domaines.
+Il garantit qu'ils survivent proprement a la refonte V7
+et restent alignes avec le nouveau modele moteur.
+
+Conclusion generale
+La V7 conserve comme acquis obligatoires :
+- la persistence
+- le save/load
+- l'undo
+- l'historique
+
+Ces fonctionnalites doivent suivre la nouvelle verite moteur V7
+sans bloquer la refonte du modele.
+
+Decision 1. Persistence, save/load, undo et historique
+sont des acquis obligatoires
+
+Decision retenue
+La refonte V7 ne peut pas sacrifier :
+- la persistence
+- le save/load
+- l'undo
+- l'historique
+
+Pourquoi
+Ces fonctions font partie des acquis critiques du moteur
+et de la qualite deja atteinte en V6.
+
+Effet attendu
+La V7 reste une evolution robuste,
+et non une regression fonctionnelle.
+
+Decision 2. Le save/load doit restaurer
+la verite moteur effective du match
+
+Decision retenue
+Le save/load V7 doit couvrir au minimum :
+- la structure
+- `attack`
+- `defense`
+- `scoring`
+- `victory`
+- l'etat runtime pertinent
+- l'historique
+- les metadonnees utiles comme `mode` et `preset`
+
+Pourquoi
+La sauvegarde doit suivre le vrai modele du match,
+pas une representation partielle ou heritee.
+
+Effet attendu
+Une partie rechargee retrouve bien son etat reel V7.
+
+Decision 3. L'undo doit survivre
+aux nouveaux points critiques du flow V7
+
+Decision retenue
+La V7 doit continuer a supporter l'undo au minimum :
+- avant attaque
+- pendant phase d'attaque
+- apres reussite d'attaque si l'etat a avance
+- apres resolution de defense
+- apres transition de match autorisee
+
+Pourquoi
+Le nouveau flow et les transitions ne doivent pas casser
+une fonctionnalite deja centrale du moteur.
+
+Effet attendu
+L'undo reste fiable malgre l'enrichissement du cycle de tour.
+
+Decision 4. L'historique doit rester lisible et utile
+
+Decision retenue
+L'historique V7 doit :
+- raconter les nouvelles phases d'attaque
+- raconter les transitions de match
+- rester lisible humainement
+- rester exploitable pour les tests et le debug
+
+Pourquoi
+L'historique garde une double valeur :
+- narrative
+- technique
+
+Effet attendu
+La V7 conserve un historique qui aide autant l'utilisateur
+que la verification du moteur.
+
+Decision 5. La coherence du modele V7 est prioritaire
+
+Decision retenue
+Si le format interne de sauvegarde doit evoluer
+pour suivre la V7, on l'accepte,
+tant que save/load reste fiable.
+
+Donc :
+- on ne sacrifie pas la V7 pour garder une vieille forme interne
+- on ne perd pas la fonctionnalite de sauvegarde/chargement
+
+Pourquoi
+La persistence doit suivre la refonte
+au lieu de la freiner.
+
+Effet attendu
+Le moteur peut evoluer proprement
+sans perdre ses acquis critiques.
+
+Coherence avec les lots precedents
+Le lot 7 est aligne avec :
+- le lot 2 sur la nouvelle verite moteur du match
+- le lot 4 sur le nouveau flow du tour
+- le lot 5 sur les transitions de match
+- le lot 6 sur la famille `Attack`
+
+Ce qui est officiellement hors lot 7
+- la specification detaillee du format de sauvegarde V7
+- la strategie precise de migration d'anciens saves
+- l'implementation concrete des snapshots d'undo
+- une refonte autonome du systeme d'historique
+
+Definition de succes du lot 7
+Le lot 7 est reussi si :
+- save/load reste present et fiable
+- l'undo couvre encore les moments critiques du moteur
+- l'historique raconte correctement la V7
+- la persistence suit le nouveau modele sans le contraindre
+
+Conclusion
+Le lot 7 valide que la refonte V7 preserve
+les acquis critiques de la V6.
+La suite du chantier peut donc avancer
+sans risquer de perdre la solidite fonctionnelle du moteur.

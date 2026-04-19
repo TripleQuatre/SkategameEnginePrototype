@@ -1,4 +1,6 @@
 import json
+import shutil
+from pathlib import Path
 
 from config.match_parameters import MatchParameters
 from config.match_policies import (
@@ -10,12 +12,23 @@ from config.rule_set_config import RuleSetConfig
 from core.snapshots import Snapshot, SnapshotHistory
 from core.player import Player
 from core.state import GameState
-from core.types import EventName, Phase
+from core.types import EventName, Phase, TurnPhase
 from persistence.config_repository import ConfigRepository
 from persistence.game_save import GameSave
 from persistence.game_save_repository import GameSaveRepository
-from persistence.game_session_repository import GameSessionRepository
 from persistence.serializers import Serializer
+
+
+def _make_case_dir(test_name: str) -> Path:
+    base_dir = (
+        Path(__file__).resolve().parents[2]
+        / "local_tmp"
+        / "persistence"
+        / test_name
+    )
+    shutil.rmtree(base_dir, ignore_errors=True)
+    base_dir.mkdir(parents=True, exist_ok=True)
+    return base_dir
 
 
 def test_serializer_can_roundtrip_game_state() -> None:
@@ -27,8 +40,10 @@ def test_serializer_can_roundtrip_game_state() -> None:
             Player(id="p2", name="Denise", score=2, is_active=False),
         ],
         phase=Phase.TURN,
+        turn_phase=TurnPhase.DEFENSE,
         turn_order=[1, 0],
         attacker_index=1,
+        attack_attempts_left=0,
         defender_indices=[0],
         current_defender_position=0,
         defense_attempts_left=2,
@@ -53,6 +68,8 @@ def test_serializer_can_roundtrip_game_state() -> None:
     restored_state = serializer.deserialize_game_state(data)
 
     assert restored_state.phase == Phase.TURN
+    assert restored_state.turn_phase == TurnPhase.DEFENSE
+    assert restored_state.attack_attempts_left == 0
     assert restored_state.turn_order == [1, 0]
     assert restored_state.attacker_index == 1
     assert restored_state.current_trick == "Soul"
@@ -70,7 +87,7 @@ def test_serializer_can_roundtrip_game_save() -> None:
 
     match_parameters = MatchParameters(
         player_ids=["p1", "p2", "p3"],
-        mode_name="battle",
+        structure_name="battle",
         preset_name=None,
         policies=MatchPolicies(
             initial_turn_order=InitialTurnOrderPolicy.RANDOMIZED,
@@ -89,8 +106,10 @@ def test_serializer_can_roundtrip_game_save() -> None:
             Player(id="p3", name="Alex"),
         ],
         phase=Phase.TURN,
+        turn_phase=TurnPhase.DEFENSE,
         turn_order=[2, 0, 1],
         attacker_index=2,
+        attack_attempts_left=0,
         defender_indices=[0, 1],
         current_defender_position=1,
         defense_attempts_left=1,
@@ -107,6 +126,7 @@ def test_serializer_can_roundtrip_game_save() -> None:
     restored_game_save = serializer.deserialize_game_save(data)
 
     assert restored_game_save.match_parameters.mode_name == "battle"
+    assert restored_game_save.match_parameters.structure_name == "battle"
     assert restored_game_save.match_parameters.preset_name is None
     assert restored_game_save.match_parameters.player_ids == ["p1", "p2", "p3"]
     assert (
@@ -130,8 +150,10 @@ def test_snapshot_restores_independent_game_state_copy() -> None:
             Player(id="p2", name="Denise", score=0),
         ],
         phase=Phase.TURN,
+        turn_phase=TurnPhase.DEFENSE,
         turn_order=[0, 1],
         attacker_index=0,
+        attack_attempts_left=0,
         defender_indices=[1],
         current_defender_position=0,
         defense_attempts_left=1,
@@ -168,6 +190,7 @@ def test_snapshot_can_restore_match_parameters_copy() -> None:
             Player(id="p2", name="Denise"),
         ],
         phase=Phase.TURN,
+        turn_phase=TurnPhase.TURN_OPEN,
         turn_order=[0, 1],
         attacker_index=0,
     )
@@ -250,12 +273,13 @@ def test_snapshot_history_respects_max_size() -> None:
     assert history.snapshots[1].restore_state().attacker_index == 0
 
 
-def test_game_save_repository_can_save_and_load_game_save(tmp_path) -> None:
+def test_game_save_repository_can_save_and_load_game_save() -> None:
+    case_dir = _make_case_dir("repository_roundtrip")
     repository = GameSaveRepository()
 
     match_parameters = MatchParameters(
         player_ids=["p1", "p2", "p3"],
-        mode_name="battle",
+        structure_name="battle",
         preset_name="battle_standard",
         policies=MatchPolicies(
             initial_turn_order=InitialTurnOrderPolicy.RANDOMIZED,
@@ -273,8 +297,10 @@ def test_game_save_repository_can_save_and_load_game_save(tmp_path) -> None:
             Player(id="p3", name="Alex", score=2),
         ],
         phase=Phase.TURN,
+        turn_phase=TurnPhase.DEFENSE,
         turn_order=[2, 0, 1],
         attacker_index=2,
+        attack_attempts_left=0,
         defender_indices=[0, 1],
         current_defender_position=0,
         defense_attempts_left=1,
@@ -287,31 +313,38 @@ def test_game_save_repository_can_save_and_load_game_save(tmp_path) -> None:
         game_state=state,
     )
 
-    filepath = tmp_path / "saves" / "game_save.json"
+    try:
+        filepath = case_dir / "saves" / "game_save.json"
 
-    repository.save(game_save, str(filepath))
-    loaded_game_save = repository.load(str(filepath))
+        repository.save(game_save, str(filepath))
+        loaded_game_save = repository.load(str(filepath))
 
-    assert filepath.exists()
-    assert loaded_game_save.match_parameters.mode_name == "battle"
-    assert loaded_game_save.match_parameters.preset_name == "battle_standard"
-    assert loaded_game_save.match_parameters.player_ids == ["p1", "p2", "p3"]
-    assert (
-        loaded_game_save.match_parameters.policies.initial_turn_order
-        == InitialTurnOrderPolicy.RANDOMIZED
-    )
-    assert loaded_game_save.game_state.phase == Phase.TURN
-    assert loaded_game_save.game_state.turn_order == [2, 0, 1]
-    assert loaded_game_save.game_state.current_trick == "Makio"
-    assert loaded_game_save.game_state.players[0].name == "Stan"
+        assert filepath.exists()
+        assert loaded_game_save.match_parameters.mode_name == "battle"
+        assert loaded_game_save.match_parameters.structure_name == "battle"
+        assert loaded_game_save.match_parameters.preset_name == "battle_standard"
+        assert loaded_game_save.match_parameters.player_ids == ["p1", "p2", "p3"]
+        assert (
+            loaded_game_save.match_parameters.policies.initial_turn_order
+            == InitialTurnOrderPolicy.RANDOMIZED
+        )
+        assert loaded_game_save.game_state.phase == Phase.TURN
+        assert loaded_game_save.game_state.turn_phase == TurnPhase.DEFENSE
+        assert loaded_game_save.game_state.attack_attempts_left == 0
+        assert loaded_game_save.game_state.turn_order == [2, 0, 1]
+        assert loaded_game_save.game_state.current_trick == "Makio"
+        assert loaded_game_save.game_state.players[0].name == "Stan"
+    finally:
+        shutil.rmtree(case_dir, ignore_errors=True)
 
 
-def test_config_repository_can_save_and_load_match_parameters(tmp_path) -> None:
+def test_config_repository_can_save_and_load_match_parameters() -> None:
+    case_dir = _make_case_dir("config_repository_roundtrip")
     repository = ConfigRepository()
 
     match_parameters = MatchParameters(
         player_ids=["Stan", "Denise"],
-        mode_name="one_vs_one",
+        structure_name="one_vs_one",
         preset_name="classic_skate",
         rule_set=RuleSetConfig(
             letters_word="SKATE",
@@ -320,26 +353,30 @@ def test_config_repository_can_save_and_load_match_parameters(tmp_path) -> None:
         ),
     )
 
-    filepath = tmp_path / "configs" / "match_config.json"
+    try:
+        filepath = case_dir / "configs" / "match_config.json"
 
-    repository.save(match_parameters, str(filepath))
-    loaded_match_parameters = repository.load(str(filepath))
+        repository.save(match_parameters, str(filepath))
+        loaded_match_parameters = repository.load(str(filepath))
 
-    assert filepath.exists()
-    assert loaded_match_parameters.player_ids == ["Stan", "Denise"]
-    assert loaded_match_parameters.mode_name == "one_vs_one"
-    assert loaded_match_parameters.preset_name == "classic_skate"
-    assert loaded_match_parameters.rule_set.letters_word == "SKATE"
-    assert loaded_match_parameters.rule_set.defense_attempts == 3
+        assert filepath.exists()
+        assert loaded_match_parameters.player_ids == ["Stan", "Denise"]
+        assert loaded_match_parameters.mode_name == "one_vs_one"
+        assert loaded_match_parameters.preset_name == "classic_skate"
+        assert loaded_match_parameters.rule_set.letters_word == "SKATE"
+        assert loaded_match_parameters.rule_set.defense_attempts == 3
+    finally:
+        shutil.rmtree(case_dir, ignore_errors=True)
 
 
-def test_game_save_repository_writes_valid_json(tmp_path) -> None:
+def test_game_save_repository_writes_valid_json() -> None:
+    case_dir = _make_case_dir("repository_writes_json")
     repository = GameSaveRepository()
 
     game_save = GameSave(
         match_parameters=MatchParameters(
             player_ids=["p1", "p2"],
-            mode_name="one_vs_one",
+            structure_name="one_vs_one",
         ),
         game_state=GameState(
             players=[
@@ -349,51 +386,22 @@ def test_game_save_repository_writes_valid_json(tmp_path) -> None:
         ),
     )
 
-    filepath = tmp_path / "game_save.json"
-    repository.save(game_save, str(filepath))
+    try:
+        filepath = case_dir / "game_save.json"
+        repository.save(game_save, str(filepath))
 
-    with filepath.open("r", encoding="utf-8") as file:
-        data = json.load(file)
+        with filepath.open("r", encoding="utf-8") as file:
+            data = json.load(file)
 
-    assert "match_parameters" in data
-    assert "game_state" in data
-    assert data["match_parameters"]["mode_name"] == "one_vs_one"
-    assert "policies" in data["match_parameters"]
-    assert "preset_name" in data["match_parameters"]
-    assert data["game_state"]["players"][0]["name"] == "Stan"
-
-
-def test_game_session_repository_is_backward_compatible_with_game_save_repository(
-    tmp_path,
-) -> None:
-    repository = GameSessionRepository()
-
-    game_save = GameSave(
-        match_parameters=MatchParameters(
-            player_ids=["p1", "p2"],
-            mode_name="one_vs_one",
-            preset_name="classic_skate",
-            rule_set=RuleSetConfig(
-                letters_word="SKATE",
-                elimination_enabled=True,
-                defense_attempts=3,
-            ),
-        ),
-        game_state=GameState(
-            players=[
-                Player(id="p1", name="Stan"),
-                Player(id="p2", name="Denise"),
-            ]
-        ),
-    )
-
-    filepath = tmp_path / "session.json"
-    repository.save(game_save, str(filepath))
-    loaded_game_save = repository.load(str(filepath))
-
-    assert filepath.exists()
-    assert loaded_game_save.match_parameters.preset_name == "classic_skate"
-    assert loaded_game_save.game_state.players[0].name == "Stan"
+        assert "match_parameters" in data
+        assert "game_state" in data
+        assert data["match_parameters"]["structure_name"] == "one_vs_one"
+        assert data["match_parameters"]["mode_name"] == "one_vs_one"
+        assert "policies" in data["match_parameters"]
+        assert "preset_name" in data["match_parameters"]
+        assert data["game_state"]["players"][0]["name"] == "Stan"
+    finally:
+        shutil.rmtree(case_dir, ignore_errors=True)
 
 
 def test_serializer_can_read_legacy_match_parameters_without_v6_fields() -> None:
@@ -416,3 +424,65 @@ def test_serializer_can_read_legacy_match_parameters_without_v6_fields() -> None
         restored_match_parameters.policies.initial_turn_order
         == InitialTurnOrderPolicy.FIXED_PLAYER_ORDER
     )
+
+
+def test_serializer_can_read_v7_match_parameters_with_structure_name() -> None:
+    serializer = Serializer()
+
+    restored_match_parameters = serializer.deserialize_match_parameters(
+        {
+            "player_ids": ["p1", "p2", "p3"],
+            "structure_name": "battle",
+            "mode_name": "one_vs_one",
+            "rule_set": {
+                "letters_word": "SKATE",
+                "elimination_enabled": True,
+                "defense_attempts": 1,
+            },
+        }
+    )
+
+    assert restored_match_parameters.structure_name == "battle"
+    assert restored_match_parameters.mode_name == "battle"
+
+
+def test_serializer_infers_turn_phase_for_legacy_saved_state() -> None:
+    serializer = Serializer()
+
+    restored_state = serializer.deserialize_game_state(
+        {
+            "players": [
+                {
+                    "id": "p1",
+                    "name": "Stan",
+                    "internal_id": "p1",
+                    "score": 0,
+                    "is_active": True,
+                },
+                {
+                    "id": "p2",
+                    "name": "Denise",
+                    "internal_id": "p2",
+                    "score": 0,
+                    "is_active": True,
+                },
+            ],
+            "phase": "turn",
+            "turn_order": [0, 1],
+            "attacker_index": 0,
+            "defender_indices": [1],
+            "current_defender_position": 0,
+            "defense_attempts_left": 1,
+            "current_trick": "Soul",
+            "history": {"events": []},
+            "rule_set": {
+                "letters_word": "SKATE",
+                "elimination_enabled": True,
+                "defense_attempts": 1,
+            },
+            "validated_tricks": [],
+        }
+    )
+
+    assert restored_state.turn_phase == TurnPhase.DEFENSE
+    assert restored_state.attack_attempts_left == 0

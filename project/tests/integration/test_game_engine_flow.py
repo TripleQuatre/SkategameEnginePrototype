@@ -1,10 +1,10 @@
-import modes.battle as battle_module
+from application.game_session import GameSession as GameEngine
+import match.structure.battle_structure as battle_structure_module
 
 from config.match_parameters import MatchParameters
 from config.rule_set_config import RuleSetConfig
 from core.exceptions import InvalidActionError
-from core.types import DefenseResolutionStatus, EventName, Phase
-from engine.game_engine import GameEngine
+from core.types import AttackResolutionStatus, DefenseResolutionStatus, EventName, Phase, TurnPhase
 
 
 def test_game_engine_can_start_a_game() -> None:
@@ -158,11 +158,11 @@ def test_battle_game_engine_start_turn_sets_multiple_defenders(monkeypatch) -> N
     def fixed_shuffle(values: list[int]) -> None:
         values[:] = [2, 0, 1]
 
-    monkeypatch.setattr(battle_module.random, "shuffle", fixed_shuffle)
+    monkeypatch.setattr(battle_structure_module.random, "shuffle", fixed_shuffle)
 
     match_parameters = MatchParameters(
         player_ids=["p1", "p2", "p3"],
-        mode_name="battle",
+        structure_name="battle",
     )
     engine = GameEngine(match_parameters)
 
@@ -181,11 +181,11 @@ def test_battle_game_engine_rotates_to_next_active_attacker(monkeypatch) -> None
     def fixed_shuffle(values: list[int]) -> None:
         values[:] = [2, 0, 1]
 
-    monkeypatch.setattr(battle_module.random, "shuffle", fixed_shuffle)
+    monkeypatch.setattr(battle_structure_module.random, "shuffle", fixed_shuffle)
 
     match_parameters = MatchParameters(
         player_ids=["p1", "p2", "p3"],
-        mode_name="battle",
+        structure_name="battle",
     )
     engine = GameEngine(match_parameters)
 
@@ -200,6 +200,50 @@ def test_battle_game_engine_rotates_to_next_active_attacker(monkeypatch) -> None
     assert state.current_trick is None
     assert state.defender_indices == []
     assert state.history.events[-1].name == EventName.TURN_ENDED
+
+
+def test_game_engine_can_resolve_multi_attempt_attack_before_defense() -> None:
+    match_parameters = MatchParameters(
+        player_ids=["p1", "p2"],
+        rule_set=RuleSetConfig(
+            letters_word="SKATE",
+            attack_attempts=2,
+            defense_attempts=1,
+        ),
+    )
+    engine = GameEngine(match_parameters)
+
+    engine.start_game()
+    engine.start_turn("kickflip")
+
+    state = engine.get_state()
+    assert state.turn_phase == TurnPhase.ATTACK
+    assert state.attack_attempts_left == 2
+    assert state.defender_indices == []
+
+    attack_result = engine.resolve_attack(False)
+    state = engine.get_state()
+    assert attack_result == AttackResolutionStatus.ATTACK_CONTINUES
+    assert state.turn_phase == TurnPhase.ATTACK
+    assert state.attack_attempts_left == 1
+
+    attack_result = engine.resolve_attack(True)
+    state = engine.get_state()
+    assert attack_result == AttackResolutionStatus.DEFENSE_READY
+    assert state.turn_phase == TurnPhase.DEFENSE
+    assert state.attack_attempts_left == 0
+    assert state.defender_indices == [1]
+    assert state.defense_attempts_left == 1
+
+    defense_result = engine.resolve_defense(False)
+    state = engine.get_state()
+    assert defense_result == DefenseResolutionStatus.TURN_FINISHED
+    assert state.turn_phase == TurnPhase.TURN_OPEN
+    assert state.attacker_index == 1
+
+    history_names = [event.name for event in state.history.events]
+    assert EventName.ATTACK_FAILED_ATTEMPT in history_names
+    assert EventName.ATTACK_SUCCEEDED in history_names
 
 
 def test_game_engine_can_add_player_between_turns_and_switch_to_battle() -> None:
@@ -218,7 +262,7 @@ def test_game_engine_can_add_player_between_turns_and_switch_to_battle() -> None
     engine.add_player_between_turns("p3")
 
     state = engine.get_state()
-    assert engine.match_parameters.mode_name == "battle"
+    assert engine.structure_name == "battle"
     assert engine.match_parameters.preset_name is None
     assert engine.match_parameters.player_ids == ["p1", "p2", "p3"]
     assert [player.id for player in state.players] == ["p1", "p2", "p3"]
@@ -242,7 +286,7 @@ def test_game_engine_add_player_between_turns_extends_defenders_on_next_trick() 
 def test_game_engine_can_remove_player_between_turns_and_switch_to_one_vs_one() -> None:
     match_parameters = MatchParameters(
         player_ids=["p1", "p2", "p3"],
-        mode_name="battle",
+        structure_name="battle",
     )
     engine = GameEngine(match_parameters)
 
@@ -250,7 +294,7 @@ def test_game_engine_can_remove_player_between_turns_and_switch_to_one_vs_one() 
     engine.remove_player_between_turns("p2")
 
     state = engine.get_state()
-    assert engine.match_parameters.mode_name == "one_vs_one"
+    assert engine.structure_name == "one_vs_one"
     assert engine.match_parameters.preset_name is None
     assert engine.match_parameters.player_ids == ["p1", "p3"]
     assert [player.id for player in state.players] == ["p1", "p3"]
@@ -264,12 +308,12 @@ def test_game_engine_remove_attacker_between_turns_reassigns_next_attacker(
     def fixed_shuffle(values: list[int]) -> None:
         values[:] = [2, 0, 1]
 
-    monkeypatch.setattr(battle_module.random, "shuffle", fixed_shuffle)
+    monkeypatch.setattr(battle_structure_module.random, "shuffle", fixed_shuffle)
 
     engine = GameEngine(
         MatchParameters(
             player_ids=["p1", "p2", "p3"],
-            mode_name="battle",
+            structure_name="battle",
         )
     )
 
@@ -296,7 +340,7 @@ def test_game_engine_rejects_adding_duplicate_player_between_turns() -> None:
 
 def test_game_engine_rejects_removing_unknown_player_between_turns() -> None:
     engine = GameEngine(
-        MatchParameters(player_ids=["p1", "p2", "p3"], mode_name="battle")
+        MatchParameters(player_ids=["p1", "p2", "p3"], structure_name="battle")
     )
 
     engine.start_game()
@@ -314,12 +358,12 @@ def test_game_engine_remove_player_between_turns_keeps_battle_mode_with_three_pl
     def fixed_shuffle(values: list[int]) -> None:
         values[:] = [1, 3, 0, 2]
 
-    monkeypatch.setattr(battle_module.random, "shuffle", fixed_shuffle)
+    monkeypatch.setattr(battle_structure_module.random, "shuffle", fixed_shuffle)
 
     engine = GameEngine(
         MatchParameters(
             player_ids=["p1", "p2", "p3", "p4"],
-            mode_name="battle",
+            structure_name="battle",
         )
     )
 
@@ -327,7 +371,7 @@ def test_game_engine_remove_player_between_turns_keeps_battle_mode_with_three_pl
     engine.remove_player_between_turns("p3")
 
     state = engine.get_state()
-    assert engine.match_parameters.mode_name == "battle"
+    assert engine.structure_name == "battle"
     assert engine.match_parameters.player_ids == ["p1", "p2", "p4"]
     assert [player.id for player in state.players] == ["p1", "p2", "p4"]
     assert state.turn_order == [1, 2, 0]

@@ -1,0 +1,111 @@
+V7 CLOSURE - 2026-04-19
+
+Intent
+This document captures the practical closure state of V7 after the main
+refactor blocks were implemented. It is not the original specification. It is
+the closing snapshot of what now acts as the real V7 center, what remains as
+compatibility, and what still sits outside the V7 scope.
+
+Current V7 center
+The runtime and product setup are now centered on:
+- config/
+- application/
+- match/
+
+The main active centers are:
+- config.match_setup
+- config.match_config
+- config.match_parameters
+- config.setup_translator
+- application.game_session
+- application.game_setup_service
+- match.structure
+- match.flow
+- match.attack
+- match.defense
+- match.scoring
+- match.victory
+- match.transitions
+
+What V7 now supports as a coherent whole
+- Product setup through presets and custom setup
+- Structure-first configuration for one_vs_one and battle
+- Explicit attack phase and defense phase
+- attack_attempts as a real runtime rule
+- scoring and victory as distinct runtime domains
+- roster transitions between turns
+- structure changes caused by roster transitions
+- save/load across the new runtime model
+- undo across turn flow and transitions
+- history rich enough for attack flow and transitions
+- CLI and GUI both using the same setup-to-controller application path
+
+Minimal compatibility kept on purpose
+The only notable compatibility facade intentionally kept in the active Python
+code is:
+- controllers.game_controller
+
+Older runtime centers under engine/, modes/ and rules/ are no longer part of
+the active codebase. The real V7 logic now lives directly in application/ and
+match/.
+
+Legacy directories removed from source
+The old source directories have been removed from the live Python tree:
+- project/engine/
+- project/modes/
+- project/rules/
+
+This means V7 is no longer running in a mixed-center layout. The old centers
+are not merely deprecated; they are gone from the active source tree.
+
+Critical paths considered release-critical for V7
+The following paths should be considered the minimum release-critical paths:
+- preset setup -> game start -> turn flow -> game end
+- custom setup with attack_attempts > 1 -> attack flow -> defense flow
+- add/remove player between turns -> structure transition
+- transition -> save/load -> restored runtime
+- transition chain -> undo -> restored preset context
+- finished game -> save/load -> consultation-safe state
+
+The smoke suite added for closure intentionally targets these paths.
+
+Smoke suite
+The dedicated V7 release smoke suite is:
+- tests/integration/test_v7_release_smoke.py
+
+Its purpose is not exhaustive coverage. It exists to answer a simple question:
+"Do the critical V7 paths still behave like one coherent product?"
+
+What remains intentionally out of scope for V7
+The following items are still outside the intended V7 delivery perimeter:
+- sport-specific runtime families
+- multiple fully implemented victory systems
+- scoring by points as a full runtime family
+- advanced attack rules beyond attack_attempts
+- large UX redesign of CLI or GUI
+- large-scale fuzzing engine
+
+Meaning of "V7 deliverable"
+At this stage, V7 should be considered deliverable if:
+- the active architecture is structure-first and match-centered
+- the new turn flow is real, not just documented
+- transitions are match-domain responsibilities
+- save/load, undo, and history remain reliable
+- CLI and GUI remain usable through the product setup path
+- broad automated tests stay green
+
+Recommended final verification
+Before calling V7 closed for release, run:
+- pytest tests
+
+If that run stays green on the user machine, the remaining work is no longer a
+refactor foundation problem. It becomes final cleanup and release judgment.
+
+Final verification status
+The full suite has been run after the closure work:
+- pytest tests -q
+- result: 258 passed
+
+The only remaining noise observed in this environment is a Windows
+PytestCacheWarning on .pytest_cache permissions, without functional impact on
+the suite result.

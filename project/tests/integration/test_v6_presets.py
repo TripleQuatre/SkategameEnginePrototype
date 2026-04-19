@@ -1,4 +1,8 @@
-import modes.battle as battle_module
+from application.game_session import GameSession as GameEngine
+import shutil
+from pathlib import Path
+
+import match.structure.battle_structure as battle_structure_module
 
 from config.match_parameters import MatchParameters
 from config.match_policies import (
@@ -10,7 +14,6 @@ from config.preset_registry import PresetRegistry
 from config.rule_set_config import RuleSetConfig
 from controllers.game_controller import GameController
 from core.types import DefenseResolutionStatus, Phase
-from engine.game_engine import GameEngine
 from tests.support.scenario_runner import (
     ScenarioDefinition,
     ScenarioRunner,
@@ -18,12 +21,24 @@ from tests.support.scenario_runner import (
 )
 
 
+def _make_case_dir(test_name: str) -> Path:
+    base_dir = (
+        Path(__file__).resolve().parents[2]
+        / "local_tmp"
+        / "v6_presets"
+        / test_name
+    )
+    shutil.rmtree(base_dir, ignore_errors=True)
+    base_dir.mkdir(parents=True, exist_ok=True)
+    return base_dir
+
+
 def test_game_engine_classic_skate_preset_starts_with_expected_configuration() -> None:
     preset = PresetRegistry().get("classic_skate")
     engine = GameEngine(
         MatchParameters(
             player_ids=["p1", "p2"],
-            mode_name=preset.mode_name,
+            structure_name=preset.structure_name,
             rule_set=preset.rule_set,
             policies=preset.policies,
             preset_name=preset.name,
@@ -39,6 +54,7 @@ def test_game_engine_classic_skate_preset_starts_with_expected_configuration() -
     assert state.rule_set.letters_word == "SKATE"
     assert state.rule_set.defense_attempts == 3
     assert context is not None
+    assert context.structure_name == "one_vs_one"
     assert context.preset_name == "classic_skate"
     assert context.mode_name == "one_vs_one"
 
@@ -48,7 +64,7 @@ def test_game_engine_classic_blade_preset_uses_blade_word() -> None:
     engine = GameEngine(
         MatchParameters(
             player_ids=["p1", "p2"],
-            mode_name=preset.mode_name,
+            structure_name=preset.structure_name,
             rule_set=preset.rule_set,
             policies=preset.policies,
             preset_name=preset.name,
@@ -68,13 +84,13 @@ def test_battle_standard_preset_uses_randomized_order_and_out_word(monkeypatch) 
     def fixed_shuffle(values: list[int]) -> None:
         values[:] = [2, 0, 1]
 
-    monkeypatch.setattr(battle_module.random, "shuffle", fixed_shuffle)
+    monkeypatch.setattr(battle_structure_module.random, "shuffle", fixed_shuffle)
 
     preset = PresetRegistry().get("battle_standard")
     engine = GameEngine(
         MatchParameters(
             player_ids=["p1", "p2", "p3"],
-            mode_name=preset.mode_name,
+            structure_name=preset.structure_name,
             rule_set=preset.rule_set,
             policies=preset.policies,
             preset_name=preset.name,
@@ -94,13 +110,13 @@ def test_battle_hardcore_preset_uses_skate_word_and_one_attempt(monkeypatch) -> 
     def fixed_shuffle(values: list[int]) -> None:
         values[:] = [2, 0, 1]
 
-    monkeypatch.setattr(battle_module.random, "shuffle", fixed_shuffle)
+    monkeypatch.setattr(battle_structure_module.random, "shuffle", fixed_shuffle)
 
     preset = PresetRegistry().get("battle_hardcore")
     engine = GameEngine(
         MatchParameters(
             player_ids=["p1", "p2", "p3"],
-            mode_name=preset.mode_name,
+            structure_name=preset.structure_name,
             rule_set=preset.rule_set,
             policies=preset.policies,
             preset_name=preset.name,
@@ -119,7 +135,7 @@ def test_technical_reverse_defender_order_policy_works(monkeypatch) -> None:
     def fixed_shuffle(values: list[int]) -> None:
         values[:] = [2, 0, 1]
 
-    monkeypatch.setattr(battle_module.random, "shuffle", fixed_shuffle)
+    monkeypatch.setattr(battle_structure_module.random, "shuffle", fixed_shuffle)
 
     engine = GameEngine(
         MatchParameters(
@@ -145,7 +161,7 @@ def test_technical_no_elimination_configuration_keeps_players_active(monkeypatch
     def fixed_shuffle(values: list[int]) -> None:
         values[:] = [2, 0, 1]
 
-    monkeypatch.setattr(battle_module.random, "shuffle", fixed_shuffle)
+    monkeypatch.setattr(battle_structure_module.random, "shuffle", fixed_shuffle)
 
     engine = GameEngine(
         MatchParameters(
@@ -171,56 +187,65 @@ def test_technical_no_elimination_configuration_keeps_players_active(monkeypatch
 
 
 def test_scenario_runner_accepts_official_preset_name_for_v6_scenarios(
-    tmp_path,
 ) -> None:
-    runner = ScenarioRunner(tmp_path)
+    case_dir = _make_case_dir("scenario_runner_preset")
 
-    result = runner.run(
-        ScenarioDefinition(
-            player_ids=["Stan", "Denise", "Alex"],
-            preset_name="battle_standard",
-            fixed_turn_order=[2, 0, 1],
-            steps=[
-                ScenarioStep(action="start_turn", trick="kickflip"),
-                ScenarioStep(
-                    action="resolve",
-                    success=True,
-                    expected_status=DefenseResolutionStatus.DEFENSE_CONTINUES,
-                ),
-            ],
+    try:
+        runner = ScenarioRunner(case_dir)
+
+        result = runner.run(
+            ScenarioDefinition(
+                player_ids=["Stan", "Denise", "Alex"],
+                preset_name="battle_standard",
+                fixed_turn_order=[2, 0, 1],
+                steps=[
+                    ScenarioStep(action="start_turn", trick="kickflip"),
+                    ScenarioStep(
+                        action="resolve",
+                        success=True,
+                        expected_status=DefenseResolutionStatus.DEFENSE_CONTINUES,
+                    ),
+                ],
+            )
         )
-    )
+    finally:
+        shutil.rmtree(case_dir, ignore_errors=True)
 
     state = result.state
-    assert result.controller.engine.match_parameters.preset_name == "battle_standard"
+    assert result.controller.match_parameters.preset_name == "battle_standard"
     assert state.defender_indices == [0, 1]
 
 
-def test_game_controller_save_and_load_preserves_v6_preset_configuration(tmp_path) -> None:
+def test_game_controller_save_and_load_preserves_v6_preset_configuration() -> None:
+    case_dir = _make_case_dir("controller_save_load_preset")
     preset = PresetRegistry().get("battle_hardcore")
     controller = GameController(
         MatchParameters(
             player_ids=["p1", "p2", "p3"],
-            mode_name=preset.mode_name,
+            structure_name=preset.structure_name,
             rule_set=preset.rule_set,
             policies=preset.policies,
             preset_name=preset.name,
         )
     )
 
-    controller.start_game()
-    save_path = tmp_path / "v6_preset_save.json"
-    controller.save_game(str(save_path))
+    try:
+        controller.start_game()
+        save_path = case_dir / "v6_preset_save.json"
+        controller.save_game(str(save_path))
 
-    reloaded_controller = GameController(MatchParameters(player_ids=["a", "b"]))
-    reloaded_controller.load_game(str(save_path))
+        reloaded_controller = GameController(MatchParameters(player_ids=["a", "b"]))
+        reloaded_controller.load_game(str(save_path))
 
-    reloaded_match_parameters = reloaded_controller.engine.match_parameters
-    reloaded_context = reloaded_controller.get_state().history.build_match_context()
+        reloaded_match_parameters = reloaded_controller.match_parameters
+        reloaded_context = reloaded_controller.get_state().history.build_match_context()
 
-    assert reloaded_match_parameters.preset_name == "battle_hardcore"
-    assert reloaded_match_parameters.mode_name == "battle"
-    assert reloaded_match_parameters.policies == preset.policies
-    assert reloaded_match_parameters.rule_set == preset.rule_set
-    assert reloaded_context is not None
-    assert reloaded_context.preset_name == "battle_hardcore"
+        assert reloaded_match_parameters.preset_name == "battle_hardcore"
+        assert reloaded_match_parameters.mode_name == "battle"
+        assert reloaded_match_parameters.policies == preset.policies
+        assert reloaded_match_parameters.rule_set == preset.rule_set
+        assert reloaded_context is not None
+        assert reloaded_context.structure_name == "battle"
+        assert reloaded_context.preset_name == "battle_hardcore"
+    finally:
+        shutil.rmtree(case_dir, ignore_errors=True)

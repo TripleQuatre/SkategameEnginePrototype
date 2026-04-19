@@ -7,6 +7,13 @@ class Phase(Enum):
     END = "end"
 
 
+class TurnPhase(Enum):
+    TURN_OPEN = "turn_open"
+    ATTACK = "attack"
+    DEFENSE = "defense"
+    TURN_FINISHED = "turn_finished"
+
+
 class Role(Enum):
     ATTACKER = "attacker"
     DEFENDER = "defender"
@@ -18,11 +25,19 @@ class DefenseResolutionStatus(Enum):
     GAME_FINISHED = "game_finished"
 
 
+class AttackResolutionStatus(Enum):
+    ATTACK_CONTINUES = "attack_continues"
+    DEFENSE_READY = "defense_ready"
+    TURN_FAILED = "turn_failed"
+
+
 class EventName(Enum):
     GAME_STARTED = "game_started"
     PLAYER_JOINED = "player_joined"
     PLAYER_REMOVED = "player_removed"
     TURN_STARTED = "turn_started"
+    ATTACK_FAILED_ATTEMPT = "attack_failed_attempt"
+    ATTACK_SUCCEEDED = "attack_succeeded"
     DEFENSE_SUCCEEDED = "defense_succeeded"
     DEFENSE_FAILED_ATTEMPT = "defense_failed_attempt"
     LETTER_RECEIVED = "letter_received"

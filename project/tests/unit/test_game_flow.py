@@ -3,14 +3,20 @@ import pytest
 from core.exceptions import InvalidActionError
 from core.player import Player
 from core.state import GameState
-from core.types import DefenseResolutionStatus, EventName, Phase
-from engine.game_flow import GameFlow
-from modes.one_vs_one import OneVsOneMode
+from core.types import (
+    AttackResolutionStatus,
+    DefenseResolutionStatus,
+    EventName,
+    Phase,
+    TurnPhase,
+)
+from match.flow.turn_flow import TurnFlow as GameFlow
+from match.structure.one_vs_one_structure import OneVsOneStructure
 
 
 @pytest.fixture
 def game_flow() -> GameFlow:
-    return GameFlow(OneVsOneMode())
+    return GameFlow(OneVsOneStructure())
 
 
 @pytest.fixture
@@ -26,6 +32,7 @@ def test_start_game_sets_turn_phase(game_flow: GameFlow, state: GameState) -> No
     game_flow.start_game(state)
 
     assert state.phase == Phase.TURN
+    assert state.turn_phase == TurnPhase.TURN_OPEN
     assert state.turn_order == [0, 1]
     assert state.attacker_index == 0
     assert state.current_trick is None
@@ -41,11 +48,74 @@ def test_start_turn_sets_trick_and_defenders(
     game_flow.start_game(state)
     game_flow.start_turn(state, "kickflip")
 
+    assert state.turn_phase == TurnPhase.DEFENSE
+    assert state.attack_attempts_left == 0
     assert state.current_trick == "kickflip"
     assert state.defender_indices == [1]
     assert state.current_defender_position == 0
     assert state.defense_attempts_left == state.rule_set.defense_attempts
     assert state.history.events[-1].name == EventName.TURN_STARTED
+
+
+def test_start_turn_enters_attack_phase_when_multiple_attack_attempts_are_enabled(
+    game_flow: GameFlow, state: GameState
+) -> None:
+    state.rule_set.attack_attempts = 2
+    game_flow.start_game(state)
+    game_flow.start_turn(state, "kickflip")
+
+    assert state.turn_phase == TurnPhase.ATTACK
+    assert state.current_trick == "kickflip"
+    assert state.attack_attempts_left == 2
+    assert state.defender_indices == []
+
+
+def test_resolve_attack_can_continue_attack_phase_after_failure(
+    game_flow: GameFlow, state: GameState
+) -> None:
+    state.rule_set.attack_attempts = 2
+    game_flow.start_game(state)
+    game_flow.start_turn(state, "kickflip")
+
+    result = game_flow.resolve_attack(state, success=False)
+
+    assert result == AttackResolutionStatus.ATTACK_CONTINUES
+    assert state.turn_phase == TurnPhase.ATTACK
+    assert state.attack_attempts_left == 1
+    assert state.history.events[-1].name == EventName.ATTACK_FAILED_ATTEMPT
+
+
+def test_resolve_attack_can_promote_to_defense(
+    game_flow: GameFlow, state: GameState
+) -> None:
+    state.rule_set.attack_attempts = 2
+    game_flow.start_game(state)
+    game_flow.start_turn(state, "kickflip")
+
+    result = game_flow.resolve_attack(state, success=True)
+
+    assert result == AttackResolutionStatus.DEFENSE_READY
+    assert state.turn_phase == TurnPhase.DEFENSE
+    assert state.attack_attempts_left == 0
+    assert state.defender_indices == [1]
+    assert state.history.events[-1].name == EventName.ATTACK_SUCCEEDED
+
+
+def test_resolve_attack_can_fail_turn_when_attempts_are_exhausted(
+    game_flow: GameFlow, state: GameState
+) -> None:
+    state.rule_set.attack_attempts = 2
+    game_flow.start_game(state)
+    game_flow.start_turn(state, "kickflip")
+    game_flow.resolve_attack(state, success=False)
+
+    result = game_flow.resolve_attack(state, success=False)
+
+    assert result == AttackResolutionStatus.TURN_FAILED
+    assert state.turn_phase == TurnPhase.TURN_OPEN
+    assert state.attacker_index == 1
+    assert state.current_trick is None
+    assert state.history.events[-1].name == EventName.TURN_FAILED
 
 
 def test_resolve_defense_returns_defense_continues_on_failed_attempt(
@@ -73,6 +143,7 @@ def test_resolve_defense_returns_turn_finished_on_success(
 
     assert result == DefenseResolutionStatus.TURN_FINISHED
     assert state.attacker_index == 1
+    assert state.turn_phase == TurnPhase.TURN_OPEN
     assert state.current_trick is None
     assert state.defender_indices == []
     assert state.history.events[-1].name == EventName.TURN_ENDED
@@ -108,6 +179,7 @@ def test_cancel_turn_adds_only_turn_failed_event(
     assert new_events[0].payload["trick"] == "Soul"
     assert new_events[0].payload["next_attacker_id"] == "p2"
     assert state.attacker_index == 1
+    assert state.turn_phase == TurnPhase.TURN_OPEN
     assert state.current_trick is None
     assert state.defender_indices == []
 

@@ -1,5 +1,8 @@
+from config.match_config import MatchConfig
 from config.match_policies import InitialTurnOrderPolicy, MatchPolicies
+from config.match_parameters import MatchParameters
 from config.match_preset import MatchPreset
+from config.match_setup import MatchSetup
 from config.rule_set_config import RuleSetConfig
 
 
@@ -24,14 +27,30 @@ class PresetRegistry:
     def list_preset_names(self) -> list[str]:
         return list(self._presets.keys())
 
+    def create_match_setup(
+        self, preset_name: str, player_ids: list[str]
+    ) -> MatchSetup:
+        return self.get(preset_name).create_match_setup(player_ids)
+
+    def create_match_config(
+        self, preset_name: str, player_ids: list[str]
+    ) -> MatchConfig:
+        return self.get(preset_name).create_match_config(player_ids)
+
+    def create_match_parameters(
+        self, preset_name: str, player_ids: list[str]
+    ) -> MatchParameters:
+        return self.get(preset_name).create_match_parameters(player_ids)
+
     def _build_official_presets(self) -> list[MatchPreset]:
         return [
             MatchPreset(
                 name="classic_skate",
-                mode_name="one_vs_one",
+                structure_name="one_vs_one",
                 rule_set=RuleSetConfig(
                     letters_word="SKATE",
                     elimination_enabled=True,
+                    attack_attempts=1,
                     defense_attempts=3,
                 ),
                 policies=MatchPolicies(
@@ -41,10 +60,11 @@ class PresetRegistry:
             ),
             MatchPreset(
                 name="classic_blade",
-                mode_name="one_vs_one",
+                structure_name="one_vs_one",
                 rule_set=RuleSetConfig(
                     letters_word="BLADE",
                     elimination_enabled=True,
+                    attack_attempts=1,
                     defense_attempts=1,
                 ),
                 policies=MatchPolicies(
@@ -54,10 +74,11 @@ class PresetRegistry:
             ),
             MatchPreset(
                 name="battle_standard",
-                mode_name="battle",
+                structure_name="battle",
                 rule_set=RuleSetConfig(
                     letters_word="OUT",
                     elimination_enabled=True,
+                    attack_attempts=1,
                     defense_attempts=3,
                 ),
                 policies=MatchPolicies(
@@ -67,10 +88,11 @@ class PresetRegistry:
             ),
             MatchPreset(
                 name="battle_hardcore",
-                mode_name="battle",
+                structure_name="battle",
                 rule_set=RuleSetConfig(
                     letters_word="SKATE",
                     elimination_enabled=True,
+                    attack_attempts=1,
                     defense_attempts=1,
                 ),
                 policies=MatchPolicies(

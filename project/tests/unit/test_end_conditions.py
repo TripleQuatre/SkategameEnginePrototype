@@ -1,13 +1,13 @@
 from core.player import Player
 from core.state import GameState
-from engine.end_conditions import EndConditions
+from match.victory.last_player_standing import LastPlayerStandingVictory
 
 
 def test_is_player_eliminated_returns_true_when_score_reaches_word_length() -> None:
     player = Player(id="p1", name="Player 1", score=5)
     state = GameState(players=[player])
 
-    end_conditions = EndConditions()
+    end_conditions = LastPlayerStandingVictory()
 
     assert end_conditions.is_player_eliminated(state, player) is True
 
@@ -19,7 +19,7 @@ def test_apply_eliminations_disables_eliminated_players() -> None:
     ]
     state = GameState(players=players)
 
-    end_conditions = EndConditions()
+    end_conditions = LastPlayerStandingVictory()
     eliminated_players = end_conditions.apply_eliminations(state)
 
     assert len(eliminated_players) == 1
@@ -35,7 +35,7 @@ def test_is_game_finished_returns_true_when_only_one_active_player_remains() -> 
     ]
     state = GameState(players=players)
 
-    end_conditions = EndConditions()
+    end_conditions = LastPlayerStandingVictory()
 
     assert end_conditions.is_game_finished(state) is True
 
@@ -47,7 +47,7 @@ def test_get_winner_returns_only_active_player() -> None:
     ]
     state = GameState(players=players)
 
-    end_conditions = EndConditions()
+    end_conditions = LastPlayerStandingVictory()
     winner = end_conditions.get_winner(state)
 
     assert winner is not None
