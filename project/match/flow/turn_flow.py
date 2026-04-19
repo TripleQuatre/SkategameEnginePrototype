@@ -56,11 +56,6 @@ class TurnFlow:
                     "structure_name": (
                         self.structure_name
                     ),
-                    "mode_name": (
-                        self.match_parameters.structure_name
-                        if self.match_parameters is not None
-                        else None
-                    ),
                     "preset_name": (
                         self.match_parameters.preset_name
                         if self.match_parameters is not None

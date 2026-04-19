@@ -10,11 +10,6 @@ class GameController:
         self.session = GameSession(match_parameters)
 
     @property
-    def engine(self) -> GameSession:
-        """Legacy alias kept while controller callers migrate to sessions."""
-        return self.session
-
-    @property
     def match_parameters(self) -> MatchParameters:
         return self.session.match_parameters
 

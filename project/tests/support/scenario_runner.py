@@ -31,16 +31,11 @@ class ScenarioDefinition:
     player_ids: list[str]
     preset_name: str | None = None
     structure_name: str | None = None
-    mode_name: str | None = None
     letters_word: str | None = None
     attack_attempts: int | None = None
     defense_attempts: int | None = None
     fixed_turn_order: list[int] | None = None
     steps: list[ScenarioStep] = field(default_factory=list)
-
-    @property
-    def effective_structure_name(self) -> str | None:
-        return self.structure_name or self.mode_name
 
 
 @dataclass
@@ -91,7 +86,7 @@ class ScenarioRunner:
                 setup.defense_attempts = definition.defense_attempts
             return GameController(self.setup_translator.to_match_parameters(setup))
 
-        structure_name = definition.effective_structure_name
+        structure_name = definition.structure_name
         if structure_name is None:
             structure_name = (
                 "one_vs_one" if len(definition.player_ids) == 2 else "battle"

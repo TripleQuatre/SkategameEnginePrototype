@@ -1213,30 +1213,14 @@ class GUIApp:
 
         return ""
 
-    @staticmethod
-    def _get_transition_structure_name(
-        payload: dict[str, object],
-        primary_key: str,
-        legacy_key: str,
-    ) -> object:
-        return payload.get(primary_key, payload.get(legacy_key))
-
     def _format_transition_event(
         self, base_message: str, payload: dict[str, object]
     ) -> str:
         message = base_message
 
         if payload.get("structure_changed"):
-            previous_structure = self._get_transition_structure_name(
-                payload,
-                "previous_structure_name",
-                "previous_mode_name",
-            )
-            next_structure = self._get_transition_structure_name(
-                payload,
-                "structure_name",
-                "mode_name",
-            )
+            previous_structure = payload.get("previous_structure_name")
+            next_structure = payload.get("structure_name")
             if previous_structure and next_structure:
                 message = (
                     f"{base_message} Structure changed: "

@@ -16,10 +16,6 @@ class MatchPreset:
     rule_set: RuleSetConfig = field(default_factory=RuleSetConfig)
     description: str = ""
 
-    @property
-    def mode_name(self) -> str:
-        return self.structure_name
-
     def create_match_setup(self, player_ids: list[str]) -> MatchSetup:
         return MatchSetup(
             player_ids=list(player_ids),

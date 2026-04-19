@@ -216,7 +216,7 @@ def test_cli_new_game_can_start_without_preset(monkeypatch) -> None:
 
     assert match_parameters.preset_name is None
     assert match_parameters.structure_name == "one_vs_one"
-    assert match_parameters.mode_name == "one_vs_one"
+    assert match_parameters.structure_name == "one_vs_one"
     assert match_parameters.rule_set.letters_word == "OUT"
     assert match_parameters.rule_set.attack_attempts == 2
     assert match_parameters.rule_set.defense_attempts == 3

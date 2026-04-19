@@ -31,14 +31,14 @@ def test_roster_transitions_can_add_player_and_switch_to_battle() -> None:
     assert state.turn_order == [0, 1, 2]
     assert match_parameters.player_ids == ["p1", "p2", "p3"]
     assert match_parameters.structure_name == "battle"
-    assert match_parameters.mode_name == "battle"
+    assert match_parameters.structure_name == "battle"
     assert match_parameters.preset_name is None
     assert event.name == EventName.PLAYER_JOINED
     assert event.payload["previous_structure_name"] == "one_vs_one"
     assert event.payload["structure_name"] == "battle"
     assert event.payload["structure_changed"] is True
-    assert event.payload["previous_mode_name"] == "one_vs_one"
-    assert event.payload["mode_name"] == "battle"
+    assert event.payload["previous_structure_name"] == "one_vs_one"
+    assert event.payload["structure_name"] == "battle"
     assert event.payload["preset_invalidated"] is True
     assert event.payload["previous_player_ids"] == ["p1", "p2"]
     assert event.payload["player_ids"] == ["p1", "p2", "p3"]
@@ -102,15 +102,15 @@ def test_roster_transitions_can_remove_player_and_switch_to_one_vs_one() -> None
     assert state.attacker_index == 0
     assert match_parameters.player_ids == ["p1", "p3"]
     assert match_parameters.structure_name == "one_vs_one"
-    assert match_parameters.mode_name == "one_vs_one"
+    assert match_parameters.structure_name == "one_vs_one"
     assert match_parameters.preset_name is None
     assert match_parameters.policies == MatchPolicies()
     assert event.name == EventName.PLAYER_REMOVED
     assert event.payload["previous_structure_name"] == "battle"
     assert event.payload["structure_name"] == "one_vs_one"
     assert event.payload["structure_changed"] is True
-    assert event.payload["previous_mode_name"] == "battle"
-    assert event.payload["mode_name"] == "one_vs_one"
+    assert event.payload["previous_structure_name"] == "battle"
+    assert event.payload["structure_name"] == "one_vs_one"
     assert event.payload["preset_invalidated"] is True
     assert event.payload["previous_player_ids"] == ["p1", "p2", "p3"]
     assert event.payload["player_ids"] == ["p1", "p3"]

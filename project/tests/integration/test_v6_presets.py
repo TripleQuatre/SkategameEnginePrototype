@@ -56,7 +56,6 @@ def test_game_engine_classic_skate_preset_starts_with_expected_configuration() -
     assert context is not None
     assert context.structure_name == "one_vs_one"
     assert context.preset_name == "classic_skate"
-    assert context.mode_name == "one_vs_one"
 
 
 def test_game_engine_classic_blade_preset_uses_blade_word() -> None:
@@ -140,7 +139,7 @@ def test_technical_reverse_defender_order_policy_works(monkeypatch) -> None:
     engine = GameEngine(
         MatchParameters(
             player_ids=["p1", "p2", "p3"],
-            mode_name="battle",
+            structure_name="battle",
             policies=MatchPolicies(
                 initial_turn_order=InitialTurnOrderPolicy.RANDOMIZED,
                 defender_order=DefenderOrderPolicy.REVERSE_TURN_ORDER,
@@ -166,7 +165,7 @@ def test_technical_no_elimination_configuration_keeps_players_active(monkeypatch
     engine = GameEngine(
         MatchParameters(
             player_ids=["p1", "p2", "p3"],
-            mode_name="battle",
+            structure_name="battle",
             rule_set=RuleSetConfig(
                 letters_word="S",
                 elimination_enabled=False,
@@ -241,7 +240,7 @@ def test_game_controller_save_and_load_preserves_v6_preset_configuration() -> No
         reloaded_context = reloaded_controller.get_state().history.build_match_context()
 
         assert reloaded_match_parameters.preset_name == "battle_hardcore"
-        assert reloaded_match_parameters.mode_name == "battle"
+        assert reloaded_match_parameters.structure_name == "battle"
         assert reloaded_match_parameters.policies == preset.policies
         assert reloaded_match_parameters.rule_set == preset.rule_set
         assert reloaded_context is not None

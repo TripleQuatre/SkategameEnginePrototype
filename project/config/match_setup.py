@@ -26,10 +26,9 @@ class MatchSetup:
         defense_attempts: int = 1,
         elimination_enabled: bool = True,
         preset_name: str | None = None,
-        mode_name: str | None = None,
     ) -> None:
         self.player_ids = player_ids
-        self.structure_name = mode_name if mode_name is not None else structure_name
+        self.structure_name = structure_name
         self.policies = policies
         self.letters_word = letters_word
         self.attack_attempts = attack_attempts
@@ -39,14 +38,6 @@ class MatchSetup:
 
         if self.policies is None:
             self.policies = build_default_policies_for_structure(self.structure_name)
-
-    @property
-    def mode_name(self) -> str:
-        return self.structure_name
-
-    @mode_name.setter
-    def mode_name(self, value: str) -> None:
-        self.structure_name = value
 
     def to_rule_set_config(self) -> RuleSetConfig:
         return RuleSetConfig(

@@ -38,7 +38,6 @@ class SetupTranslator:
                 victory_type="last_player_standing",
                 elimination_enabled=setup.elimination_enabled,
             ),
-            legacy_mode_name=setup.structure_name,
             preset_name=setup.preset_name,
         )
 

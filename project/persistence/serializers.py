@@ -90,18 +90,15 @@ class Serializer:
         return {
             "player_ids": match_parameters.player_ids,
             "structure_name": match_parameters.structure_name,
-            "mode_name": match_parameters.structure_name,
             "rule_set": self.serialize_rule_set(match_parameters.rule_set),
             "policies": self.serialize_match_policies(match_parameters.policies),
             "preset_name": match_parameters.preset_name,
         }
 
     def deserialize_match_parameters(self, data: dict) -> MatchParameters:
-        structure_name = data.get("structure_name", data["mode_name"])
-
         return MatchParameters(
             player_ids=data["player_ids"],
-            structure_name=structure_name,
+            structure_name=data["structure_name"],
             rule_set=self.deserialize_rule_set(data["rule_set"]),
             policies=self.deserialize_match_policies(data.get("policies")),
             preset_name=data.get("preset_name"),

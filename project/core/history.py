@@ -36,7 +36,6 @@ class HistoryRow:
 @dataclass
 class HistoryMatchContext:
     structure_name: str | None = None
-    legacy_mode_name: str | None = None
     preset_name: str | None = None
     player_names: list[str] = field(default_factory=list)
     turn_order: list[int] = field(default_factory=list)
@@ -44,14 +43,6 @@ class HistoryMatchContext:
     initial_turn_order_policy: str | None = None
     attacker_rotation_policy: str | None = None
     defender_order_policy: str | None = None
-
-    @property
-    def mode_name(self) -> str | None:
-        return self.legacy_mode_name or self.structure_name
-
-    @mode_name.setter
-    def mode_name(self, value: str | None) -> None:
-        self.legacy_mode_name = value
 
 
 @dataclass
@@ -66,10 +57,7 @@ class History:
         payload: dict[str, object],
         fallback: str | None = None,
     ) -> str | None:
-        return payload.get(
-            "structure_name",
-            payload.get("mode_name", fallback),
-        )
+        return payload.get("structure_name", fallback)
 
     def build_match_context(self) -> HistoryMatchContext | None:
         context: HistoryMatchContext | None = None
@@ -81,7 +69,6 @@ class History:
                 structure_name = self._get_payload_structure_name(payload)
                 context = HistoryMatchContext(
                     structure_name=structure_name,
-                    legacy_mode_name=payload.get("mode_name"),
                     preset_name=payload.get("preset_name"),
                     player_names=list(payload.get("player_names", [])),
                     turn_order=list(payload.get("turn_order", [])),
@@ -101,7 +88,6 @@ class History:
                     context.structure_name,
                 )
                 context.structure_name = structure_name
-                context.legacy_mode_name = payload.get("mode_name")
                 context.preset_name = payload.get("preset_name", context.preset_name)
                 context.player_names = list(
                     payload.get("player_names", context.player_names)

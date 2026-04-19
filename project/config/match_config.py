@@ -14,17 +14,8 @@ class MatchConfig:
     defense: DefenseConfig = field(default_factory=DefenseConfig)
     scoring: ScoringConfig = field(default_factory=ScoringConfig)
     victory: VictoryConfig = field(default_factory=VictoryConfig)
-    legacy_mode_name: str | None = None
     preset_name: str | None = None
 
     @property
     def structure_name(self) -> str:
-        if self.structure.structure_name:
-            return self.structure.structure_name
-        if self.legacy_mode_name is not None:
-            return self.legacy_mode_name
-        return ""
-
-    @property
-    def mode_name(self) -> str | None:
-        return self.legacy_mode_name or self.structure_name
+        return self.structure.structure_name

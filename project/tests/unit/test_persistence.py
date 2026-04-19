@@ -124,7 +124,6 @@ def test_serializer_can_roundtrip_game_save() -> None:
     data = serializer.serialize_game_save(game_save)
     restored_game_save = serializer.deserialize_game_save(data)
 
-    assert restored_game_save.match_parameters.mode_name == "battle"
     assert restored_game_save.match_parameters.structure_name == "battle"
     assert restored_game_save.match_parameters.preset_name is None
     assert restored_game_save.match_parameters.player_ids == ["p1", "p2", "p3"]
@@ -198,11 +197,11 @@ def test_snapshot_can_restore_match_parameters_copy() -> None:
     restored_match_parameters = snapshot.restore_match_parameters()
 
     match_parameters.player_ids.append("p3")
-    match_parameters.mode_name = "battle"
+    match_parameters.structure_name = "battle"
 
     assert restored_match_parameters is not None
     assert restored_match_parameters.player_ids == ["p1", "p2"]
-    assert restored_match_parameters.mode_name == "one_vs_one"
+    assert restored_match_parameters.structure_name == "one_vs_one"
     assert restored_match_parameters.preset_name == "classic_skate"
 
 
@@ -319,7 +318,6 @@ def test_game_save_repository_can_save_and_load_game_save() -> None:
         loaded_game_save = repository.load(str(filepath))
 
         assert filepath.exists()
-        assert loaded_game_save.match_parameters.mode_name == "battle"
         assert loaded_game_save.match_parameters.structure_name == "battle"
         assert loaded_game_save.match_parameters.preset_name == "battle_standard"
         assert loaded_game_save.match_parameters.player_ids == ["p1", "p2", "p3"]
@@ -364,34 +362,11 @@ def test_game_save_repository_writes_valid_json() -> None:
         assert "match_parameters" in data
         assert "game_state" in data
         assert data["match_parameters"]["structure_name"] == "one_vs_one"
-        assert data["match_parameters"]["mode_name"] == "one_vs_one"
         assert "policies" in data["match_parameters"]
         assert "preset_name" in data["match_parameters"]
         assert data["game_state"]["players"][0]["name"] == "Stan"
     finally:
         shutil.rmtree(case_dir, ignore_errors=True)
-
-
-def test_serializer_can_read_legacy_match_parameters_without_v6_fields() -> None:
-    serializer = Serializer()
-
-    restored_match_parameters = serializer.deserialize_match_parameters(
-        {
-            "player_ids": ["p1", "p2"],
-            "mode_name": "one_vs_one",
-            "rule_set": {
-                "letters_word": "SKATE",
-                "elimination_enabled": True,
-                "defense_attempts": 1,
-            },
-        }
-    )
-
-    assert restored_match_parameters.preset_name is None
-    assert (
-        restored_match_parameters.policies.initial_turn_order
-        == InitialTurnOrderPolicy.FIXED_PLAYER_ORDER
-    )
 
 
 def test_serializer_can_read_v7_match_parameters_with_structure_name() -> None:
@@ -401,7 +376,6 @@ def test_serializer_can_read_v7_match_parameters_with_structure_name() -> None:
         {
             "player_ids": ["p1", "p2", "p3"],
             "structure_name": "battle",
-            "mode_name": "one_vs_one",
             "rule_set": {
                 "letters_word": "SKATE",
                 "elimination_enabled": True,
@@ -411,7 +385,7 @@ def test_serializer_can_read_v7_match_parameters_with_structure_name() -> None:
     )
 
     assert restored_match_parameters.structure_name == "battle"
-    assert restored_match_parameters.mode_name == "battle"
+    assert restored_match_parameters.preset_name is None
 
 
 def test_serializer_infers_turn_phase_for_legacy_saved_state() -> None:

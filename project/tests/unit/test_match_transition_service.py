@@ -58,7 +58,7 @@ def test_match_transition_service_can_add_player_and_rebuild_runtime() -> None:
 
     assert transition.event.name == EventName.PLAYER_JOINED
     assert match_parameters.structure_name == "battle"
-    assert match_parameters.mode_name == "battle"
+    assert match_parameters.structure_name == "battle"
     assert [player.id for player in state.players] == ["p1", "p2", "p3"]
     assert state.turn_order == [0, 1, 2]
     assert transition.structure.__class__.__name__ == "BattleStructure"
@@ -114,7 +114,7 @@ def test_match_transition_service_can_remove_player_and_rebuild_runtime() -> Non
 
     assert transition.event.name == EventName.PLAYER_REMOVED
     assert match_parameters.structure_name == "one_vs_one"
-    assert match_parameters.mode_name == "one_vs_one"
+    assert match_parameters.structure_name == "one_vs_one"
     assert [player.id for player in state.players] == ["p1", "p3"]
     assert state.turn_order == [0, 1]
     assert transition.structure.__class__.__name__ == "OneVsOneStructure"

@@ -239,7 +239,7 @@ def test_scenario_runner_can_preserve_structure_context_after_transition_and_loa
 
     assert context is not None
     assert context.structure_name == "battle"
-    assert context.mode_name == "battle"
+    assert context.structure_name == "battle"
     assert result.controller.match_parameters.structure_name == "battle"
     assert context.player_names == ["p1", "p2", "p3"]
     assert context.preset_name is None

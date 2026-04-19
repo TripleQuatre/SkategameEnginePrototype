@@ -14,15 +14,6 @@ def test_match_setup_uses_battle_default_policies() -> None:
     assert setup.structure_name == "battle"
 
 
-def test_match_setup_structure_name_alias_tracks_mode_name() -> None:
-    setup = MatchSetup(player_ids=["p1", "p2"])
-
-    setup.structure_name = "battle"
-
-    assert setup.mode_name == "battle"
-    assert setup.structure_name == "battle"
-
-
 def test_setup_translator_builds_v7_match_config() -> None:
     setup = MatchSetup(
         player_ids=["p1", "p2"],
@@ -43,7 +34,6 @@ def test_setup_translator_builds_v7_match_config() -> None:
     assert match_config.scoring.letters_word == "SKATE"
     assert match_config.victory.victory_type == "last_player_standing"
     assert match_config.victory.elimination_enabled is True
-    assert match_config.mode_name == "one_vs_one"
     assert match_config.structure_name == "one_vs_one"
     assert match_config.preset_name == "classic_skate"
 
@@ -62,7 +52,7 @@ def test_setup_translator_can_build_legacy_match_parameters_from_setup() -> None
     match_parameters = SetupTranslator().to_match_parameters(setup)
 
     assert match_parameters.player_ids == ["p1", "p2", "p3"]
-    assert match_parameters.mode_name == "battle"
+    assert match_parameters.structure_name == "battle"
     assert match_parameters.rule_set.letters_word == "OUT"
     assert match_parameters.rule_set.attack_attempts == 2
     assert match_parameters.rule_set.defense_attempts == 3
@@ -111,18 +101,16 @@ def test_preset_registry_can_build_legacy_match_parameters_from_official_preset(
     )
 
     assert match_parameters.player_ids == ["Stan", "Denise"]
-    assert match_parameters.mode_name == "one_vs_one"
+    assert match_parameters.structure_name == "one_vs_one"
     assert match_parameters.rule_set.letters_word == "SKATE"
     assert match_parameters.rule_set.attack_attempts == 1
     assert match_parameters.rule_set.defense_attempts == 3
     assert match_parameters.preset_name == "classic_skate"
 
 
-def test_match_config_structure_name_prefers_structure_over_legacy_mode_name() -> None:
+def test_match_config_structure_name_comes_from_structure_config() -> None:
     match_config = MatchConfig(
         structure=StructureConfig(structure_name="battle"),
-        legacy_mode_name="one_vs_one",
     )
 
     assert match_config.structure_name == "battle"
-    assert match_config.mode_name == "one_vs_one"

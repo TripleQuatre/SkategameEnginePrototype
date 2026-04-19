@@ -10,7 +10,6 @@ def test_build_match_context_from_game_started_event() -> None:
             name=EventName.GAME_STARTED,
             payload={
                 "structure_name": "battle",
-                "mode_name": "battle",
                 "preset_name": "battle_standard",
                 "player_names": ["Stan", "Denise", "Alex"],
                 "turn_order": [2, 0, 1],
@@ -26,7 +25,6 @@ def test_build_match_context_from_game_started_event() -> None:
 
     assert context is not None
     assert context.structure_name == "battle"
-    assert context.mode_name == "battle"
     assert context.preset_name == "battle_standard"
     assert context.player_names == ["Stan", "Denise", "Alex"]
     assert context.turn_order == [2, 0, 1]
@@ -54,7 +52,6 @@ def test_build_match_context_accepts_v7_structure_only_payload() -> None:
 
     assert context is not None
     assert context.structure_name == "battle"
-    assert context.mode_name == "battle"
     assert context.player_names == ["Stan", "Denise", "Alex"]
     assert context.turn_order == [2, 0, 1]
     assert context.starting_attacker_name == "Alex"
@@ -67,7 +64,6 @@ def test_build_match_context_is_updated_after_player_join_event() -> None:
             name=EventName.GAME_STARTED,
             payload={
                 "structure_name": "one_vs_one",
-                "mode_name": "one_vs_one",
                 "preset_name": "classic_skate",
                 "player_names": ["Stan", "Denise"],
                 "turn_order": [0, 1],
@@ -83,7 +79,6 @@ def test_build_match_context_is_updated_after_player_join_event() -> None:
             name=EventName.PLAYER_JOINED,
             payload={
                 "structure_name": "battle",
-                "mode_name": "battle",
                 "preset_name": None,
                 "player_names": ["Stan", "Denise", "Alex"],
                 "turn_order": [0, 1, 2],
@@ -95,7 +90,6 @@ def test_build_match_context_is_updated_after_player_join_event() -> None:
 
     assert context is not None
     assert context.structure_name == "battle"
-    assert context.mode_name == "battle"
     assert context.preset_name is None
     assert context.player_names == ["Stan", "Denise", "Alex"]
     assert context.turn_order == [0, 1, 2]
@@ -108,7 +102,6 @@ def test_build_match_context_is_updated_after_player_removed_event() -> None:
             name=EventName.GAME_STARTED,
             payload={
                 "structure_name": "battle",
-                "mode_name": "battle",
                 "preset_name": "battle_standard",
                 "player_names": ["Stan", "Denise", "Alex"],
                 "turn_order": [0, 1, 2],
@@ -124,7 +117,6 @@ def test_build_match_context_is_updated_after_player_removed_event() -> None:
             name=EventName.PLAYER_REMOVED,
             payload={
                 "structure_name": "one_vs_one",
-                "mode_name": "one_vs_one",
                 "preset_name": None,
                 "player_names": ["Stan", "Alex"],
                 "turn_order": [0, 1],
@@ -136,7 +128,6 @@ def test_build_match_context_is_updated_after_player_removed_event() -> None:
 
     assert context is not None
     assert context.structure_name == "one_vs_one"
-    assert context.mode_name == "one_vs_one"
     assert context.preset_name is None
     assert context.player_names == ["Stan", "Alex"]
     assert context.turn_order == [0, 1]
