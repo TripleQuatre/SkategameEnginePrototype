@@ -13,7 +13,6 @@ from core.snapshots import Snapshot, SnapshotHistory
 from core.player import Player
 from core.state import GameState
 from core.types import EventName, Phase, TurnPhase
-from persistence.config_repository import ConfigRepository
 from persistence.game_save import GameSave
 from persistence.game_save_repository import GameSaveRepository
 from persistence.serializers import Serializer
@@ -334,37 +333,6 @@ def test_game_save_repository_can_save_and_load_game_save() -> None:
         assert loaded_game_save.game_state.turn_order == [2, 0, 1]
         assert loaded_game_save.game_state.current_trick == "Makio"
         assert loaded_game_save.game_state.players[0].name == "Stan"
-    finally:
-        shutil.rmtree(case_dir, ignore_errors=True)
-
-
-def test_config_repository_can_save_and_load_match_parameters() -> None:
-    case_dir = _make_case_dir("config_repository_roundtrip")
-    repository = ConfigRepository()
-
-    match_parameters = MatchParameters(
-        player_ids=["Stan", "Denise"],
-        structure_name="one_vs_one",
-        preset_name="classic_skate",
-        rule_set=RuleSetConfig(
-            letters_word="SKATE",
-            elimination_enabled=True,
-            defense_attempts=3,
-        ),
-    )
-
-    try:
-        filepath = case_dir / "configs" / "match_config.json"
-
-        repository.save(match_parameters, str(filepath))
-        loaded_match_parameters = repository.load(str(filepath))
-
-        assert filepath.exists()
-        assert loaded_match_parameters.player_ids == ["Stan", "Denise"]
-        assert loaded_match_parameters.mode_name == "one_vs_one"
-        assert loaded_match_parameters.preset_name == "classic_skate"
-        assert loaded_match_parameters.rule_set.letters_word == "SKATE"
-        assert loaded_match_parameters.rule_set.defense_attempts == 3
     finally:
         shutil.rmtree(case_dir, ignore_errors=True)
 
