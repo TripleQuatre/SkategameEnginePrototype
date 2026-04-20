@@ -1,5 +1,6 @@
 import match.structure.battle_structure as battle_structure_module
 import pytest
+import tkinter as tk
 
 from core.types import Phase, TurnPhase
 from interfaces.gui.gui_app import GUIApp
@@ -16,7 +17,11 @@ def gui_app(monkeypatch) -> GUIApp:
         lambda *args, **kwargs: None,
     )
 
-    app = GUIApp()
+    try:
+        app = GUIApp()
+    except tk.TclError as error:
+        pytest.skip(f"Tk GUI is unavailable in this environment: {error}")
+
     app.root.withdraw()
 
     yield app

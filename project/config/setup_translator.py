@@ -20,6 +20,7 @@ class SetupTranslator:
 
     def to_match_config(self, setup: MatchSetup) -> MatchConfig:
         return MatchConfig(
+            player_ids=list(setup.player_ids),
             structure=StructureConfig(
                 structure_name=setup.structure_name,
                 policies=setup.policies,
@@ -42,14 +43,13 @@ class SetupTranslator:
         )
 
     def from_match_parameters(self, match_parameters: MatchParameters) -> MatchConfig:
-        setup = MatchSetup(
-            player_ids=list(match_parameters.player_ids),
-            structure_name=match_parameters.structure_name,
-            policies=match_parameters.policies,
-            letters_word=match_parameters.rule_set.letters_word,
-            attack_attempts=match_parameters.rule_set.attack_attempts,
-            defense_attempts=match_parameters.rule_set.defense_attempts,
-            elimination_enabled=match_parameters.rule_set.elimination_enabled,
-            preset_name=match_parameters.preset_name,
+        return match_parameters.to_match_config()
+
+    def from_match_config(self, match_config: MatchConfig) -> MatchParameters:
+        return MatchParameters(
+            player_ids=list(match_config.player_ids),
+            structure_name=match_config.structure_name,
+            policies=match_config.policies,
+            rule_set=match_config.to_rule_set_config(),
+            preset_name=match_config.preset_name,
         )
-        return self.to_match_config(setup)

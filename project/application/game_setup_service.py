@@ -73,7 +73,7 @@ class GameSetupService:
         return self.create_started_controller_from_setup(setup)
 
     def create_started_controller_from_setup(self, setup: MatchSetup) -> GameController:
-        controller = GameController(self.setup_translator.to_match_parameters(setup))
+        controller = GameController(self.setup_translator.to_match_config(setup))
         controller.start_game()
         return controller
 
@@ -82,7 +82,7 @@ class GameSetupService:
             player_ids=["Player 1", "Player 2"],
             structure_name="one_vs_one",
         )
-        return GameController(self.setup_translator.to_match_parameters(placeholder_setup))
+        return GameController(self.setup_translator.to_match_config(placeholder_setup))
 
     def load_controller(self, filepath: str) -> GameController:
         controller = self.create_loading_controller()

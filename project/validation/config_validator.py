@@ -2,19 +2,27 @@ from config.match_policies import (
     DefenderOrderPolicy,
     InitialTurnOrderPolicy,
 )
+from config.match_config import MatchConfig
 from config.match_parameters import MatchParameters
 from config.preset_registry import PresetRegistry
 from config.rule_set_config import RuleSetConfig
+from config.setup_translator import SetupTranslator
 from core.exceptions import InvalidStateError
 
 
 class ConfigValidator:
     def __init__(self) -> None:
         self.preset_registry = PresetRegistry()
+        self.setup_translator = SetupTranslator()
 
     def validate_match_parameters(self, match_parameters: MatchParameters) -> None:
-        player_count = len(match_parameters.player_ids)
-        structure_name = match_parameters.structure_name
+        self.validate_match_config(
+            self.setup_translator.from_match_parameters(match_parameters)
+        )
+
+    def validate_match_config(self, match_config: MatchConfig) -> None:
+        player_count = len(match_config.player_ids)
+        structure_name = match_config.structure_name
 
         if player_count < 2:
             raise InvalidStateError("At least two players are required.")
@@ -31,8 +39,10 @@ class ConfigValidator:
         if structure_name == "battle" and player_count < 3:
             raise InvalidStateError("Battle structure requires at least three players.")
 
-        self._validate_policies(match_parameters)
-        self._validate_preset_coherence(match_parameters)
+        self.validate_rule_set(match_config.to_rule_set_config())
+        self._validate_policies(match_config)
+        self._validate_runtime_families(match_config)
+        self._validate_preset_coherence(match_config)
 
     def validate_rule_set(self, rule_set: RuleSetConfig) -> None:
         if not rule_set.letters_word:
@@ -47,9 +57,20 @@ class ConfigValidator:
         if not (1 <= rule_set.defense_attempts <= 3):
             raise ValueError("defense_attempts must be between 1 and 3")
 
-    def _validate_policies(self, match_parameters: MatchParameters) -> None:
-        policies = match_parameters.policies
-        structure_name = match_parameters.structure_name
+    def _validate_runtime_families(self, match_config: MatchConfig) -> None:
+        if match_config.scoring.scoring_type != "letters":
+            raise InvalidStateError(
+                f"Unsupported scoring type: {match_config.scoring.scoring_type}"
+            )
+
+        if match_config.victory.victory_type != "last_player_standing":
+            raise InvalidStateError(
+                f"Unsupported victory type: {match_config.victory.victory_type}"
+            )
+
+    def _validate_policies(self, match_config: MatchConfig) -> None:
+        policies = match_config.policies
+        structure_name = match_config.structure_name
 
         if structure_name == "one_vs_one":
             if policies.initial_turn_order != InitialTurnOrderPolicy.FIXED_PLAYER_ORDER:
@@ -62,8 +83,8 @@ class ConfigValidator:
                     "One vs one structure requires defenders to follow turn order."
                 )
 
-    def _validate_preset_coherence(self, match_parameters: MatchParameters) -> None:
-        preset_name = match_parameters.preset_name
+    def _validate_preset_coherence(self, match_config: MatchConfig) -> None:
+        preset_name = match_config.preset_name
         if preset_name is None:
             return
 
@@ -72,17 +93,17 @@ class ConfigValidator:
 
         preset = self.preset_registry.get(preset_name)
 
-        if match_parameters.structure_name != preset.structure_name:
+        if match_config.structure_name != preset.structure_name:
             raise InvalidStateError(
                 "preset_name does not match the configured structure_name."
             )
 
-        if match_parameters.policies != preset.policies:
+        if match_config.policies != preset.policies:
             raise InvalidStateError(
                 "preset_name does not match the configured match policies."
             )
 
-        if match_parameters.rule_set != preset.rule_set:
+        if match_config.to_rule_set_config() != preset.rule_set:
             raise InvalidStateError(
                 "preset_name does not match the configured rule set."
             )

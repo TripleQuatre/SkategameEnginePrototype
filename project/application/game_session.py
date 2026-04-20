@@ -1,4 +1,6 @@
+from config.match_config import MatchConfig
 from config.match_parameters import MatchParameters
+from config.setup_translator import SetupTranslator
 from core.snapshots import SnapshotHistory
 from core.state import GameState
 from core.types import AttackResolutionStatus, DefenseResolutionStatus
@@ -11,8 +13,9 @@ from validation.state_validator import StateValidator
 
 
 class GameSession:
-    def __init__(self, match_parameters: MatchParameters) -> None:
-        self.match_parameters = match_parameters
+    def __init__(self, match_config: MatchConfig | MatchParameters) -> None:
+        self.setup_translator = SetupTranslator()
+        self._match_config = self._coerce_match_config(match_config)
         self.config_validator = ConfigValidator()
         self.state_validator = StateValidator()
         self.snapshot_history = SnapshotHistory()
@@ -21,7 +24,7 @@ class GameSession:
             config_validator=self.config_validator,
         )
         runtime = self.transition_service.create_initial_runtime(
-            self.match_parameters,
+            self._match_config,
             self.state_validator,
         )
         self._apply_runtime_session(runtime)
@@ -30,12 +33,33 @@ class GameSession:
     def structure_name(self) -> str:
         return self.structure.structure_name
 
+    @property
+    def match_config(self) -> MatchConfig:
+        if hasattr(self, "state"):
+            self._match_config = self._match_config.with_rule_set(self.state.rule_set)
+        return self._match_config
+
+    @property
+    def match_parameters(self) -> MatchParameters:
+        match_parameters = self.setup_translator.from_match_config(self.match_config)
+        if hasattr(self, "state"):
+            match_parameters.rule_set = self.state.rule_set
+        return match_parameters
+
+    def _coerce_match_config(
+        self,
+        match_config: MatchConfig | MatchParameters,
+    ) -> MatchConfig:
+        if isinstance(match_config, MatchParameters):
+            return self.setup_translator.from_match_parameters(match_config)
+        return match_config
+
     def _save_snapshot(self) -> None:
-        self.snapshot_history.push(self.state, self.match_parameters)
+        self.snapshot_history.push(self.state, self.match_config)
 
     def _apply_runtime_session(self, runtime: RuntimeSession) -> None:
         self.state = runtime.state
-        self.match_parameters = runtime.match_parameters
+        self._match_config = runtime.match_config
         self.structure = runtime.structure
         self.game_flow = runtime.game_flow
 
@@ -76,7 +100,7 @@ class GameSession:
         self._execute_roster_transition(
             lambda: self.transition_service.add_player_between_turns(
                 self.state,
-                self.match_parameters,
+                self.match_config,
                 self.game_flow.action_validator,
                 player_id,
             )
@@ -86,7 +110,7 @@ class GameSession:
         self._execute_roster_transition(
             lambda: self.transition_service.remove_player_between_turns(
                 self.state,
-                self.match_parameters,
+                self.match_config,
                 self.game_flow.action_validator,
                 player_id,
             )
@@ -109,12 +133,10 @@ class GameSession:
         if snapshot is None:
             return False
 
-        restored_match_parameters = (
-            snapshot.restore_match_parameters() or self.match_parameters
-        )
+        restored_match_config = snapshot.restore_match_config() or self.match_config
         runtime = self.transition_service.restore_runtime(
             snapshot.restore_state(),
-            restored_match_parameters,
+            restored_match_config,
             self.state_validator,
         )
         self._apply_runtime_session(runtime)
@@ -123,10 +145,9 @@ class GameSession:
     def save_game(self, filepath: str) -> None:
         self.state_validator.validate(self.state)
         self.structure.validate(self.state)
-        self.match_parameters.rule_set = self.state.rule_set
 
         game_save = GameSave(
-            match_parameters=self.match_parameters,
+            match_config=self.match_config,
             game_state=self.state,
         )
         self.save_repository.save(game_save, filepath)
@@ -135,7 +156,7 @@ class GameSession:
         game_save = self.save_repository.load(filepath)
         runtime = self.transition_service.restore_runtime(
             game_save.game_state,
-            game_save.match_parameters,
+            game_save.match_config,
             self.state_validator,
         )
         self._apply_runtime_session(runtime)

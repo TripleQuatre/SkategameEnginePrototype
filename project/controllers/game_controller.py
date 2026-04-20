@@ -1,4 +1,5 @@
 from application.game_session import GameSession
+from config.match_config import MatchConfig
 from config.match_parameters import MatchParameters
 from core.state import GameState
 from core.types import AttackResolutionStatus, DefenseResolutionStatus
@@ -6,8 +7,12 @@ from match.structure.base_structure import BaseStructure
 
 
 class GameController:
-    def __init__(self, match_parameters: MatchParameters) -> None:
-        self.session = GameSession(match_parameters)
+    def __init__(self, match_config: MatchConfig | MatchParameters) -> None:
+        self.session = GameSession(match_config)
+
+    @property
+    def match_config(self) -> MatchConfig:
+        return self.session.match_config
 
     @property
     def match_parameters(self) -> MatchParameters:

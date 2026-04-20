@@ -1,5 +1,8 @@
 from dataclasses import asdict
 
+from config.attack_config import AttackConfig
+from config.defense_config import DefenseConfig
+from config.match_config import MatchConfig
 from config.match_parameters import MatchParameters
 from config.match_policies import (
     AttackerRotationPolicy,
@@ -8,6 +11,10 @@ from config.match_policies import (
     MatchPolicies,
 )
 from config.rule_set_config import RuleSetConfig
+from config.scoring_config import ScoringConfig
+from config.setup_translator import SetupTranslator
+from config.structure_config import StructureConfig
+from config.victory_config import VictoryConfig
 from core.events import Event
 from core.history import History
 from core.player import Player
@@ -17,6 +24,9 @@ from persistence.game_save import GameSave
 
 
 class Serializer:
+    def __init__(self) -> None:
+        self.setup_translator = SetupTranslator()
+
     def serialize_player(self, player: Player) -> dict:
         return {
             "id": player.id,
@@ -86,6 +96,43 @@ class Serializer:
             defender_order=DefenderOrderPolicy(data["defender_order"]),
         )
 
+    def serialize_match_config(self, match_config: MatchConfig) -> dict:
+        return {
+            "player_ids": list(match_config.player_ids),
+            "structure": {
+                "structure_name": match_config.structure_name,
+                "policies": self.serialize_match_policies(match_config.policies),
+            },
+            "attack": asdict(match_config.attack),
+            "defense": asdict(match_config.defense),
+            "scoring": asdict(match_config.scoring),
+            "victory": asdict(match_config.victory),
+            "preset_name": match_config.preset_name,
+        }
+
+    def deserialize_match_config(self, data: dict) -> MatchConfig:
+        if "structure" in data:
+            structure_data = data["structure"]
+            return MatchConfig(
+                player_ids=list(data.get("player_ids", [])),
+                structure=StructureConfig(
+                    structure_name=structure_data["structure_name"],
+                    policies=(
+                        self.deserialize_match_policies(structure_data.get("policies"))
+                        or MatchPolicies()
+                    ),
+                ),
+                attack=AttackConfig(**data.get("attack", {})),
+                defense=DefenseConfig(**data.get("defense", {})),
+                scoring=ScoringConfig(**data.get("scoring", {})),
+                victory=VictoryConfig(**data.get("victory", {})),
+                preset_name=data.get("preset_name"),
+            )
+
+        return self.setup_translator.from_match_parameters(
+            self.deserialize_match_parameters(data)
+        )
+
     def serialize_match_parameters(self, match_parameters: MatchParameters) -> dict:
         return {
             "player_ids": match_parameters.player_ids,
@@ -96,6 +143,11 @@ class Serializer:
         }
 
     def deserialize_match_parameters(self, data: dict) -> MatchParameters:
+        if "structure" in data:
+            return self.setup_translator.from_match_config(
+                self.deserialize_match_config(data)
+            )
+
         return MatchParameters(
             player_ids=data["player_ids"],
             structure_name=data["structure_name"],
@@ -150,6 +202,7 @@ class Serializer:
 
     def serialize_game_save(self, game_save: GameSave) -> dict:
         return {
+            "match_config": self.serialize_match_config(game_save.match_config),
             "match_parameters": self.serialize_match_parameters(
                 game_save.match_parameters
             ),
@@ -157,9 +210,15 @@ class Serializer:
         }
 
     def deserialize_game_save(self, data: dict) -> GameSave:
+        match_config_data = data.get("match_config")
+        if match_config_data is not None:
+            match_config = self.deserialize_match_config(match_config_data)
+        else:
+            match_config = self.setup_translator.from_match_parameters(
+                self.deserialize_match_parameters(data["match_parameters"])
+            )
+
         return GameSave(
-            match_parameters=self.deserialize_match_parameters(
-                data["match_parameters"]
-            ),
+            match_config=match_config,
             game_state=self.deserialize_game_state(data["game_state"]),
         )

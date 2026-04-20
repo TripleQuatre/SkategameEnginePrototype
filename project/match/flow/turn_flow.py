@@ -1,4 +1,6 @@
+from config.match_config import MatchConfig
 from config.match_parameters import MatchParameters
+from config.setup_translator import SetupTranslator
 from core.events import Event
 from core.exceptions import InvalidStateError
 from core.state import GameState
@@ -15,8 +17,10 @@ from match.flow.turn_cycle import TurnCycle
 from match.flow.turn_state import promote_attack_to_defense
 from match.flow.trick_rules import TrickRules
 from match.scoring.letters_scoring import LettersScoring
+from match.scoring.scoring_factory import ScoringFactory
 from match.structure.base_structure import BaseStructure
 from match.victory.last_player_standing import LastPlayerStandingVictory
+from match.victory.victory_factory import VictoryFactory
 from validation.action_validator import ActionValidator
 
 
@@ -24,15 +28,35 @@ class TurnFlow:
     def __init__(
         self,
         structure: BaseStructure,
-        match_parameters: MatchParameters | None = None,
+        match_config: MatchConfig | None = None,
+        legacy_match_parameters: MatchParameters | None = None,
     ) -> None:
         self.structure = structure
-        self.match_parameters = match_parameters
-        self.scoring = LettersScoring()
+        self.match_config = match_config
+        self.legacy_match_parameters = legacy_match_parameters
+        scoring_factory = ScoringFactory()
+        victory_factory = VictoryFactory()
+
+        scoring_config = (
+            self.match_config.scoring if self.match_config is not None else None
+        )
+        victory_config = (
+            self.match_config.victory if self.match_config is not None else None
+        )
+
+        self.scoring = (
+            scoring_factory.create(scoring_config)
+            if scoring_config is not None
+            else LettersScoring()
+        )
         self.special_rules = TrickRules()
         self.turn_resolver = DefenseAttemptResolver(self.scoring)
         self.attack_flow = AttackFlow()
-        self.end_conditions = LastPlayerStandingVictory()
+        self.end_conditions = (
+            victory_factory.create(victory_config, scoring_config)
+            if victory_config is not None and scoring_config is not None
+            else LastPlayerStandingVictory()
+        )
         self.defense_flow = DefenseFlow(self.turn_resolver, self.end_conditions)
         self.turn_cycle = TurnCycle(self.structure, self.special_rules)
         self.action_validator = ActionValidator(self.special_rules)
@@ -40,6 +64,14 @@ class TurnFlow:
     @property
     def structure_name(self) -> str:
         return self.structure.structure_name
+
+    @property
+    def match_parameters(self):
+        if self.legacy_match_parameters is not None:
+            return self.legacy_match_parameters
+        if self.match_config is None:
+            return None
+        return SetupTranslator().from_match_config(self.match_config)
 
     def start_game(self, state: GameState) -> None:
         self.structure.initialize_game(state)
@@ -57,23 +89,23 @@ class TurnFlow:
                         self.structure_name
                     ),
                     "preset_name": (
-                        self.match_parameters.preset_name
-                        if self.match_parameters is not None
+                        self.match_config.preset_name
+                        if self.match_config is not None
                         else None
                     ),
                     "initial_turn_order_policy": (
-                        self.match_parameters.policies.initial_turn_order.value
-                        if self.match_parameters is not None
+                        self.match_config.policies.initial_turn_order.value
+                        if self.match_config is not None
                         else None
                     ),
                     "attacker_rotation_policy": (
-                        self.match_parameters.policies.attacker_rotation.value
-                        if self.match_parameters is not None
+                        self.match_config.policies.attacker_rotation.value
+                        if self.match_config is not None
                         else None
                     ),
                     "defender_order_policy": (
-                        self.match_parameters.policies.defender_order.value
-                        if self.match_parameters is not None
+                        self.match_config.policies.defender_order.value
+                        if self.match_config is not None
                         else None
                     ),
                 },

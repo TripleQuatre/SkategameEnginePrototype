@@ -1,15 +1,35 @@
+from config.scoring_config import ScoringConfig
+from config.victory_config import VictoryConfig
 from core.player import Player
 from core.state import GameState
 
 
 class LastPlayerStandingVictory:
+    def __init__(
+        self,
+        scoring_config: ScoringConfig | None = None,
+        victory_config: VictoryConfig | None = None,
+    ) -> None:
+        self.scoring_config = scoring_config
+        self.victory_config = victory_config
+
     def is_player_eliminated(self, state: GameState, player: Player) -> bool:
-        return player.score >= len(state.rule_set.letters_word)
+        word = (
+            state.rule_set.letters_word
+            if hasattr(state, "rule_set")
+            else self.scoring_config.letters_word
+        )
+        return player.score >= len(word)
 
     def apply_eliminations(self, state: GameState) -> list[Player]:
         eliminated_players = []
 
-        if not state.rule_set.elimination_enabled:
+        elimination_enabled = (
+            state.rule_set.elimination_enabled
+            if hasattr(state, "rule_set")
+            else self.victory_config.elimination_enabled
+        )
+        if not elimination_enabled:
             return eliminated_players
 
         for player in state.players:
