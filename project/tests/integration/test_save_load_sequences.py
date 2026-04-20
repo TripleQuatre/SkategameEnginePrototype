@@ -45,7 +45,7 @@ def test_game_engine_can_save_and_load_engaged_turn() -> None:
         assert state.current_trick == "kickflip"
         assert state.defender_indices == [1]
         assert state.current_defender_position == 0
-        assert state.defense_attempts_left == state.rule_set.defense_attempts
+        assert state.defense_attempts_left == reloaded_engine.match_config.defense_attempts
         assert state.validated_tricks == []
         assert state.history.events[-1].name == EventName.TURN_STARTED
     finally:
@@ -54,12 +54,13 @@ def test_game_engine_can_save_and_load_engaged_turn() -> None:
 
 def test_game_engine_can_save_and_load_finished_game() -> None:
     case_dir = _make_case_dir("engine_finished_game")
-    match_parameters = MatchParameters(player_ids=["p1", "p2"])
+    match_parameters = MatchParameters(
+        player_ids=["p1", "p2"],
+        rule_set=RuleSetConfig(letters_word="S"),
+    )
     engine = GameEngine(match_parameters)
 
     try:
-        engine.get_state().rule_set.letters_word = "S"
-
         engine.start_game()
         engine.start_turn("soul")
         engine.resolve_defense(False)
@@ -131,7 +132,7 @@ def test_game_controller_can_save_and_load_engaged_turn() -> None:
         assert state.current_trick == "kickflip"
         assert state.defender_indices == [1]
         assert state.current_defender_position == 0
-        assert state.defense_attempts_left == state.rule_set.defense_attempts
+        assert state.defense_attempts_left == reloaded_controller.match_config.defense_attempts
         assert state.validated_tricks == []
         assert state.history.events[-1].name == EventName.TURN_STARTED
     finally:
@@ -199,8 +200,8 @@ def test_game_engine_can_load_battle_save_from_one_vs_one_placeholder(
         shutil.rmtree(case_dir, ignore_errors=True)
 
 
-def test_game_engine_load_relinks_match_parameters_and_state_rule_set() -> None:
-    case_dir = _make_case_dir("relinks_rule_set")
+def test_game_engine_load_restores_match_config_consistently() -> None:
+    case_dir = _make_case_dir("restores_match_config")
     match_parameters = MatchParameters(player_ids=["p1", "p2"])
     engine = GameEngine(match_parameters)
 
@@ -213,9 +214,8 @@ def test_game_engine_load_relinks_match_parameters_and_state_rule_set() -> None:
         reloaded_engine = GameEngine(match_parameters)
         reloaded_engine.load_game(str(filepath))
 
-        assert reloaded_engine.match_parameters.rule_set is reloaded_engine.get_state().rule_set
-
-        reloaded_engine.get_state().rule_set.letters_word = "OUT"
+        assert reloaded_engine.match_config.letters_word == "SKATE"
+        assert reloaded_engine.match_parameters.rule_set.letters_word == "SKATE"
 
         updated_filepath = case_dir / "updated_saved_game.json"
         reloaded_engine.save_game(str(updated_filepath))
@@ -223,8 +223,8 @@ def test_game_engine_load_relinks_match_parameters_and_state_rule_set() -> None:
         final_engine = GameEngine(match_parameters)
         final_engine.load_game(str(updated_filepath))
 
-        assert final_engine.match_parameters.rule_set.letters_word == "OUT"
-        assert final_engine.get_state().rule_set.letters_word == "OUT"
+        assert final_engine.match_config.letters_word == "SKATE"
+        assert final_engine.match_parameters.rule_set.letters_word == "SKATE"
     finally:
         shutil.rmtree(case_dir, ignore_errors=True)
 

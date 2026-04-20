@@ -23,7 +23,7 @@ class ActionValidator:
         if not state.players[state.attacker_index].is_active:
             raise InvalidActionError("Current attacker is not active.")
 
-        if self.special_rules.is_trick_already_validated(state, trick):
+        if self.special_rules.uniqueness_blocks_trick(state, trick):
             raise InvalidActionError("This trick has already been validated in this game.")
 
     def validate_resolve_defense(self, state: GameState) -> None:

@@ -3,7 +3,6 @@ from dataclasses import dataclass, replace
 from config.match_config import MatchConfig
 from config.match_parameters import MatchParameters
 from config.match_policies import MatchPolicies
-from config.setup_translator import SetupTranslator
 from config.structure_config import StructureConfig
 from core.events import Event
 from core.exceptions import InvalidActionError
@@ -22,31 +21,13 @@ class TransitionResult:
 
 
 class RosterTransitions:
-    def __init__(self) -> None:
-        self.setup_translator = SetupTranslator()
-
     def _coerce_match_config(
         self,
         match_config: MatchConfig | MatchParameters,
-    ) -> tuple[MatchConfig, MatchParameters | None]:
+    ) -> MatchConfig:
         if isinstance(match_config, MatchParameters):
-            return (
-                self.setup_translator.from_match_parameters(match_config),
-                match_config,
-            )
-        return match_config, None
-
-    def _sync_legacy_match_parameters(
-        self,
-        legacy_match_parameters: MatchParameters,
-        match_config: MatchConfig,
-    ) -> None:
-        updated = self.setup_translator.from_match_config(match_config)
-        legacy_match_parameters.player_ids = updated.player_ids
-        legacy_match_parameters.structure_name = updated.structure_name
-        legacy_match_parameters.rule_set = updated.rule_set
-        legacy_match_parameters.policies = updated.policies
-        legacy_match_parameters.preset_name = updated.preset_name
+            return match_config.to_match_config()
+        return match_config
 
     def add_player_between_turns(
         self,
@@ -54,7 +35,7 @@ class RosterTransitions:
         match_config: MatchConfig | MatchParameters,
         player_id: str,
     ) -> TransitionResult:
-        match_config, legacy_match_parameters = self._coerce_match_config(match_config)
+        match_config = self._coerce_match_config(match_config)
         if any(player.id == player_id for player in state.players):
             raise InvalidActionError("This player already exists in the game.")
 
@@ -118,11 +99,6 @@ class RosterTransitions:
                 },
             ),
         )
-        if legacy_match_parameters is not None:
-            self._sync_legacy_match_parameters(
-                legacy_match_parameters,
-                next_match_config,
-            )
         return result
 
     def remove_player_between_turns(
@@ -131,7 +107,7 @@ class RosterTransitions:
         match_config: MatchConfig | MatchParameters,
         player_id: str,
     ) -> TransitionResult:
-        match_config, legacy_match_parameters = self._coerce_match_config(match_config)
+        match_config = self._coerce_match_config(match_config)
         removed_index = self._find_player_index(state, player_id)
         if removed_index is None:
             raise InvalidActionError("This player does not exist in the game.")
@@ -213,11 +189,6 @@ class RosterTransitions:
                 },
             ),
         )
-        if legacy_match_parameters is not None:
-            self._sync_legacy_match_parameters(
-                legacy_match_parameters,
-                next_match_config,
-            )
         return result
 
     def _find_player_index(self, state: GameState, player_id: str) -> int | None:

@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 
+from config.fine_rules_config import FineRulesConfig
 from config.match_config import MatchConfig
 from config.match_policies import MatchPolicies
 from config.match_parameters import MatchParameters
@@ -14,6 +15,7 @@ class MatchPreset:
     structure_name: str
     policies: MatchPolicies = field(default_factory=MatchPolicies)
     rule_set: RuleSetConfig = field(default_factory=RuleSetConfig)
+    fine_rules: FineRulesConfig = field(default_factory=FineRulesConfig)
     description: str = ""
 
     def create_match_setup(self, player_ids: list[str]) -> MatchSetup:
@@ -25,6 +27,7 @@ class MatchPreset:
             attack_attempts=self.rule_set.attack_attempts,
             defense_attempts=self.rule_set.defense_attempts,
             elimination_enabled=self.rule_set.elimination_enabled,
+            uniqueness_enabled=self.fine_rules.uniqueness_enabled,
             preset_name=self.name,
         )
 

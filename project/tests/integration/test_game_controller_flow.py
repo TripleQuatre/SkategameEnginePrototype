@@ -51,10 +51,11 @@ def test_game_controller_defense_success_finishes_turn() -> None:
 
 
 def test_game_controller_defense_failure_can_finish_game() -> None:
-    match_parameters = MatchParameters(player_ids=["p1", "p2"])
+    match_parameters = MatchParameters(
+        player_ids=["p1", "p2"],
+        rule_set=RuleSetConfig(letters_word="S"),
+    )
     controller = GameController(match_parameters)
-
-    controller.get_state().rule_set.letters_word = "S"
 
     controller.start_game()
     controller.start_turn("kickflip")
@@ -174,7 +175,7 @@ def test_game_controller_undo_restores_state_before_resolve_defense() -> None:
     assert state.current_trick == "kickflip"
     assert state.defender_indices == [1]
     assert state.current_defender_position == 0
-    assert state.defense_attempts_left == state.rule_set.defense_attempts
+    assert state.defense_attempts_left == controller.match_config.defense_attempts
     assert state.validated_tricks == []
     assert state.history.events[-1].name == EventName.TURN_STARTED
 

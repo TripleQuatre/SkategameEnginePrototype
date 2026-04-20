@@ -2,6 +2,7 @@ from dataclasses import asdict
 
 from config.attack_config import AttackConfig
 from config.defense_config import DefenseConfig
+from config.fine_rules_config import FineRulesConfig
 from config.match_config import MatchConfig
 from config.match_parameters import MatchParameters
 from config.match_policies import (
@@ -18,6 +19,7 @@ from config.victory_config import VictoryConfig
 from core.events import Event
 from core.history import History
 from core.player import Player
+from core.player_score import PlayerScoreState
 from core.state import GameState
 from core.types import EventName, Phase, TurnPhase
 from persistence.game_save import GameSave
@@ -32,16 +34,30 @@ class Serializer:
             "id": player.id,
             "name": player.name,
             "internal_id": player.internal_id,
-            "score": player.score,
+            "score_state": {
+                "letters": player.score,
+                "points": player.points,
+            },
             "is_active": player.is_active,
         }
 
     def deserialize_player(self, data: dict) -> Player:
+        score_state_data = data.get("score_state")
+        score_state = (
+            PlayerScoreState(
+                letters=score_state_data.get("letters", 0),
+                points=score_state_data.get("points", 0),
+            )
+            if score_state_data is not None
+            else None
+        )
         return Player(
             id=data["id"],
             name=data["name"],
             internal_id=data["internal_id"],
-            score=data["score"],
+            score=data.get("score", 0),
+            points=data.get("points", 0),
+            score_state=score_state,
             is_active=data["is_active"],
         )
 
@@ -107,6 +123,7 @@ class Serializer:
             "defense": asdict(match_config.defense),
             "scoring": asdict(match_config.scoring),
             "victory": asdict(match_config.victory),
+            "fine_rules": asdict(match_config.fine_rules),
             "preset_name": match_config.preset_name,
         }
 
@@ -126,6 +143,7 @@ class Serializer:
                 defense=DefenseConfig(**data.get("defense", {})),
                 scoring=ScoringConfig(**data.get("scoring", {})),
                 victory=VictoryConfig(**data.get("victory", {})),
+                fine_rules=FineRulesConfig(**data.get("fine_rules", {})),
                 preset_name=data.get("preset_name"),
             )
 
@@ -139,6 +157,7 @@ class Serializer:
             "structure_name": match_parameters.structure_name,
             "rule_set": self.serialize_rule_set(match_parameters.rule_set),
             "policies": self.serialize_match_policies(match_parameters.policies),
+            "fine_rules": asdict(match_parameters.fine_rules),
             "preset_name": match_parameters.preset_name,
         }
 
@@ -153,6 +172,7 @@ class Serializer:
             structure_name=data["structure_name"],
             rule_set=self.deserialize_rule_set(data["rule_set"]),
             policies=self.deserialize_match_policies(data.get("policies")),
+            fine_rules=FineRulesConfig(**data.get("fine_rules", {})),
             preset_name=data.get("preset_name"),
         )
 
@@ -169,7 +189,6 @@ class Serializer:
             "defense_attempts_left": state.defense_attempts_left,
             "current_trick": state.current_trick,
             "history": self.serialize_history(state.history),
-            "rule_set": self.serialize_rule_set(state.rule_set),
             "validated_tricks": state.validated_tricks,
         }
 
@@ -196,16 +215,12 @@ class Serializer:
             defense_attempts_left=data["defense_attempts_left"],
             current_trick=data.get("current_trick"),
             history=self.deserialize_history(data["history"]),
-            rule_set=self.deserialize_rule_set(data["rule_set"]),
             validated_tricks=data.get("validated_tricks", []),
         )
 
     def serialize_game_save(self, game_save: GameSave) -> dict:
         return {
             "match_config": self.serialize_match_config(game_save.match_config),
-            "match_parameters": self.serialize_match_parameters(
-                game_save.match_parameters
-            ),
             "game_state": self.serialize_game_state(game_save.game_state),
         }
 

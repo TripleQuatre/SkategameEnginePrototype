@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 
 from config.attack_config import AttackConfig
 from config.defense_config import DefenseConfig
+from config.fine_rules_config import FineRulesConfig
 from config.match_config import MatchConfig
 from config.match_policies import MatchPolicies
 from config.rule_set_config import RuleSetConfig
@@ -17,6 +18,7 @@ class MatchParameters:
     structure_name: str
     rule_set: RuleSetConfig = field(default_factory=RuleSetConfig)
     policies: MatchPolicies | None = None
+    fine_rules: FineRulesConfig = field(default_factory=FineRulesConfig)
     preset_name: str | None = None
 
     def __init__(
@@ -25,12 +27,14 @@ class MatchParameters:
         structure_name: str = "one_vs_one",
         rule_set: RuleSetConfig | None = None,
         policies: MatchPolicies | None = None,
+        fine_rules: FineRulesConfig | None = None,
         preset_name: str | None = None,
     ) -> None:
         self.player_ids = player_ids
         self.structure_name = structure_name
         self.rule_set = rule_set if rule_set is not None else RuleSetConfig()
         self.policies = policies
+        self.fine_rules = fine_rules if fine_rules is not None else FineRulesConfig()
         self.preset_name = preset_name
 
         if self.policies is None:
@@ -63,5 +67,6 @@ class MatchParameters:
                 victory_type="last_player_standing",
                 elimination_enabled=self.rule_set.elimination_enabled,
             ),
+            fine_rules=self.fine_rules,
             preset_name=self.preset_name,
         )

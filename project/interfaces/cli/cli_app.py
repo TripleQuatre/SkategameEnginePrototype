@@ -20,11 +20,13 @@ class CLIApp:
     SAVES_DIR = Path(__file__).resolve().parents[2] / "saves"
     def __init__(self) -> None:
         self.setup_service = GameSetupService()
+        self.controller: GameController | None = None
 
     def run(self) -> None:
         print("=== SkateGame Engine Prototype CLI ===")
 
         controller = self._setup_or_load_game()
+        self.controller = controller
 
         print()
 
@@ -33,6 +35,7 @@ class CLIApp:
 
             if state.phase == Phase.END:
                 controller = self._run_end_of_game_loop(controller)
+                self.controller = controller
                 print()
                 continue
 
@@ -347,12 +350,13 @@ class CLIApp:
 
     def _display_state(self, state: GameState) -> None:
         preset_name = self._get_active_preset_name(state)
+        letters_word = self._get_letters_word()
         if preset_name:
             print(f"Preset: {preset_name}")
 
         print("Score:")
         for player in state.players:
-            penalty = self._format_penalty_slots(state.rule_set.letters_word, player.score)
+            penalty = self._format_penalty_slots(letters_word, player.score)
             status = "" if player.is_active else " (OUT)"
             print(f"{player.name:<10} {penalty}{status}")
 
@@ -495,10 +499,11 @@ class CLIApp:
 
     def _display_winner(self, state: GameState) -> None:
         active_players = [player for player in state.players if player.is_active]
+        letters_word = self._get_letters_word()
 
         print("Final score:")
         for player in state.players:
-            penalty = self._format_penalty_slots(state.rule_set.letters_word, player.score)
+            penalty = self._format_penalty_slots(letters_word, player.score)
             print(f"{player.name:<10} {penalty}")
 
         print()
@@ -747,58 +752,62 @@ class CLIApp:
             print("Type y or n.")
 
     def _display_history(self, state: GameState) -> None:
-            turns: list[HistoryTurn] = state.history.build_turns()
+        letters_word = self._get_letters_word()
+        turns: list[HistoryTurn] = state.history.build_turns()
 
-            if not turns:
-                return
+        if not turns:
+            return
 
-            print("\nHistory:")
-            print(
-                f"{'Turn':<6}"
-                f"{'Attacker':<12}"
-                f"{'Trick':<16}"
-                f"{'Valid':<8}"
-                f"{'Defender':<12}"
-                f"{'Defense':<10}"
-                f"{'Letters':<10}"
+        print("\nHistory:")
+        print(
+            f"{'Turn':<6}"
+            f"{'Attacker':<12}"
+            f"{'Trick':<16}"
+            f"{'Valid':<8}"
+            f"{'Defender':<12}"
+            f"{'Defense':<10}"
+            f"{'Letters':<10}"
+        )
+        print("-" * 74)
+
+        for turn in turns:
+            trick_validated = turn.attack_trace or (
+                "V" if turn.trick_status == "validated" else "X"
             )
-            print("-" * 74)
 
-            for turn in turns:
-                trick_validated = turn.attack_trace or (
-                    "V" if turn.trick_status == "validated" else "X"
+            if not turn.defenses:
+                print(
+                    f"{turn.turn_number:<6}"
+                    f"{turn.attacker_name:<12}"
+                    f"{turn.trick_name:<16}"
+                    f"{trick_validated:<8}"
+                    f"{'-':<12}"
+                    f"{'-':<10}"
+                    f"{'-':<10}"
+                )
+                continue
+
+            for index, defense in enumerate(turn.defenses):
+                letters = self._format_letters(defense.letters, letters_word)
+                turn_value = str(turn.turn_number) if index == 0 else ""
+                attacker_value = turn.attacker_name if index == 0 else ""
+                trick_value = turn.trick_name if index == 0 else ""
+                valid_value = trick_validated if index == 0 else ""
+
+                print(
+                    f"{turn_value:<6}"
+                    f"{attacker_value:<12}"
+                    f"{trick_value:<16}"
+                    f"{valid_value:<8}"
+                    f"{defense.defender_name:<12}"
+                    f"{(defense.attempts_trace or '-'): <10}"
+                    f"{letters:<10}"
                 )
 
-                if not turn.defenses:
-                    print(
-                        f"{turn.turn_number:<6}"
-                        f"{turn.attacker_name:<12}"
-                        f"{turn.trick_name:<16}"
-                        f"{trick_validated:<8}"
-                        f"{'-':<12}"
-                        f"{'-':<10}"
-                        f"{'-':<10}"
-                    )
-                    continue
-
-                for index, defense in enumerate(turn.defenses):
-                    letters = self._format_letters(
-                        defense.letters, state.rule_set.letters_word
-                    )
-                    turn_value = str(turn.turn_number) if index == 0 else ""
-                    attacker_value = turn.attacker_name if index == 0 else ""
-                    trick_value = turn.trick_name if index == 0 else ""
-                    valid_value = trick_validated if index == 0 else ""
-
-                    print(
-                        f"{turn_value:<6}"
-                        f"{attacker_value:<12}"
-                        f"{trick_value:<16}"
-                        f"{valid_value:<8}"
-                        f"{defense.defender_name:<12}"
-                        f"{(defense.attempts_trace or '-'): <10}"
-                        f"{letters:<10}"
-                    )
+    def _get_letters_word(self) -> str:
+        if self.controller is None:
+            return "SKATE"
+        return self.controller.match_config.letters_word
 
     def _format_letters(self, letters: str, word: str) -> str:
         if not letters:

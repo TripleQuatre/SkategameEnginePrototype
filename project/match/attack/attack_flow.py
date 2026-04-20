@@ -1,6 +1,7 @@
 from core.events import Event
 from core.state import GameState
-from core.types import AttackResolutionStatus, EventName
+from core.types import EventName
+from match.flow.exchange_outcome import ExchangeOutcome
 from match.flow.turn_state import begin_attack_phase
 
 
@@ -43,7 +44,7 @@ class AttackFlow:
         attacker_name: str,
         on_attack_succeeded,
         on_attack_failed,
-    ) -> AttackResolutionStatus:
+    ) -> ExchangeOutcome:
         if success:
             state.history.add_event(
                 Event(
@@ -56,7 +57,7 @@ class AttackFlow:
                 )
             )
             on_attack_succeeded()
-            return AttackResolutionStatus.DEFENSE_READY
+            return ExchangeOutcome.defense_ready()
 
         state.attack_attempts_left -= 1
 
@@ -72,7 +73,7 @@ class AttackFlow:
                     },
                 )
             )
-            return AttackResolutionStatus.ATTACK_CONTINUES
+            return ExchangeOutcome.attack_continues()
 
         on_attack_failed()
-        return AttackResolutionStatus.TURN_FAILED
+        return ExchangeOutcome.attacker_failed()

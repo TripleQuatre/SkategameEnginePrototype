@@ -2,6 +2,7 @@ from application.game_session import GameSession as GameEngine
 import match.structure.battle_structure as battle_structure_module
 
 from config.match_parameters import MatchParameters
+from config.rule_set_config import RuleSetConfig
 from core.types import DefenseResolutionStatus, Phase
 from validation.state_validator import StateValidator
 
@@ -38,10 +39,11 @@ def test_simulation_sequence_with_turn_finish_and_cancel_keeps_state_valid() -> 
 
 
 def test_simulation_sequence_with_failed_attempt_then_undo_keeps_state_valid() -> None:
-    match_parameters = MatchParameters(player_ids=["p1", "p2"])
+    match_parameters = MatchParameters(
+        player_ids=["p1", "p2"],
+        rule_set=RuleSetConfig(defense_attempts=2),
+    )
     engine = GameEngine(match_parameters)
-
-    engine.get_state().rule_set.defense_attempts = 2
 
     engine.start_game()
     assert_valid_state(engine)
@@ -66,10 +68,11 @@ def test_simulation_sequence_with_failed_attempt_then_undo_keeps_state_valid() -
 
 
 def test_simulation_sequence_with_game_finish_then_undo_keeps_state_valid() -> None:
-    match_parameters = MatchParameters(player_ids=["p1", "p2"])
+    match_parameters = MatchParameters(
+        player_ids=["p1", "p2"],
+        rule_set=RuleSetConfig(letters_word="S"),
+    )
     engine = GameEngine(match_parameters)
-
-    engine.get_state().rule_set.letters_word = "S"
 
     engine.start_game()
     assert_valid_state(engine)
@@ -175,9 +178,9 @@ def test_battle_eliminated_previous_defender_keeps_state_valid(monkeypatch) -> N
     match_parameters = MatchParameters(
         player_ids=["p1", "p2", "p3"],
         structure_name="battle",
+        rule_set=RuleSetConfig(letters_word="S"),
     )
     engine = GameEngine(match_parameters)
-    engine.get_state().rule_set.letters_word = "S"
 
     engine.start_game()
     assert_valid_state(engine)

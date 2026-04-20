@@ -32,14 +32,15 @@ def gui_app(monkeypatch) -> GUIApp:
 def test_gui_refresh_game_view_shows_consultation_mode_for_finished_game(
     gui_app: GUIApp,
 ) -> None:
+    gui_app.setup_mode_var.set("custom")
     for index, player_var in enumerate(gui_app.player_name_vars):
         player_var.set(f"Player {index + 1}")
+    gui_app.custom_word_var.set("S")
+    gui_app.custom_defense_attempts_var.set(1)
 
     gui_app._start_game()
 
     assert gui_app.controller is not None
-    gui_app.controller.get_state().rule_set.letters_word = "S"
-    gui_app.controller.get_state().rule_set.defense_attempts = 1
     gui_app.controller.start_turn("soul")
     gui_app.controller.resolve_defense(False)
 
@@ -74,12 +75,13 @@ def test_gui_history_view_renders_battle_turns(
     gui_app.player_name_vars[0].set("Stan")
     gui_app.player_name_vars[1].set("Denise")
     gui_app.player_name_vars[2].set("Alex")
-    gui_app.preset_var.set("battle_standard")
+    gui_app.setup_mode_var.set("custom")
+    gui_app.custom_word_var.set("OUT")
+    gui_app.custom_defense_attempts_var.set(1)
 
     gui_app._start_game()
 
     assert gui_app.controller is not None
-    gui_app.controller.get_state().rule_set.defense_attempts = 1
     gui_app.controller.start_turn("kickflip")
     gui_app.controller.resolve_defense(True)
     gui_app.controller.resolve_defense(False)

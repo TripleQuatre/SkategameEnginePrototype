@@ -22,7 +22,6 @@ class TransitionApplication:
     match_config: MatchConfig
     structure: BaseStructure
     game_flow: TurnFlow
-    legacy_match_parameters: MatchParameters | None = None
 
     @property
     def structure_name(self) -> str:
@@ -102,12 +101,9 @@ class RuntimeSession:
     match_config: MatchConfig
     structure: BaseStructure
     game_flow: TurnFlow
-    legacy_match_parameters: MatchParameters | None = None
 
     @property
     def match_parameters(self) -> MatchParameters:
-        if self.legacy_match_parameters is not None:
-            return self.legacy_match_parameters
         return SetupTranslator().from_match_config(self.match_config)
 
 
@@ -131,26 +127,11 @@ class MatchTransitionService:
             return self.setup_translator.from_match_parameters(match_config)
         return match_config
 
-    def _sync_legacy_match_parameters(
-        self,
-        legacy_match_parameters: MatchParameters,
-        match_config: MatchConfig,
-    ) -> None:
-        updated = self.setup_translator.from_match_config(match_config)
-        legacy_match_parameters.player_ids = updated.player_ids
-        legacy_match_parameters.structure_name = updated.structure_name
-        legacy_match_parameters.rule_set = updated.rule_set
-        legacy_match_parameters.policies = updated.policies
-        legacy_match_parameters.preset_name = updated.preset_name
-
     def create_initial_runtime(
         self,
         match_config: MatchConfig | MatchParameters,
         state_validator: StateValidator,
     ) -> RuntimeSession:
-        legacy_match_parameters = (
-            match_config if isinstance(match_config, MatchParameters) else None
-        )
         match_config = self._coerce_match_config(match_config)
         self.config_validator.validate_match_config(match_config)
 
@@ -160,11 +141,6 @@ class MatchTransitionService:
                 for player_id in match_config.player_ids
             ]
         )
-        state.rule_set = (
-            legacy_match_parameters.rule_set
-            if legacy_match_parameters is not None
-            else match_config.to_rule_set_config()
-        )
 
         state_validator.validate(state)
 
@@ -174,7 +150,6 @@ class MatchTransitionService:
             match_config=match_config,
             structure=structure,
             game_flow=game_flow,
-            legacy_match_parameters=legacy_match_parameters,
         )
 
     def restore_runtime(
@@ -183,15 +158,7 @@ class MatchTransitionService:
         match_config: MatchConfig | MatchParameters,
         state_validator: StateValidator,
     ) -> RuntimeSession:
-        legacy_match_parameters = (
-            match_config if isinstance(match_config, MatchParameters) else None
-        )
         match_config = self._coerce_match_config(match_config)
-        state.rule_set = (
-            legacy_match_parameters.rule_set
-            if legacy_match_parameters is not None
-            else match_config.to_rule_set_config()
-        )
         self.config_validator.validate_match_config(match_config)
         state_validator.validate(state)
 
@@ -201,7 +168,6 @@ class MatchTransitionService:
             match_config=match_config,
             structure=structure,
             game_flow=game_flow,
-            legacy_match_parameters=legacy_match_parameters,
         )
 
     def add_player_between_turns(
@@ -211,9 +177,6 @@ class MatchTransitionService:
         action_validator: ActionValidator,
         player_id: str,
     ) -> TransitionApplication:
-        legacy_match_parameters = (
-            match_config if isinstance(match_config, MatchParameters) else None
-        )
         match_config = self._coerce_match_config(match_config)
         action_validator.validate_add_player_between_turns(state, player_id)
 
@@ -222,16 +185,10 @@ class MatchTransitionService:
             match_config,
             player_id,
         )
-        if legacy_match_parameters is not None:
-            self._sync_legacy_match_parameters(
-                legacy_match_parameters,
-                transition_result.match_config,
-            )
         return self._build_transition_application(
             state,
             transition_result.match_config,
             transition_result.event,
-            legacy_match_parameters=legacy_match_parameters,
         )
 
     def execute_add_player_between_turns(
@@ -258,9 +215,6 @@ class MatchTransitionService:
         action_validator: ActionValidator,
         player_id: str,
     ) -> TransitionApplication:
-        legacy_match_parameters = (
-            match_config if isinstance(match_config, MatchParameters) else None
-        )
         match_config = self._coerce_match_config(match_config)
         action_validator.validate_remove_player_between_turns(state, player_id)
 
@@ -269,16 +223,10 @@ class MatchTransitionService:
             match_config,
             player_id,
         )
-        if legacy_match_parameters is not None:
-            self._sync_legacy_match_parameters(
-                legacy_match_parameters,
-                transition_result.match_config,
-            )
         return self._build_transition_application(
             state,
             transition_result.match_config,
             transition_result.event,
-            legacy_match_parameters=legacy_match_parameters,
         )
 
     def execute_remove_player_between_turns(
@@ -312,7 +260,6 @@ class MatchTransitionService:
             match_config=transition.match_config,
             structure=transition.structure,
             game_flow=transition.game_flow,
-            legacy_match_parameters=transition.legacy_match_parameters,
         )
 
     def build_runtime(
@@ -320,9 +267,6 @@ class MatchTransitionService:
         state: GameState,
         match_config: MatchConfig | MatchParameters,
     ) -> tuple[BaseStructure, TurnFlow]:
-        legacy_match_parameters = (
-            match_config if isinstance(match_config, MatchParameters) else None
-        )
         match_config = self._coerce_match_config(match_config)
         self.config_validator.validate_match_config(match_config)
         structure = self.structure_factory.create(
@@ -333,7 +277,6 @@ class MatchTransitionService:
         game_flow = TurnFlow(
             structure,
             match_config,
-            legacy_match_parameters=legacy_match_parameters,
         )
         return structure, game_flow
 
@@ -342,14 +285,11 @@ class MatchTransitionService:
         state: GameState,
         match_config: MatchConfig,
         event: Event,
-        legacy_match_parameters: MatchParameters | None = None,
     ) -> TransitionApplication:
-        state.rule_set = match_config.to_rule_set_config()
         structure, game_flow = self.build_runtime(state, match_config)
         return TransitionApplication(
             event=event,
             match_config=match_config,
             structure=structure,
             game_flow=game_flow,
-            legacy_match_parameters=legacy_match_parameters,
         )

@@ -5,8 +5,9 @@ from core.types import EventName
 
 
 class DefenseAttemptResolver:
-    def __init__(self, scoring) -> None:
+    def __init__(self, scoring, defense_attempts: int = 1) -> None:
         self.scoring = scoring
+        self.defense_attempts = defense_attempts
 
     def resolve_defense_attempt(self, state: GameState, success: bool) -> bool:
         if self.is_turn_finished(state):
@@ -69,7 +70,7 @@ class DefenseAttemptResolver:
         if self.is_turn_finished(state):
             return True
 
-        state.defense_attempts_left = state.rule_set.defense_attempts
+        state.defense_attempts_left = self.defense_attempts
         return False
 
     def is_turn_finished(self, state: GameState) -> bool:

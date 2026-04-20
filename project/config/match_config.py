@@ -1,9 +1,9 @@
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
 
 from config.attack_config import AttackConfig
 from config.defense_config import DefenseConfig
+from config.fine_rules_config import FineRulesConfig
 from config.match_policies import MatchPolicies
-from config.rule_set_config import RuleSetConfig
 from config.scoring_config import ScoringConfig
 from config.structure_config import StructureConfig
 from config.victory_config import VictoryConfig
@@ -17,6 +17,7 @@ class MatchConfig:
     defense: DefenseConfig = field(default_factory=DefenseConfig)
     scoring: ScoringConfig = field(default_factory=ScoringConfig)
     victory: VictoryConfig = field(default_factory=VictoryConfig)
+    fine_rules: FineRulesConfig = field(default_factory=FineRulesConfig)
     preset_name: str | None = None
 
     @property
@@ -44,25 +45,5 @@ class MatchConfig:
         return self.victory.elimination_enabled
 
     @property
-    def rule_set(self) -> RuleSetConfig:
-        return self.to_rule_set_config()
-
-    def to_rule_set_config(self) -> RuleSetConfig:
-        return RuleSetConfig(
-            letters_word=self.scoring.letters_word,
-            elimination_enabled=self.victory.elimination_enabled,
-            attack_attempts=self.attack.attack_attempts,
-            defense_attempts=self.defense.defense_attempts,
-        )
-
-    def with_rule_set(self, rule_set: RuleSetConfig) -> "MatchConfig":
-        return replace(
-            self,
-            attack=AttackConfig(attack_attempts=rule_set.attack_attempts),
-            defense=DefenseConfig(defense_attempts=rule_set.defense_attempts),
-            scoring=replace(self.scoring, letters_word=rule_set.letters_word),
-            victory=replace(
-                self.victory,
-                elimination_enabled=rule_set.elimination_enabled,
-            ),
-        )
+    def uniqueness_enabled(self) -> bool:
+        return self.fine_rules.uniqueness_enabled

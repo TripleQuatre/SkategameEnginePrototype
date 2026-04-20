@@ -24,10 +24,12 @@ def _make_case_dir(test_name: str) -> Path:
 
 
 def test_cli_end_of_game_loop_can_undo_finished_game(monkeypatch, capsys) -> None:
-    match_parameters = MatchParameters(player_ids=["p1", "p2"])
+    match_parameters = MatchParameters(
+        player_ids=["p1", "p2"],
+        rule_set=RuleSetConfig(letters_word="S"),
+    )
     controller = GameController(match_parameters)
 
-    controller.get_state().rule_set.letters_word = "S"
     controller.start_game()
     controller.start_turn("soul")
     controller.resolve_defense(False)
@@ -55,10 +57,12 @@ def test_cli_load_saved_game_controller_reports_consultation_for_finished_game(
     case_dir = _make_case_dir("load_saved_finished_game")
 
     try:
-        match_parameters = MatchParameters(player_ids=["p1", "p2"])
+        match_parameters = MatchParameters(
+            player_ids=["p1", "p2"],
+            rule_set=RuleSetConfig(letters_word="S"),
+        )
         controller = GameController(match_parameters)
 
-        controller.get_state().rule_set.letters_word = "S"
         controller.start_game()
         controller.start_turn("soul")
         controller.resolve_defense(False)
@@ -97,6 +101,7 @@ def test_cli_display_history_renders_battle_turns(monkeypatch, capsys) -> None:
     controller.resolve_defense(False)
 
     cli = CLIApp()
+    cli.controller = controller
     cli._display_history(controller.get_state())
     output = capsys.readouterr().out
 
@@ -115,10 +120,12 @@ def test_cli_run_can_load_finished_game_and_quit_from_consultation(
     case_dir = _make_case_dir("run_load_finished_game")
 
     try:
-        match_parameters = MatchParameters(player_ids=["p1", "p2"])
+        match_parameters = MatchParameters(
+            player_ids=["p1", "p2"],
+            rule_set=RuleSetConfig(letters_word="S"),
+        )
         controller = GameController(match_parameters)
 
-        controller.get_state().rule_set.letters_word = "S"
         controller.start_game()
         controller.start_turn("soul")
         controller.resolve_defense(False)

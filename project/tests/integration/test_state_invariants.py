@@ -2,6 +2,7 @@ from application.game_session import GameSession as GameEngine
 import match.structure.battle_structure as battle_structure_module
 
 from config.match_parameters import MatchParameters
+from config.rule_set_config import RuleSetConfig
 from core.types import DefenseResolutionStatus, EventName, Phase
 from validation.state_validator import StateValidator
 
@@ -70,16 +71,17 @@ def test_start_turn_enters_engaged_turn_state() -> None:
         attacker_index=0,
         trick="kickflip",
         defender_indices=[1],
-        defense_attempts_left=engine.get_state().rule_set.defense_attempts,
+        defense_attempts_left=engine.match_config.defense_attempts,
     )
     assert engine.get_state().history.events[-1].name == EventName.TURN_STARTED
 
 
 def test_failed_defense_keeps_turn_engaged_with_same_defender() -> None:
-    match_parameters = MatchParameters(player_ids=["p1", "p2"])
+    match_parameters = MatchParameters(
+        player_ids=["p1", "p2"],
+        rule_set=RuleSetConfig(defense_attempts=2),
+    )
     engine = GameEngine(match_parameters)
-
-    engine.get_state().rule_set.defense_attempts = 2
 
     engine.start_game()
     engine.start_turn("kickflip")
@@ -111,10 +113,11 @@ def test_successful_defense_closes_turn_and_rotates_attacker() -> None:
 
 
 def test_game_finished_clears_current_turn_state() -> None:
-    match_parameters = MatchParameters(player_ids=["p1", "p2"])
+    match_parameters = MatchParameters(
+        player_ids=["p1", "p2"],
+        rule_set=RuleSetConfig(letters_word="S"),
+    )
     engine = GameEngine(match_parameters)
-
-    engine.get_state().rule_set.letters_word = "S"
 
     engine.start_game()
     engine.start_turn("kickflip")

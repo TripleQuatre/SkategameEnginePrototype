@@ -359,11 +359,12 @@ def test_game_save_repository_writes_valid_json() -> None:
         with filepath.open("r", encoding="utf-8") as file:
             data = json.load(file)
 
-        assert "match_parameters" in data
+        assert "match_config" in data
+        assert "match_parameters" not in data
         assert "game_state" in data
-        assert data["match_parameters"]["structure_name"] == "one_vs_one"
-        assert "policies" in data["match_parameters"]
-        assert "preset_name" in data["match_parameters"]
+        assert data["match_config"]["structure"]["structure_name"] == "one_vs_one"
+        assert "policies" in data["match_config"]["structure"]
+        assert "preset_name" in data["match_config"]
         assert data["game_state"]["players"][0]["name"] == "Stan"
     finally:
         shutil.rmtree(case_dir, ignore_errors=True)

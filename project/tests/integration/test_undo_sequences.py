@@ -21,7 +21,7 @@ def test_game_engine_can_undo_multiple_steps_back_to_setup() -> None:
     assert state.current_trick == "kickflip"
     assert state.defender_indices == [1]
     assert state.current_defender_position == 0
-    assert state.defense_attempts_left == state.rule_set.defense_attempts
+    assert state.defense_attempts_left == engine.match_config.defense_attempts
     assert state.validated_tricks == []
     assert state.history.events[-1].name == EventName.TURN_STARTED
 
@@ -45,10 +45,11 @@ def test_game_engine_can_undo_multiple_steps_back_to_setup() -> None:
 
 
 def test_game_engine_undo_after_game_finished_restores_engaged_turn() -> None:
-    match_parameters = MatchParameters(player_ids=["p1", "p2"])
+    match_parameters = MatchParameters(
+        player_ids=["p1", "p2"],
+        rule_set=RuleSetConfig(letters_word="S"),
+    )
     engine = GameEngine(match_parameters)
-
-    engine.state.rule_set.letters_word = "S"
 
     engine.start_game()
     engine.start_turn("soul")
@@ -128,7 +129,7 @@ def test_game_controller_can_undo_multiple_steps_back_to_setup() -> None:
     assert state.current_trick == "kickflip"
     assert state.defender_indices == [1]
     assert state.current_defender_position == 0
-    assert state.defense_attempts_left == state.rule_set.defense_attempts
+    assert state.defense_attempts_left == controller.match_config.defense_attempts
     assert state.validated_tricks == []
     assert state.history.events[-1].name == EventName.TURN_STARTED
 

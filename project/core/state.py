@@ -1,10 +1,9 @@
 from dataclasses import dataclass, field
 from typing import Optional
 
+from core.history import History
 from core.player import Player
 from core.types import Phase, TurnPhase
-from core.history import History
-from config.rule_set_config import RuleSetConfig
 
 @dataclass
 class GameState:
@@ -19,5 +18,4 @@ class GameState:
     defense_attempts_left: int = 0
     current_trick: Optional[str] = None
     history: History = field(default_factory=History)
-    rule_set: RuleSetConfig = field(default_factory=RuleSetConfig)
     validated_tricks: list[str] = field(default_factory=list)

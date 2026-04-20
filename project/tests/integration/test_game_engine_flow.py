@@ -31,15 +31,16 @@ def test_game_engine_can_start_a_turn() -> None:
     assert state.current_trick == "kickflip"
     assert state.defender_indices == [1]
     assert state.current_defender_position == 0
-    assert state.defense_attempts_left == state.rule_set.defense_attempts
+    assert state.defense_attempts_left == engine.match_config.defense_attempts
     assert state.history.events[-1].name == EventName.TURN_STARTED
 
 
 def test_game_engine_defense_failure_can_finish_game() -> None:
-    match_parameters = MatchParameters(player_ids=["p1", "p2"])
+    match_parameters = MatchParameters(
+        player_ids=["p1", "p2"],
+        rule_set=RuleSetConfig(letters_word="S"),
+    )
     engine = GameEngine(match_parameters)
-
-    engine.state.rule_set.letters_word = "S"
 
     engine.start_game()
     engine.start_turn("kickflip")
@@ -131,7 +132,7 @@ def test_game_engine_undo_restores_state_before_resolve_defense() -> None:
     assert state.current_trick == "kickflip"
     assert state.defender_indices == [1]
     assert state.current_defender_position == 0
-    assert state.defense_attempts_left == state.rule_set.defense_attempts
+    assert state.defense_attempts_left == engine.match_config.defense_attempts
     assert state.validated_tricks == []
     assert state.history.events[-1].name == EventName.TURN_STARTED
 
@@ -174,7 +175,7 @@ def test_battle_game_engine_start_turn_sets_multiple_defenders(monkeypatch) -> N
     assert state.attacker_index == 2
     assert state.defender_indices == [0, 1]
     assert state.current_defender_position == 0
-    assert state.defense_attempts_left == state.rule_set.defense_attempts
+    assert state.defense_attempts_left == engine.match_config.defense_attempts
 
 
 def test_battle_game_engine_rotates_to_next_active_attacker(monkeypatch) -> None:

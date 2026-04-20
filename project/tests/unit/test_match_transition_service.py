@@ -21,11 +21,11 @@ def test_match_transition_service_can_create_initial_runtime() -> None:
 
     runtime = service.create_initial_runtime(match_parameters, StateValidator())
 
-    assert runtime.match_parameters is match_parameters
+    assert runtime.match_parameters == match_parameters
     assert runtime.structure.structure_name == "one_vs_one"
     assert runtime.game_flow.structure is runtime.structure
     assert [player.id for player in runtime.state.players] == ["p1", "p2"]
-    assert runtime.state.rule_set is match_parameters.rule_set
+    assert runtime.match_config == match_parameters.to_match_config()
 
 
 def test_match_transition_service_can_add_player_and_rebuild_runtime() -> None:
@@ -57,12 +57,11 @@ def test_match_transition_service_can_add_player_and_rebuild_runtime() -> None:
     )
 
     assert transition.event.name == EventName.PLAYER_JOINED
-    assert match_parameters.structure_name == "battle"
-    assert match_parameters.structure_name == "battle"
     assert [player.id for player in state.players] == ["p1", "p2", "p3"]
     assert state.turn_order == [0, 1, 2]
     assert transition.structure.__class__.__name__ == "BattleStructure"
     assert transition.structure_name == "battle"
+    assert transition.match_config.structure_name == "battle"
     assert transition.previous_structure_name == "one_vs_one"
     assert transition.structure_changed is True
     assert transition.previous_preset_name == "classic_skate"
@@ -113,12 +112,11 @@ def test_match_transition_service_can_remove_player_and_rebuild_runtime() -> Non
     )
 
     assert transition.event.name == EventName.PLAYER_REMOVED
-    assert match_parameters.structure_name == "one_vs_one"
-    assert match_parameters.structure_name == "one_vs_one"
     assert [player.id for player in state.players] == ["p1", "p3"]
     assert state.turn_order == [0, 1]
     assert transition.structure.__class__.__name__ == "OneVsOneStructure"
     assert transition.structure_name == "one_vs_one"
+    assert transition.match_config.structure_name == "one_vs_one"
     assert transition.previous_structure_name == "battle"
     assert transition.structure_changed is True
     assert transition.previous_preset_name == "battle_standard"
@@ -210,7 +208,7 @@ def test_match_transition_service_can_execute_transition_end_to_end() -> None:
     )
 
     assert transition.structure_name == "battle"
-    assert match_parameters.structure_name == "battle"
+    assert transition.match_config.structure_name == "battle"
     assert state.history.events[-1] is transition.event
 
 
@@ -234,13 +232,12 @@ def test_match_transition_service_can_build_runtime_for_match_state() -> None:
         turn_order=[0, 1, 2],
         attacker_index=1,
     )
-    state.rule_set = match_parameters.rule_set
 
     structure, game_flow = service.build_runtime(state, match_parameters)
 
     assert structure.structure_name == "battle"
     assert game_flow.structure is structure
-    assert game_flow.match_parameters is match_parameters
+    assert game_flow.match_parameters == match_parameters
 
 
 def test_match_transition_service_can_restore_runtime() -> None:
@@ -267,7 +264,7 @@ def test_match_transition_service_can_restore_runtime() -> None:
     runtime = service.restore_runtime(state, match_parameters, StateValidator())
 
     assert runtime.state is state
-    assert runtime.match_parameters is match_parameters
+    assert runtime.match_parameters == match_parameters
     assert runtime.structure.structure_name == "battle"
     assert runtime.game_flow.structure is runtime.structure
-    assert runtime.state.rule_set is match_parameters.rule_set
+    assert runtime.match_config == match_parameters.to_match_config()

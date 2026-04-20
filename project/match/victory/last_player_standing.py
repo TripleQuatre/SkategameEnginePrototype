@@ -10,25 +10,17 @@ class LastPlayerStandingVictory:
         scoring_config: ScoringConfig | None = None,
         victory_config: VictoryConfig | None = None,
     ) -> None:
-        self.scoring_config = scoring_config
-        self.victory_config = victory_config
+        self.scoring_config = scoring_config if scoring_config is not None else ScoringConfig()
+        self.victory_config = victory_config if victory_config is not None else VictoryConfig()
 
     def is_player_eliminated(self, state: GameState, player: Player) -> bool:
-        word = (
-            state.rule_set.letters_word
-            if hasattr(state, "rule_set")
-            else self.scoring_config.letters_word
-        )
+        word = self.scoring_config.letters_word
         return player.score >= len(word)
 
     def apply_eliminations(self, state: GameState) -> list[Player]:
         eliminated_players = []
 
-        elimination_enabled = (
-            state.rule_set.elimination_enabled
-            if hasattr(state, "rule_set")
-            else self.victory_config.elimination_enabled
-        )
+        elimination_enabled = self.victory_config.elimination_enabled
         if not elimination_enabled:
             return eliminated_players
 

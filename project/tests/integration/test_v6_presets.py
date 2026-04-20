@@ -51,8 +51,8 @@ def test_game_engine_classic_skate_preset_starts_with_expected_configuration() -
 
     assert state.phase == Phase.TURN
     assert state.turn_order == [0, 1]
-    assert state.rule_set.letters_word == "SKATE"
-    assert state.rule_set.defense_attempts == 3
+    assert engine.match_config.letters_word == "SKATE"
+    assert engine.match_config.defense_attempts == 3
     assert context is not None
     assert context.structure_name == "one_vs_one"
     assert context.preset_name == "classic_skate"
@@ -75,8 +75,8 @@ def test_game_engine_classic_blade_preset_uses_blade_word() -> None:
 
     assert state.phase == Phase.TURN
     assert state.turn_order == [0, 1]
-    assert state.rule_set.letters_word == "BLADE"
-    assert state.rule_set.defense_attempts == 1
+    assert engine.match_config.letters_word == "BLADE"
+    assert engine.match_config.defense_attempts == 1
 
 
 def test_battle_standard_preset_uses_randomized_order_and_out_word(monkeypatch) -> None:
@@ -101,8 +101,8 @@ def test_battle_standard_preset_uses_randomized_order_and_out_word(monkeypatch) 
 
     assert state.turn_order == [2, 0, 1]
     assert state.attacker_index == 2
-    assert state.rule_set.letters_word == "OUT"
-    assert state.rule_set.defense_attempts == 3
+    assert engine.match_config.letters_word == "OUT"
+    assert engine.match_config.defense_attempts == 3
 
 
 def test_battle_hardcore_preset_uses_skate_word_and_one_attempt(monkeypatch) -> None:
@@ -126,8 +126,8 @@ def test_battle_hardcore_preset_uses_skate_word_and_one_attempt(monkeypatch) -> 
     state = engine.get_state()
 
     assert state.turn_order == [2, 0, 1]
-    assert state.rule_set.letters_word == "SKATE"
-    assert state.rule_set.defense_attempts == 1
+    assert engine.match_config.letters_word == "SKATE"
+    assert engine.match_config.defense_attempts == 1
 
 
 def test_technical_reverse_defender_order_policy_works(monkeypatch) -> None:

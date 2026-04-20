@@ -35,16 +35,11 @@ class GameSession:
 
     @property
     def match_config(self) -> MatchConfig:
-        if hasattr(self, "state"):
-            self._match_config = self._match_config.with_rule_set(self.state.rule_set)
         return self._match_config
 
     @property
     def match_parameters(self) -> MatchParameters:
-        match_parameters = self.setup_translator.from_match_config(self.match_config)
-        if hasattr(self, "state"):
-            match_parameters.rule_set = self.state.rule_set
-        return match_parameters
+        return self.setup_translator.from_match_config(self.match_config)
 
     def _coerce_match_config(
         self,

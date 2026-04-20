@@ -1,6 +1,7 @@
 from core.events import Event
 from core.state import GameState
-from core.types import DefenseResolutionStatus, EventName
+from core.types import EventName
+from match.flow.exchange_outcome import ExchangeOutcome
 
 
 class DefenseFlow:
@@ -16,7 +17,7 @@ class DefenseFlow:
         on_mark_turn_finished,
         on_consume_current_trick,
         on_advance_to_next_attacker,
-    ) -> DefenseResolutionStatus:
+    ) -> ExchangeOutcome:
         turn_finished = self.turn_resolver.resolve_defense_attempt(state, success)
 
         eliminated_players = self.victory.apply_eliminations(state)
@@ -46,12 +47,12 @@ class DefenseFlow:
                 )
             )
 
-            return DefenseResolutionStatus.GAME_FINISHED
+            return ExchangeOutcome.game_finished()
 
         if turn_finished:
             on_consume_current_trick()
             on_mark_turn_finished()
             on_advance_to_next_attacker(log_turn_end=True)
-            return DefenseResolutionStatus.TURN_FINISHED
+            return ExchangeOutcome.attacker_held()
 
-        return DefenseResolutionStatus.DEFENSE_CONTINUES
+        return ExchangeOutcome.defense_continues()

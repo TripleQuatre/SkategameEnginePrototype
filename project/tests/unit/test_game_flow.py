@@ -1,5 +1,10 @@
 import pytest
 
+from config.attack_config import AttackConfig
+from config.defense_config import DefenseConfig
+from config.match_config import MatchConfig
+from config.scoring_config import ScoringConfig
+from config.victory_config import VictoryConfig
 from core.exceptions import InvalidActionError
 from core.player import Player
 from core.state import GameState
@@ -14,9 +19,26 @@ from match.flow.turn_flow import TurnFlow as GameFlow
 from match.structure.one_vs_one_structure import OneVsOneStructure
 
 
+def build_game_flow(
+    attack_attempts: int = 1,
+    defense_attempts: int = 1,
+    letters_word: str = "SKATE",
+    elimination_enabled: bool = True,
+) -> GameFlow:
+    return GameFlow(
+        OneVsOneStructure(),
+        MatchConfig(
+            attack=AttackConfig(attack_attempts=attack_attempts),
+            defense=DefenseConfig(defense_attempts=defense_attempts),
+            scoring=ScoringConfig(letters_word=letters_word),
+            victory=VictoryConfig(elimination_enabled=elimination_enabled),
+        ),
+    )
+
+
 @pytest.fixture
 def game_flow() -> GameFlow:
-    return GameFlow(OneVsOneStructure())
+    return build_game_flow()
 
 
 @pytest.fixture
@@ -53,14 +75,14 @@ def test_start_turn_sets_trick_and_defenders(
     assert state.current_trick == "kickflip"
     assert state.defender_indices == [1]
     assert state.current_defender_position == 0
-    assert state.defense_attempts_left == state.rule_set.defense_attempts
+    assert state.defense_attempts_left == game_flow.match_config.defense_attempts
     assert state.history.events[-1].name == EventName.TURN_STARTED
 
 
 def test_start_turn_enters_attack_phase_when_multiple_attack_attempts_are_enabled(
-    game_flow: GameFlow, state: GameState
+    state: GameState
 ) -> None:
-    state.rule_set.attack_attempts = 2
+    game_flow = build_game_flow(attack_attempts=2)
     game_flow.start_game(state)
     game_flow.start_turn(state, "kickflip")
 
@@ -71,9 +93,9 @@ def test_start_turn_enters_attack_phase_when_multiple_attack_attempts_are_enable
 
 
 def test_resolve_attack_can_continue_attack_phase_after_failure(
-    game_flow: GameFlow, state: GameState
+    state: GameState
 ) -> None:
-    state.rule_set.attack_attempts = 2
+    game_flow = build_game_flow(attack_attempts=2)
     game_flow.start_game(state)
     game_flow.start_turn(state, "kickflip")
 
@@ -86,9 +108,9 @@ def test_resolve_attack_can_continue_attack_phase_after_failure(
 
 
 def test_resolve_attack_can_promote_to_defense(
-    game_flow: GameFlow, state: GameState
+    state: GameState
 ) -> None:
-    state.rule_set.attack_attempts = 2
+    game_flow = build_game_flow(attack_attempts=2)
     game_flow.start_game(state)
     game_flow.start_turn(state, "kickflip")
 
@@ -102,9 +124,9 @@ def test_resolve_attack_can_promote_to_defense(
 
 
 def test_resolve_attack_can_fail_turn_when_attempts_are_exhausted(
-    game_flow: GameFlow, state: GameState
+    state: GameState
 ) -> None:
-    state.rule_set.attack_attempts = 2
+    game_flow = build_game_flow(attack_attempts=2)
     game_flow.start_game(state)
     game_flow.start_turn(state, "kickflip")
     game_flow.resolve_attack(state, success=False)
@@ -119,9 +141,9 @@ def test_resolve_attack_can_fail_turn_when_attempts_are_exhausted(
 
 
 def test_resolve_defense_returns_defense_continues_on_failed_attempt(
-    game_flow: GameFlow, state: GameState
+    state: GameState
 ) -> None:
-    state.rule_set.defense_attempts = 2
+    game_flow = build_game_flow(defense_attempts=2)
     game_flow.start_game(state)
     game_flow.start_turn(state, "kickflip")
 
@@ -150,9 +172,9 @@ def test_resolve_defense_returns_turn_finished_on_success(
 
 
 def test_resolve_defense_returns_game_finished_on_final_elimination(
-    game_flow: GameFlow, state: GameState
+    state: GameState
 ) -> None:
-    state.rule_set.letters_word = "S"
+    game_flow = build_game_flow(letters_word="S")
     game_flow.start_game(state)
     game_flow.start_turn(state, "kickflip")
 
@@ -227,9 +249,9 @@ def test_resolve_defense_consumes_trick_when_turn_finishes(
 
 
 def test_resolve_defense_consumes_trick_when_game_finishes(
-    game_flow: GameFlow, state: GameState
+    state: GameState
 ) -> None:
-    state.rule_set.letters_word = "S"
+    game_flow = build_game_flow(letters_word="S")
     game_flow.start_game(state)
     game_flow.start_turn(state, "Soul")
 

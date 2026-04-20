@@ -1,15 +1,16 @@
 from core.player import Player
 from core.state import GameState
-from core.types import DefenseResolutionStatus, EventName, Phase, TurnPhase
+from core.types import EventName, ExchangeStatus, Phase, TurnPhase
 from match.defense.defense_attempt_resolver import DefenseAttemptResolver
 from match.defense.defense_flow import DefenseFlow
 from match.scoring.letters_scoring import LettersScoring
+from config.scoring_config import ScoringConfig
 from match.victory.last_player_standing import LastPlayerStandingVictory
 
 
 def test_defense_flow_can_continue_after_failed_attempt() -> None:
     flow = DefenseFlow(
-        DefenseAttemptResolver(LettersScoring()),
+        DefenseAttemptResolver(LettersScoring(), defense_attempts=2),
         LastPlayerStandingVictory(),
     )
     state = GameState(
@@ -35,7 +36,7 @@ def test_defense_flow_can_continue_after_failed_attempt() -> None:
         on_advance_to_next_attacker=lambda log_turn_end: None,
     )
 
-    assert result == DefenseResolutionStatus.DEFENSE_CONTINUES
+    assert result.status == ExchangeStatus.DEFENSE_CONTINUES
     assert state.defense_attempts_left == 1
     assert state.history.events[-1].name == EventName.DEFENSE_FAILED_ATTEMPT
 
@@ -73,7 +74,7 @@ def test_defense_flow_can_finish_turn() -> None:
         ),
     )
 
-    assert result == DefenseResolutionStatus.TURN_FINISHED
+    assert result.status == ExchangeStatus.ATTACKER_HELD
     assert consumed["called"] is True
     assert marked["called"] is True
     assert advanced["called"] is True
@@ -82,8 +83,8 @@ def test_defense_flow_can_finish_turn() -> None:
 
 def test_defense_flow_can_finish_game_after_elimination() -> None:
     flow = DefenseFlow(
-        DefenseAttemptResolver(LettersScoring()),
-        LastPlayerStandingVictory(),
+        DefenseAttemptResolver(LettersScoring(ScoringConfig(letters_word="S"))),
+        LastPlayerStandingVictory(scoring_config=ScoringConfig(letters_word="S")),
     )
     state = GameState(
         players=[
@@ -98,7 +99,6 @@ def test_defense_flow_can_finish_game_after_elimination() -> None:
         defense_attempts_left=1,
         current_trick="kickflip",
     )
-    state.rule_set.letters_word = "S"
     finished = {"called": False}
     consumed = {"called": False}
 
@@ -111,7 +111,7 @@ def test_defense_flow_can_finish_game_after_elimination() -> None:
         on_advance_to_next_attacker=lambda log_turn_end: None,
     )
 
-    assert result == DefenseResolutionStatus.GAME_FINISHED
+    assert result.status == ExchangeStatus.GAME_FINISHED
     assert finished["called"] is True
     assert consumed["called"] is True
     history_names = [event.name for event in state.history.events]

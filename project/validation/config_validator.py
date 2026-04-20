@@ -39,7 +39,7 @@ class ConfigValidator:
         if structure_name == "battle" and player_count < 3:
             raise InvalidStateError("Battle structure requires at least three players.")
 
-        self.validate_rule_set(match_config.to_rule_set_config())
+        self._validate_runtime_config(match_config)
         self._validate_policies(match_config)
         self._validate_runtime_families(match_config)
         self._validate_preset_coherence(match_config)
@@ -55,6 +55,19 @@ class ConfigValidator:
             raise ValueError("attack_attempts must be greater than or equal to 1")
 
         if not (1 <= rule_set.defense_attempts <= 3):
+            raise ValueError("defense_attempts must be between 1 and 3")
+
+    def _validate_runtime_config(self, match_config: MatchConfig) -> None:
+        if not match_config.scoring.letters_word:
+            raise ValueError("letters_word cannot be empty")
+
+        if len(match_config.scoring.letters_word) > 10:
+            raise ValueError("letters_word cannot exceed 10 characters")
+
+        if match_config.attack.attack_attempts < 1:
+            raise ValueError("attack_attempts must be greater than or equal to 1")
+
+        if not (1 <= match_config.defense.defense_attempts <= 3):
             raise ValueError("defense_attempts must be between 1 and 3")
 
     def _validate_runtime_families(self, match_config: MatchConfig) -> None:
@@ -103,7 +116,27 @@ class ConfigValidator:
                 "preset_name does not match the configured match policies."
             )
 
-        if match_config.to_rule_set_config() != preset.rule_set:
+        if match_config.scoring.letters_word != preset.rule_set.letters_word:
             raise InvalidStateError(
                 "preset_name does not match the configured rule set."
+            )
+
+        if match_config.attack.attack_attempts != preset.rule_set.attack_attempts:
+            raise InvalidStateError(
+                "preset_name does not match the configured rule set."
+            )
+
+        if match_config.defense.defense_attempts != preset.rule_set.defense_attempts:
+            raise InvalidStateError(
+                "preset_name does not match the configured rule set."
+            )
+
+        if match_config.victory.elimination_enabled != preset.rule_set.elimination_enabled:
+            raise InvalidStateError(
+                "preset_name does not match the configured rule set."
+            )
+
+        if match_config.fine_rules != preset.fine_rules:
+            raise InvalidStateError(
+                "preset_name does not match the configured fine rules."
             )

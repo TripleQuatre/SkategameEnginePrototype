@@ -1,6 +1,6 @@
 from core.player import Player
 from core.state import GameState
-from core.types import AttackResolutionStatus, EventName, Phase, TurnPhase
+from core.types import EventName, ExchangeStatus, Phase, TurnPhase
 from match.attack.attack_flow import AttackFlow
 
 
@@ -54,7 +54,7 @@ def test_attack_flow_resolve_attack_success_uses_callback() -> None:
         on_attack_failed=lambda: None,
     )
 
-    assert result == AttackResolutionStatus.DEFENSE_READY
+    assert result.status == ExchangeStatus.DEFENSE_READY
     assert promoted["called"] is True
     assert state.history.events[-1].name == EventName.ATTACK_SUCCEEDED
 
@@ -79,7 +79,7 @@ def test_attack_flow_resolve_attack_failure_can_continue_or_fail() -> None:
         on_attack_failed=lambda: failed.__setitem__("called", True),
     )
 
-    assert result == AttackResolutionStatus.ATTACK_CONTINUES
+    assert result.status == ExchangeStatus.ATTACK_CONTINUES
     assert state.attack_attempts_left == 1
     assert state.history.events[-1].name == EventName.ATTACK_FAILED_ATTEMPT
     assert failed["called"] is False
@@ -93,5 +93,5 @@ def test_attack_flow_resolve_attack_failure_can_continue_or_fail() -> None:
         on_attack_failed=lambda: failed.__setitem__("called", True),
     )
 
-    assert result == AttackResolutionStatus.TURN_FAILED
+    assert result.status == ExchangeStatus.ATTACKER_FAILED
     assert failed["called"] is True

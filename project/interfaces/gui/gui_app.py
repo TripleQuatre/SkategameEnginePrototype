@@ -978,7 +978,7 @@ class GUIApp:
         self.score_text.delete("1.0", tk.END)
         self.score_text.config(height=max(3, len(state.players)))
 
-        word = state.rule_set.letters_word
+        word = self._get_letters_word()
 
         for index, player in enumerate(state.players):
             self.score_text.insert(tk.END, f"{player.name}: ", "score_name")
@@ -1068,7 +1068,7 @@ class GUIApp:
                 continue
 
             for index, defense in enumerate(turn.defenses):
-                letters = self._format_letters(defense.letters, state.rule_set.letters_word)
+                letters = self._format_letters(defense.letters, self._get_letters_word())
                 turn_value = turn.turn_number if index == 0 else ""
                 attacker_value = turn.attacker_name if index == 0 else ""
                 trick_value = turn.trick_name if index == 0 else ""
@@ -1087,6 +1087,11 @@ class GUIApp:
                         letters,
                     ),
                 )
+
+    def _get_letters_word(self) -> str:
+        if self.controller is None:
+            return "SKATE"
+        return self.controller.match_config.letters_word
 
     # =========================
     # Helpers
