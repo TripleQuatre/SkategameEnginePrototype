@@ -157,6 +157,9 @@ def test_gui_can_start_custom_game_without_preset(gui_app: GUIApp) -> None:
     gui_app.custom_word_var.set("OUT")
     gui_app.custom_attack_attempts_var.set(2)
     gui_app.custom_defense_attempts_var.set(3)
+    gui_app.custom_uniqueness_var.set(False)
+    gui_app.custom_repetition_mode_var.set("common")
+    gui_app.custom_repetition_limit_var.set(2)
 
     gui_app._start_game()
 
@@ -168,6 +171,24 @@ def test_gui_can_start_custom_game_without_preset(gui_app: GUIApp) -> None:
     assert match_parameters.rule_set.letters_word == "OUT"
     assert match_parameters.rule_set.attack_attempts == 2
     assert match_parameters.rule_set.defense_attempts == 3
+    assert match_parameters.fine_rules.uniqueness_enabled is False
+    assert match_parameters.fine_rules.repetition_mode == "common"
+    assert match_parameters.fine_rules.repetition_limit == 2
+
+
+def test_gui_preset_mode_reflects_v8_fine_rules(gui_app: GUIApp) -> None:
+    assert gui_app.repetition_mode_combo is not None
+    assert gui_app.repetition_limit_spinbox is not None
+    assert gui_app.uniqueness_checkbutton is not None
+
+    gui_app.preset_var.set("battle_common_v8")
+
+    assert gui_app.custom_uniqueness_var.get() is True
+    assert gui_app.custom_repetition_mode_var.get() == "common"
+    assert gui_app.custom_repetition_limit_var.get() == 3
+    assert str(gui_app.repetition_mode_combo.cget("state")) == "disabled"
+    assert str(gui_app.repetition_limit_spinbox.cget("state")) == "disabled"
+    assert str(gui_app.uniqueness_checkbutton.cget("state")) == "disabled"
 
 
 def test_gui_refresh_game_view_shows_attack_phase_details(gui_app: GUIApp) -> None:
@@ -363,3 +384,35 @@ def test_gui_return_to_setup_clears_controller_and_status(gui_app: GUIApp) -> No
     assert gui_app.current_view == "setup"
     assert gui_app.trick_var.get() == ""
     assert gui_app.status_var.get() == "Configure the game to begin."
+
+
+def test_gui_undo_to_initial_snapshot_returns_to_setup_without_trick_input_bug(
+    gui_app: GUIApp,
+) -> None:
+    gui_app.setup_mode_var.set("custom")
+    gui_app.player_name_vars[0].set("Stan")
+    gui_app.player_name_vars[1].set("Denise")
+    gui_app._start_game()
+
+    assert gui_app.controller is not None
+    assert gui_app.current_view == "game"
+    assert gui_app.trick_suggestions_listbox is not None
+    assert gui_app.confirm_trick_button is not None
+
+    gui_app._undo_action()
+
+    assert gui_app.current_view == "setup"
+    assert gui_app.controller is not None
+    assert gui_app.controller.get_state().phase == Phase.SETUP
+    assert gui_app.status_var.get() == "Undo successful. Returned to setup."
+
+    gui_app.trick_var.set("soul")
+    gui_app._refresh_trick_suggestions()
+
+    assert list(gui_app.trick_suggestions_listbox.get(0, tk.END)) == []
+    assert str(gui_app.confirm_trick_button.cget("state")) == "disabled"
+
+    gui_app._undo_action()
+
+    assert gui_app.current_view == "setup"
+    assert gui_app.status_var.get() == "Nothing to undo."

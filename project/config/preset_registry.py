@@ -1,4 +1,5 @@
 from config.match_config import MatchConfig
+from config.fine_rules_config import FineRulesConfig
 from config.match_policies import InitialTurnOrderPolicy, MatchPolicies
 from config.match_parameters import MatchParameters
 from config.match_preset import MatchPreset
@@ -99,5 +100,81 @@ class PresetRegistry:
                     initial_turn_order=InitialTurnOrderPolicy.RANDOMIZED,
                 ),
                 description="Hardcore multiplayer battle setup.",
+            ),
+            MatchPreset(
+                name="classic_skate_v8",
+                structure_name="one_vs_one",
+                rule_set=RuleSetConfig(
+                    letters_word="SKATE",
+                    elimination_enabled=True,
+                    attack_attempts=2,
+                    defense_attempts=3,
+                ),
+                policies=MatchPolicies(
+                    initial_turn_order=InitialTurnOrderPolicy.FIXED_PLAYER_ORDER,
+                ),
+                fine_rules=FineRulesConfig(
+                    uniqueness_enabled=True,
+                    repetition_mode="choice",
+                    repetition_limit=3,
+                ),
+                description="V8 duel preset with assisted tricks, uniqueness and per-attacker repetition.",
+            ),
+            MatchPreset(
+                name="blade_open_v8",
+                structure_name="one_vs_one",
+                rule_set=RuleSetConfig(
+                    letters_word="BLADE",
+                    elimination_enabled=True,
+                    attack_attempts=2,
+                    defense_attempts=1,
+                ),
+                policies=MatchPolicies(
+                    initial_turn_order=InitialTurnOrderPolicy.FIXED_PLAYER_ORDER,
+                ),
+                fine_rules=FineRulesConfig(
+                    uniqueness_enabled=False,
+                    repetition_mode="disabled",
+                    repetition_limit=3,
+                ),
+                description="V8 duel preset with free trick reuse and no repetition cap.",
+            ),
+            MatchPreset(
+                name="battle_common_v8",
+                structure_name="battle",
+                rule_set=RuleSetConfig(
+                    letters_word="OUT",
+                    elimination_enabled=True,
+                    attack_attempts=2,
+                    defense_attempts=3,
+                ),
+                policies=MatchPolicies(
+                    initial_turn_order=InitialTurnOrderPolicy.RANDOMIZED,
+                ),
+                fine_rules=FineRulesConfig(
+                    uniqueness_enabled=True,
+                    repetition_mode="common",
+                    repetition_limit=3,
+                ),
+                description="V8 battle preset with shared repetition limit across attackers.",
+            ),
+            MatchPreset(
+                name="battle_hardcore_v8",
+                structure_name="battle",
+                rule_set=RuleSetConfig(
+                    letters_word="SKATE",
+                    elimination_enabled=True,
+                    attack_attempts=2,
+                    defense_attempts=1,
+                ),
+                policies=MatchPolicies(
+                    initial_turn_order=InitialTurnOrderPolicy.RANDOMIZED,
+                ),
+                fine_rules=FineRulesConfig(
+                    uniqueness_enabled=True,
+                    repetition_mode="common",
+                    repetition_limit=1,
+                ),
+                description="V8 hardcore battle preset with strict shared repetition.",
             ),
         ]

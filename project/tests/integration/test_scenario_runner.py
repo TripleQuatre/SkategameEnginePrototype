@@ -1,6 +1,8 @@
 import shutil
 from pathlib import Path
 
+import pytest
+
 from core.types import (
     AttackResolutionStatus,
     DefenseResolutionStatus,
@@ -8,6 +10,7 @@ from core.types import (
     Phase,
     TurnPhase,
 )
+from core.exceptions import InvalidActionError
 from tests.support.scenario_runner import (
     ScenarioDefinition,
     ScenarioRunner,
@@ -244,3 +247,34 @@ def test_scenario_runner_can_preserve_structure_context_after_transition_and_loa
     assert context.player_names == ["p1", "p2", "p3"]
     assert context.preset_name is None
     assert result.controller.structure_name == "battle"
+
+
+def test_scenario_runner_v8_preset_can_enforce_common_repetition() -> None:
+    runner, base_dir = _make_runner("v8_preset_common_repetition")
+
+    try:
+        result = runner.run(
+            ScenarioDefinition(
+                player_ids=["Stan", "Denise", "Alex"],
+                preset_name="battle_hardcore_v8",
+                fixed_turn_order=[0, 1, 2],
+                steps=[
+                    ScenarioStep(action="start_turn", trick="Soul"),
+                    ScenarioStep(
+                        action="resolve_attack",
+                        success=False,
+                        expected_attack_status=AttackResolutionStatus.ATTACK_CONTINUES,
+                    ),
+                    ScenarioStep(
+                        action="resolve_attack",
+                        success=False,
+                        expected_attack_status=AttackResolutionStatus.TURN_FAILED,
+                    ),
+                ],
+            )
+        )
+
+        with pytest.raises(InvalidActionError):
+            result.controller.start_turn("Soul")
+    finally:
+        shutil.rmtree(base_dir, ignore_errors=True)

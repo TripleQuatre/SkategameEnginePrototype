@@ -207,14 +207,19 @@ def test_cli_new_game_preset_flow_selects_preset_before_player_names(
     controller = cli._create_new_game_controller()
 
     assert controller.match_parameters.preset_name == "battle_standard"
-    assert prompts.index("Choose a preset (1-4): ") < prompts.index(
+    preset_prompt = next(
+        prompt for prompt in prompts if prompt.startswith("Choose a preset (1-")
+    )
+    assert prompts.index(preset_prompt) < prompts.index(
         "Player 1 name: "
     )
 
 
 def test_cli_new_game_can_start_without_preset(monkeypatch) -> None:
     cli = CLIApp()
-    answers = iter(["2", "2", "Stan", "Denise", "OUT", "2", "3"])
+    answers = iter(
+        ["2", "2", "Stan", "Denise", "OUT", "2", "3", "n", "common", "2"]
+    )
 
     monkeypatch.setattr("builtins.input", lambda prompt="": next(answers))
 
@@ -227,6 +232,9 @@ def test_cli_new_game_can_start_without_preset(monkeypatch) -> None:
     assert match_parameters.rule_set.letters_word == "OUT"
     assert match_parameters.rule_set.attack_attempts == 2
     assert match_parameters.rule_set.defense_attempts == 3
+    assert match_parameters.fine_rules.uniqueness_enabled is False
+    assert match_parameters.fine_rules.repetition_mode == "common"
+    assert match_parameters.fine_rules.repetition_limit == 2
 
 
 def test_cli_display_state_shows_attack_phase_details(capsys) -> None:
@@ -266,6 +274,9 @@ def test_cli_run_can_resolve_attack_phase_before_defense(
             "S",
             "2",
             "1",
+            "y",
+            "choice",
+            "3",
             "switch soul",
             "1",
             "y",
@@ -303,6 +314,17 @@ def test_cli_trick_input_requires_selecting_a_suggestion(monkeypatch) -> None:
     trick = cli._ask_validated_trick_input(controller)
 
     assert trick == "Soul Switch"
+
+
+def test_cli_choose_official_preset_displays_v8_fine_rules(monkeypatch, capsys) -> None:
+    cli = CLIApp()
+    monkeypatch.setattr("builtins.input", lambda _prompt="": "5")
+
+    preset = cli._choose_official_preset()
+    output = capsys.readouterr().out
+
+    assert preset.name == "classic_skate_v8"
+    assert "Uniqueness=on, Repetition=choice, limit=3" in output
 
 
 def test_cli_join_command_can_add_player_between_turns(monkeypatch, capsys) -> None:

@@ -177,12 +177,20 @@ class CLIApp:
         word = self._ask_letters_word()
         attack_attempts = self._ask_attack_attempts()
         defense_attempts = self._ask_defense_attempts()
+        uniqueness_enabled = self._ask_uniqueness_enabled()
+        repetition_mode = self._ask_repetition_mode()
+        repetition_limit = 3
+        if repetition_mode != "disabled":
+            repetition_limit = self._ask_repetition_limit()
         return self.setup_service.create_started_controller_from_custom_setup(
             player_ids=player_ids,
             letters_word=word,
             attack_attempts=attack_attempts,
             defense_attempts=defense_attempts,
             elimination_enabled=True,
+            uniqueness_enabled=uniqueness_enabled,
+            repetition_mode=repetition_mode,
+            repetition_limit=repetition_limit,
         )
 
     def _load_saved_game_controller(self) -> GameController | None:
@@ -744,6 +752,12 @@ class CLIApp:
         for index, preset_name in enumerate(preset_names, start=1):
             preset = self.setup_service.get_preset(preset_name)
             print(f"{index}. {preset.name} - {preset.description}")
+            print(
+                "   "
+                f"Uniqueness={'on' if preset.fine_rules.uniqueness_enabled else 'off'}, "
+                f"Repetition={preset.fine_rules.repetition_mode}, "
+                f"limit={preset.fine_rules.repetition_limit}"
+            )
 
         while True:
             value = input(f"Choose a preset (1-{len(preset_names)}): ").strip()
@@ -783,6 +797,37 @@ class CLIApp:
                 if 1 <= attempts <= 3:
                     return attempts
             print("Attack attempts must be between 1 and 3.")
+
+    def _ask_uniqueness_enabled(self) -> bool:
+        while True:
+            value = input("Uniqueness enabled? (y/n, default y): ").strip().lower()
+            if value in {"", "y", "yes"}:
+                return True
+            if value in {"n", "no"}:
+                return False
+            print("Type y or n.")
+
+    def _ask_repetition_mode(self) -> str:
+        while True:
+            value = input(
+                "Repetition mode (choice/common/disabled, default choice): "
+            ).strip().lower()
+            if value in {"", "choice"}:
+                return "choice"
+            if value in {"common", "disabled"}:
+                return value
+            print("Type choice, common or disabled.")
+
+    def _ask_repetition_limit(self) -> int:
+        while True:
+            value = input("Repetition limit (1-9, default 3): ").strip()
+            if value == "":
+                return 3
+            if value.isdigit():
+                limit = int(value)
+                if 1 <= limit <= 9:
+                    return limit
+            print("Repetition limit must be between 1 and 9.")
 
     def _ask_yes_no(self, prompt: str) -> bool:
         while True:

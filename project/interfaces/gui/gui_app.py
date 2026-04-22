@@ -31,6 +31,9 @@ class GUIApp:
         self.custom_word_var = tk.StringVar(value="SKATE")
         self.custom_attack_attempts_var = tk.IntVar(value=1)
         self.custom_defense_attempts_var = tk.IntVar(value=1)
+        self.custom_uniqueness_var = tk.BooleanVar(value=True)
+        self.custom_repetition_mode_var = tk.StringVar(value="choice")
+        self.custom_repetition_limit_var = tk.IntVar(value=3)
         self.trick_var = tk.StringVar()
         self.status_var = tk.StringVar(value="Configure the game to begin.")
         self._suppress_trick_updates = False
@@ -87,6 +90,9 @@ class GUIApp:
         self.word_entry: ttk.Entry | None = None
         self.attack_attempts_spinbox: ttk.Spinbox | None = None
         self.attempts_spinbox: ttk.Spinbox | None = None
+        self.uniqueness_checkbutton: ttk.Checkbutton | None = None
+        self.repetition_mode_combo: ttk.Combobox | None = None
+        self.repetition_limit_spinbox: ttk.Spinbox | None = None
 
         self._build_setup_view()
         self._build_game_view()
@@ -237,12 +243,60 @@ class GUIApp:
         )
         self.attempts_spinbox.grid(row=13, column=0, sticky="w", pady=(0, 24))
 
+        ttk.Label(form, text="Uniqueness:", font=self.body_font).grid(
+            row=14, column=0, sticky="w", pady=(0, 6)
+        )
+
+        self.uniqueness_checkbutton = ttk.Checkbutton(
+            form,
+            text="Enabled",
+            variable=self.custom_uniqueness_var,
+            onvalue=True,
+            offvalue=False,
+        )
+        self.uniqueness_checkbutton.grid(
+            row=15, column=0, columnspan=2, sticky="w", pady=(0, 18)
+        )
+
+        ttk.Label(form, text="Repetition mode:", font=self.body_font).grid(
+            row=16, column=0, sticky="w", pady=(0, 6)
+        )
+
+        self.repetition_mode_combo = ttk.Combobox(
+            form,
+            textvariable=self.custom_repetition_mode_var,
+            values=("choice", "common", "disabled"),
+            state="readonly",
+            width=18,
+        )
+        self.repetition_mode_combo.grid(
+            row=17, column=0, columnspan=2, sticky="w", pady=(0, 18)
+        )
+
+        ttk.Label(form, text="Repetition limit:", font=self.body_font).grid(
+            row=18, column=0, sticky="w", pady=(0, 6)
+        )
+
+        self.repetition_limit_spinbox = ttk.Spinbox(
+            form,
+            from_=1,
+            to=9,
+            textvariable=self.custom_repetition_limit_var,
+            width=6,
+        )
+        self.repetition_limit_spinbox.grid(
+            row=19, column=0, sticky="w", pady=(0, 24)
+        )
+
         def refresh_setup_controls() -> None:
             assert self.preset_combo is not None
             assert self.player_count_spinbox is not None
             assert self.word_entry is not None
             assert self.attack_attempts_spinbox is not None
             assert self.attempts_spinbox is not None
+            assert self.uniqueness_checkbutton is not None
+            assert self.repetition_mode_combo is not None
+            assert self.repetition_limit_spinbox is not None
 
             use_preset = self.setup_mode_var.get() == "preset"
             preset_names = self._get_official_preset_names()
@@ -257,6 +311,15 @@ class GUIApp:
                 self.custom_word_var.set(preset.rule_set.letters_word)
                 self.custom_attack_attempts_var.set(preset.rule_set.attack_attempts)
                 self.custom_defense_attempts_var.set(preset.rule_set.defense_attempts)
+                self.custom_uniqueness_var.set(preset.fine_rules.uniqueness_enabled)
+                if (
+                    self.custom_repetition_mode_var.get()
+                    != preset.fine_rules.repetition_mode
+                ):
+                    self.custom_repetition_mode_var.set(
+                        preset.fine_rules.repetition_mode
+                    )
+                self.custom_repetition_limit_var.set(preset.fine_rules.repetition_limit)
 
                 if preset.structure_name == "one_vs_one":
                     self.player_count_var.set(2)
@@ -270,6 +333,8 @@ class GUIApp:
                 self.word_entry.config(state="readonly")
                 self.attack_attempts_spinbox.config(state="disabled")
                 self.attempts_spinbox.config(state="disabled")
+                self.uniqueness_checkbutton.config(state="disabled")
+                self.repetition_mode_combo.config(state="disabled")
             else:
                 if self.player_count_var.get() < 2:
                     self.player_count_var.set(2)
@@ -278,15 +343,27 @@ class GUIApp:
                 self.word_entry.config(state="normal")
                 self.attack_attempts_spinbox.config(state="normal")
                 self.attempts_spinbox.config(state="normal")
+                self.uniqueness_checkbutton.config(state="normal")
+                self.repetition_mode_combo.config(state="readonly")
+
+            repetition_limit_state = (
+                "disabled"
+                if self.custom_repetition_mode_var.get() == "disabled"
+                else ("normal" if not use_preset else "disabled")
+            )
+            self.repetition_limit_spinbox.config(state=repetition_limit_state)
 
             self._rebuild_player_inputs()
 
         self.setup_mode_var.trace_add("write", lambda *_args: refresh_setup_controls())
         self.preset_var.trace_add("write", lambda *_args: refresh_setup_controls())
+        self.custom_repetition_mode_var.trace_add(
+            "write", lambda *_args: refresh_setup_controls()
+        )
         self.trick_var.trace_add("write", lambda *_args: self._refresh_trick_suggestions())
 
         buttons = ttk.Frame(form)
-        buttons.grid(row=14, column=0, columnspan=2, pady=(6, 0))
+        buttons.grid(row=20, column=0, columnspan=2, pady=(6, 0))
 
         ttk.Button(
             buttons,
@@ -637,6 +714,12 @@ class GUIApp:
 
         if self.controller.undo():
             self._clear_trick_selection()
+            restored_state = self.controller.get_state()
+            if restored_state.phase == Phase.SETUP:
+                self.status_var.set("Undo successful. Returned to setup.")
+                self._show_view("setup")
+                return
+
             self.status_var.set("Undo successful.")
         else:
             self.status_var.set("Nothing to undo.")
@@ -752,6 +835,9 @@ class GUIApp:
                     attack_attempts=int(self.custom_attack_attempts_var.get()),
                     defense_attempts=int(self.custom_defense_attempts_var.get()),
                     elimination_enabled=True,
+                    uniqueness_enabled=bool(self.custom_uniqueness_var.get()),
+                    repetition_mode=self.custom_repetition_mode_var.get(),
+                    repetition_limit=int(self.custom_repetition_limit_var.get()),
                 )
         except ValueError as error:
             messagebox.showerror("Invalid setup", str(error))
@@ -1290,7 +1376,7 @@ class GUIApp:
             return
 
         state = self.controller.get_state()
-        if state.current_trick is not None or state.phase == Phase.END:
+        if state.phase != Phase.TURN or state.current_trick is not None:
             self._selected_trick_completion = None
             self._set_trick_controls_enabled(False)
             return
