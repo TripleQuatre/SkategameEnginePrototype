@@ -1,0 +1,185 @@
+V8 CODEBASE MAP
+
+Intent
+This document is a practical map of the current codebase after V8. It is not a
+full file-by-file mirror. It points to the folders and files that matter most
+to understand the engine.
+
+Top-Level Folders
+
+application
+- High-level session/setup orchestration
+- Important files:
+  - application/game_session.py
+    Main application service used by controller/UI. Exposes runtime actions,
+    save/load, undo, and now dictionary suggestions/resolution.
+  - application/game_setup_service.py
+    Entry point for preset/custom setup creation and started controllers.
+
+config
+- Match configuration models and setup translation
+- Important files:
+  - config/match_config.py
+    Runtime source of truth for the match.
+  - config/match_setup.py
+    Setup-facing shape used to build a match.
+  - config/setup_translator.py
+    Bridge between setup objects, match config, and legacy match parameters.
+  - config/fine_rules_config.py
+    Holds V8 fine rules such as Uniqueness and Repetition.
+  - config/match_preset.py
+    Definition of an official preset.
+  - config/preset_registry.py
+    Registry of official presets.
+
+controllers
+- Thin façade around the application session for CLI and GUI
+- Important file:
+  - controllers/game_controller.py
+    Main controller used by interfaces and tests.
+
+core
+- Fundamental engine state and generic data structures
+- Important files:
+  - core/state.py
+    Central runtime state of the game.
+  - core/player.py
+    Player model.
+  - core/player_score.py
+    Extensible score state introduced by the V7.x consolidation.
+  - core/history.py
+    Event history.
+  - core/snapshots.py
+    Undo snapshots using serialized state copies.
+  - core/types.py
+    Runtime enums for phase, results, and event categories.
+
+dictionary
+- New V8 autonomous trick domain
+- Important files:
+  - dictionary/models.py
+    Core trick objects: segment, exit, constructed trick.
+  - dictionary/base.py
+    Dictionary contracts and shared datatypes.
+  - dictionary/catalog.py
+    Generic catalog-based dictionary helpers.
+  - dictionary/inline_primary_grind.py
+    First real dictionary implementation shipped by V8.
+  - dictionary/runtime.py
+    Runtime access point used by the engine to resolve/store canonical trick
+    data.
+  - dictionary/types.py
+    Dictionary-specific enums such as Sport and TrickType.
+
+interfaces
+- User-facing CLI and GUI
+- Important files:
+  - interfaces/cli/cli_app.py
+    CLI flow with assisted trick suggestion/selection.
+  - interfaces/gui/gui_app.py
+    Tkinter UI with assisted trick suggestions and validation.
+
+match
+- Core gameplay logic
+- Sub-areas:
+
+  match/attack
+  - Attack phase logic
+  - Important file:
+    - match/attack/attack_flow.py
+
+  match/defense
+  - Defense phase logic
+  - Important files:
+    - match/defense/defense_flow.py
+    - match/defense/defense_attempt_resolver.py
+
+  match/flow
+  - Turn orchestration and special rules
+  - Important files:
+    - match/flow/turn_flow.py
+      Main orchestration of a turn.
+    - match/flow/turn_cycle.py
+      Turn failure/advance/consume helpers.
+    - match/flow/turn_state.py
+      Runtime state transitions between turn states.
+    - match/flow/trick_rules.py
+      Uniqueness and Repetition logic on canonical tricks.
+
+  match/scoring
+  - Scoring runtime selection
+  - Important files:
+    - match/scoring/scoring_factory.py
+    - match/scoring/letters_scoring.py
+
+  match/victory
+  - Victory runtime selection
+  - Important files:
+    - match/victory/victory_factory.py
+    - match/victory/last_player_standing.py
+
+  match/structure
+  - Game structure implementations
+  - Important files:
+    - match/structure/one_vs_one_structure.py
+    - match/structure/battle_structure.py
+
+persistence
+- Save/load infrastructure
+- Important files:
+  - persistence/serializers.py
+    Serializer for match config, runtime state, history, and V8 trick data.
+  - persistence/game_save.py
+    Save envelope object.
+  - persistence/game_save_repository.py
+    File repository for saves.
+
+validation
+- Guard rails for config, actions, and runtime state
+- Important files:
+  - validation/action_validator.py
+    Blocks invalid player actions before runtime mutation.
+  - validation/config_validator.py
+    Validates setup/runtime config coherence.
+  - validation/state_validator.py
+    Validates runtime state consistency.
+
+tests
+- Unit and integration coverage
+- Useful areas for V8:
+  - tests/unit/test_dictionary_models.py
+  - tests/unit/test_dictionary_catalog.py
+  - tests/unit/test_inline_primary_grind_dictionary.py
+  - tests/unit/test_game_flow.py
+  - tests/unit/test_validation.py
+  - tests/unit/test_persistence.py
+  - tests/interfaces/test_cli_app.py
+  - tests/interfaces/test_gui_app.py
+
+docs
+- Functional and technical references
+- Important files:
+  - docs/sheets/*.txt
+    Business rule sheets kept as the source reference.
+  - docs/v8_dictionary_spec.txt
+  - docs/v8_inline_primary_grind_spec.txt
+  - docs/v8_rules_integration.txt
+  - docs/v8_planification.txt
+  - docs/v8_closure_20260422.txt
+  - docs/v8_codebase_map.txt
+
+Suggested Reading Order
+1. docs/sheets/uniqueness.txt and docs/sheets/repetition.txt
+2. docs/v8_dictionary_spec.txt
+3. docs/v8_inline_primary_grind_spec.txt
+4. dictionary/models.py
+5. dictionary/inline_primary_grind.py
+6. match/flow/trick_rules.py
+7. match/flow/turn_flow.py
+8. interfaces/cli/cli_app.py or interfaces/gui/gui_app.py
+
+Shortest Mental Model
+- Dictionary says what a trick is.
+- Validation says whether that trick is currently allowed.
+- TurnFlow drives the exchange.
+- Persistence keeps the runtime and canonical trick history stable.

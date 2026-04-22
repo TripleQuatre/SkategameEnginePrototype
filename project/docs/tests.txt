@@ -1,66 +1,53 @@
-Documentation V5 - Dossier `tests/`
+Documentation V8 - Dossier `tests/`
 
 Role global
-Le dossier `tests/` valide la solidite reelle du moteur et de ses interfaces utilitaires.
+Le dossier `tests/` valide la solidite reelle du moteur et de ses interfaces.
 
 Structure
 - `tests/unit/` : verification fine des composants
 - `tests/integration/` : verification des couches branchees ensemble
 - `tests/interfaces/` : verification ciblee du CLI et du GUI
-- `tests/support/` : outillage reutilisable pour les scenarios
 
-Couverture notable en V5
+Zones importantes apres V8
 
-Unit tests
-- flow de jeu
-- validation
-- historique
-- persistence
-- turn resolver
-- end conditions
+Dictionary
+- `test_dictionary_models.py`
+- `test_dictionary_catalog.py`
+- `test_inline_primary_grind_dictionary.py`
 
-Integration tests
-- `test_game_engine_flow.py`
-- `test_game_controller_flow.py`
-- `test_undo_sequences.py`
-- `test_state_invariants.py`
-- `test_simulation_invariants.py`
+Runtime match
+- `test_game_flow.py`
+- `test_attack_flow.py`
+- `test_turn_cycle.py`
+- `test_turn_state.py`
+- `test_turn_resolver.py`
+
+Validation
+- `test_validation.py`
+
+Persistence
+- `test_persistence.py`
 - `test_save_load_sequences.py`
-- `test_scenario_runner.py`
 
-Interface tests
+Setup / config / structure
+- `test_game_setup_service.py`
+- `test_match_config.py`
+- `test_structure_factory.py`
+- `test_match_transition_service.py`
+
+Interfaces
 - `test_cli_app.py`
 - `test_gui_app.py`
 
-Apports V5
-- couverture du mode `battle`
-- tests save/load multi-mode
-- tests de fin de partie et consultation
-- tests CLI sur parcours reels
-- tests GUI cibles sur etats critiques
-- premier `ScenarioRunner`
+Ce que la V8 a ajoute en pratique
+- couverture du dictionnaire
+- couverture de la saisie assistee
+- couverture de l'identite canonique des tricks
+- couverture de `Uniqueness`
+- couverture de `Repetition`
+- couverture de la persistence des tricks canoniques
 
-`tests/support/scenario_runner.py`
-- permet de definir des scenarios en Python
-- sait enchainer :
-  - `start_turn`
-  - `resolve`
-  - `cancel_turn`
-  - `undo`
-  - `save`
-  - `load`
-- sait figer un ordre `battle` pour les tests
-
-Interet de cette structure
-- proteger les decisions V5
-- attraper les regressions de parcours
-- preparer un futur outillage plus riche de simulation de configurations
-
-Ce qui manque encore
-- couverture GUI plus large
-- snapshots texte CLI si souhaites
-- scenarios de regles futures plus complexes
-
-Etat V5
-La couverture de tests n'est plus uniquement moteur :
-elle commence a couvrir les interfaces et les parcours complets.
+Etat V8
+- la suite complete valide le moteur, les interfaces et les parcours critiques
+- le warning residuel connu est un `PytestCacheWarning` Windows sur
+  `.pytest_cache`

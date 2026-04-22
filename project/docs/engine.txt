@@ -1,63 +1,82 @@
-Documentation V5 - Dossier `engine/`
+Documentation V8 - Orchestration du moteur
+
+Important
+Le projet n'est plus centre sur un dossier `engine/` comme dans les versions
+plus anciennes. En V8, l'orchestration du moteur est partagee entre :
+
+- `application/`
+- `controllers/`
+- `match/`
 
 Role global
-`engine/` orchestre activement le match sans porter lui-meme les politiques de mode.
+L'orchestration active d'une partie est maintenant assuree par :
 
-Fichiers
+- `application/game_session.py`
+- `controllers/game_controller.py`
+- `match/flow/turn_flow.py`
 
-`game_engine.py`
-- facade principale du moteur
-- initialise validation, mode, flow, snapshots et persistence
-- expose :
+`application/game_session.py`
+- facade applicative principale
+- construit le runtime a partir de `MatchConfig`
+- coordonne :
+  - structure
+  - flow
+  - validation
+  - persistence
+  - undo
+  - transitions de roster
+  - dictionnaire de tricks
+- expose les operations de haut niveau :
   - `start_game`
   - `start_turn`
+  - `resolve_attack`
   - `resolve_defense`
   - `cancel_turn`
   - `undo`
   - `save_game`
   - `load_game`
+  - suggestions/resolution de tricks V8
 
-`game_flow.py`
-- coeur de l'orchestration
-- demarre la partie
-- engage un trick
-- resout la fin de tour
-- nettoie l'etat courant
-- produit les evenements
+`controllers/game_controller.py`
+- relais tres fin vers `GameSession`
+- API stable pour CLI, GUI et tests
 
-Decisions V5 importantes dans `game_flow.py`
-- `start_game()` delegue l'initialisation au mode
-- `start_turn(trick)` engage le trick mais ne le consomme pas
-- `cancel_turn(trick)` produit `TURN_FAILED`
-- les defenseurs sont fournis par le mode
-- le prochain attaquant est fourni par le mode
-- le trick est consomme en fin terminale de tour
-- la fin de partie nettoie correctement l'etat courant
+`match/flow/turn_flow.py`
+- coeur de l'orchestration d'un tour
+- compose :
+  - `AttackFlow`
+  - `DefenseFlow`
+  - `TurnCycle`
+  - `TrickRules`
+  - scoring runtime
+  - victory runtime
 
-`turn_resolver.py`
-- gere une tentative de defense
-- succes
-- echec avec essais restants
-- echec final avec penalite
-- progression defenseur par defenseur
+Pieces importantes du flow
 
-`end_conditions.py`
-- determine les eliminations
-- determine la fin de partie
-- retourne le gagnant si applicable
+`match/attack/attack_flow.py`
+- demarre un tour
+- gere les tentatives d'attaque
+- decide si l'attaque continue, passe en defense, ou echoue
 
-Undo V5
-- snapshots pris avant chaque action mutante
-- restauration complete d'etat
-- undo possible apres une fin de partie tant que la session courante existe
-- l'historique d'undo est vide apres `load_game`
+`match/defense/defense_flow.py`
+- gere la reponse des defenseurs
+- pilote la progression defenseur par defenseur
+- delegue la resolution fine a `DefenseAttemptResolver`
 
-Save / Load V5
-- sauvegarde via un `GameSave`
-- `GameSave` contient `match_parameters + game_state`
-- `load_game()` recharge le bon mode a partir de la sauvegarde
-- plus de dependance a un placeholder de mode pour les vraies sauvegardes
+`match/flow/turn_cycle.py`
+- consomme le trick courant
+- avance au prochain attaquant
+- termine proprement un tour ou une partie
+- historise les echec d'attaque utiles a `Repetition`
 
-Etat V5
-Le dossier `engine/` reste le coeur actif du moteur, mais sa logique de structure de match
-est maintenant proprement deleguee a `modes/`.
+`match/flow/turn_state.py`
+- fonctions de mutation d'etat de bas niveau
+- ouverture/fermeture du tour
+- promotion attaque -> defense
+- nettoyage runtime
+
+Ce qu'il faut retenir
+- l'orchestration n'est plus concentree dans un seul fichier
+- `GameSession` est la facade applicative
+- `TurnFlow` est le coeur runtime d'un tour
+- `match/` est le vrai centre moteur actuel

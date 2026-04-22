@@ -1,73 +1,74 @@
-Documentation V5 - Logique des donnees
+Documentation V8 - Logique des donnees
 
 But
-Ce document decrit la logique de donnees la plus importante du moteur, independamment
+Ce document decrit la logique de donnees importante du moteur, independamment
 des interfaces.
 
-Source de verite
-- `GameState` est la source de verite principale
-- `History` est une trace exploitable du passe
-- `Snapshot` est une image restaurable de l'etat
-- `GameSave` est une enveloppe persistable de partie
+Sources de verite
+- `GameState` : etat courant du runtime
+- `MatchConfig` : configuration runtime du match
+- `History` : trace des evenements
+- `Snapshot` : image restaurable pour l'undo
+- `GameSave` : enveloppe persistable du match
+- `ConstructedTrick` : identite canonique d'un trick cote dictionnaire
 
-Distinction cle V5
+Distinctions cles
 
 1. Etat courant
 - ce que le moteur est en train de vivre
 - porte par `GameState`
 
-2. Historique
+2. Configuration
+- ce qui pilote structure, scoring, victory et regles fines
+- porte par `MatchConfig`
+
+3. Historique
 - ce qui s'est produit
 - porte par `History`
 
-3. Snapshot
+4. Snapshot
 - ce qui peut etre restaure rapidement
 - porte par `Snapshot` et `SnapshotHistory`
 
-4. Sauvegarde
+5. Sauvegarde
 - ce qui peut etre stocke et recharge
 - porte par `GameSave`
 
-Cycle de tour
-- tour ouvert : `current_trick is None`
-- tour engage : `current_trick is not None`
-- tour termine : resultat terminal produit
+6. Identite canonique d'un trick
+- ce que `Dictionary` considere comme le vrai trick
+- porte par les objets de `dictionary/`
 
 Donnees sensibles du state
 - `turn_order`
 - `attacker_index`
 - `defender_indices`
 - `current_defender_position`
+- `attack_attempts_left`
 - `defense_attempts_left`
 - `current_trick`
+- `current_trick_data`
 - `validated_tricks`
+- `validated_trick_data`
+- `failed_attack_trick_data`
 - `history`
 
-Semantique des tricks
-- un trick peut etre propose et accepte pour entrer dans le tour
-- il devient alors `current_trick`
-- il n'entre dans `validated_tricks` qu'en fin terminale du tour
+Semantique actuelle des tricks
+- un trick saisi passe idealement par `dictionary/`
+- le texte brut peut encore exister pour compatibilite
+- l'identite canonique V8 vit en parallele
+- un trick valide alimente `validated_trick_data`
+- un trick lance puis rate alimente `failed_attack_trick_data`
 
-Semantique du multijoueur
-- `turn_order` porte l'ordre complet du match
-- `defender_indices` porte les defenseurs du tour courant
-- un defenseur deja resolu peut devenir inactif sans invalider l'etat
-- les defenseurs restants doivent rester actifs
+Semantique V8 de l'historique des tricks
+- `Uniqueness` lit les tricks valides
+- `Repetition` lit les tricks lances puis rates
+- les deux travaillent sur une identite canonique si elle existe
 
 Pourquoi c'est important
-Cette separation permet a la V5 de garder coherents :
-- le battle
-- l'annulation de tour
+Cette separation permet de garder coherents :
+- la saisie assistee V8
+- `Uniqueness`
+- `Repetition`
 - l'undo
 - le save/load
-- les tests d'invariants
-
-Persistence
-- la serialisation conserve la difference entre :
-  - un trick engage
-  - un trick deja consomme
-  - un ordre de rotation actif
-  - une partie complete sauvegardee
-
-Conclusion
-La V5 a etendu le modele de donnees sans perdre la clarte apportee par la V4.
+- les futures regles comme `Banned Tricks`

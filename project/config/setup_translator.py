@@ -24,6 +24,8 @@ class SetupTranslator:
             ),
             fine_rules=FineRulesConfig(
                 uniqueness_enabled=setup.uniqueness_enabled,
+                repetition_mode=setup.repetition_mode,
+                repetition_limit=setup.repetition_limit,
             ),
             preset_name=setup.preset_name,
         )
@@ -51,6 +53,8 @@ class SetupTranslator:
             ),
             fine_rules=FineRulesConfig(
                 uniqueness_enabled=setup.uniqueness_enabled,
+                repetition_mode=setup.repetition_mode,
+                repetition_limit=setup.repetition_limit,
             ),
             preset_name=setup.preset_name,
         )

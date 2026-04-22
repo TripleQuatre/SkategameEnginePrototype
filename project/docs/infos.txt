@@ -1,63 +1,53 @@
-SkateGame Engine Prototype - Informations V5
+SkateGame Engine Prototype - Informations V8
 
 Statut
-La V5 est une version d'extension structurelle du moteur.
+La V8 est une version structurante du moteur.
 
-Cap V5
-- introduire le multijoueur via `battle`
-- garder le moteur independant des interfaces
-- fiabiliser la fin de partie
-- rendre save/load compatible avec plusieurs modes
-- commencer une vraie stabilisation des interfaces par tests
+Cap V8
+- introduire la feature `Dictionary`
+- brancher la saisie de tricks sur une identite canonique
+- livrer le premier dictionnaire `inline_primary_grind`
+- ajouter `Uniqueness`
+- ajouter `Repetition`
+- conserver la base consolidée de V7.x
 
 Objectifs atteints
-- mode `battle` pour parties a `3+` joueurs
-- `turn_order` persistant dans l'etat
-- orchestration des tours deleguee aux modes
-- `TURN_FAILED` remplace `TURN_CANCELLED`
-- undo possible en fin de partie dans la session courante
-- sauvegarde et chargement d'une partie terminee
-- chargement adaptatif du bon mode via `GameSave`
-- historique reconstruit en tours + sous-lignes defenseur
-- CLI et GUI compatibles `one_vs_one` et `battle`
-- premiers tests d'interfaces
-- premier runner de scenarios reutilisable
+- dictionnaire autonome dans `dictionary/`
+- premiere implementation concrete `inline_primary_grind`
+- saisie assistee CLI et GUI
+- stockage canonique des tricks dans le runtime
+- persistence des tricks canoniques
+- `Uniqueness` sur tricks valides
+- `Repetition` sur tricks lances puis rates
+- docs V8 posees
 
 Capacites utilisateur actuelles
-- creer une partie `one_vs_one`
-- creer une partie `battle`
-- jouer une partie via CLI
-- jouer une partie via GUI
-- undo pendant la partie et apres la fin de partie
-- sauvegarder une partie en cours ou terminee
-- charger une partie en cours ou terminee
-- consulter l'historique d'une partie finie
+- creer une partie preset ou custom
+- jouer via CLI
+- jouer via GUI
+- saisir un trick via suggestions
+- utiliser `Uniqueness`
+- utiliser `Repetition`
+- sauvegarder / charger / undo
 
 Limites assumees
-- presentation GUI encore utilitaire
-- details visuels non prioritaires
-- tests GUI encore cibles et non exhaustifs
-- pas encore de systeme complet pour couvrir automatiquement toutes les combinaisons de regles futures
-- pas de gestion des equipes
+- sport reellement exploitable : `inline`
+- dictionnaire reellement exploitable : `inline_primary_grind`
+- pas encore de `Banned Tricks`
+- pas encore de `Randomizer`
+- pas encore de vraie regle `Switch` pour les combos
+- interfaces encore utilitaires
 
-Ce que la V5 ne cherche pas encore a faire
-- architecture reseau
-- couche sociale / app mere
-- presets communautaires complets
-- systeme de points alternatif
-- modes equipes
-
-Base de robustesse V5
-- unit tests
-- integration tests
-- tests CLI
-- tests GUI cibles
-- save/load sequences
-- undo sequences
-- state invariants
-- simulation invariants
-- scenario runner
+Base de robustesse V8
+- suite unitaire
+- suite integration
+- tests interfaces
+- tests dictionnaire
+- tests save/load
+- tests undo
+- tests invariants
 
 Bilan
-La V5 fait passer le projet d'un moteur duel stabilise a un moteur d'arbitrage multi-mode
-deja utilisable, persistable et testable.
+La V8 fait passer le projet d'un moteur configurable a un moteur capable de
+raisonner sur des tricks canoniques, ce qui debloque les futures regles plus
+avancees.

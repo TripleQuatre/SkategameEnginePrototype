@@ -26,6 +26,10 @@ class ActionValidator:
         if self.special_rules.uniqueness_blocks_trick(state, trick):
             raise InvalidActionError("This trick has already been validated in this game.")
 
+        attacker_id = state.players[state.attacker_index].id
+        if self.special_rules.repetition_blocks_trick(state, trick, attacker_id):
+            raise InvalidActionError(self.special_rules.repetition_block_message())
+
     def validate_resolve_defense(self, state: GameState) -> None:
         if state.phase != Phase.TURN:
             raise InvalidActionError("Cannot resolve defense outside TURN phase.")

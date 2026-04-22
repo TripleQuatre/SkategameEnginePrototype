@@ -1,9 +1,9 @@
-Documentation V5 - Dossier `persistence/`
+Documentation V8 - Dossier `persistence/`
 
 Role global
 `persistence/` gere la conversion et le stockage des donnees du moteur.
 
-Fichiers
+Fichiers importants
 
 `serializers.py`
 - convertit les objets moteur en dictionnaires et inversement
@@ -11,45 +11,36 @@ Fichiers
   - `Player`
   - `Event`
   - `History`
-  - `RuleSetConfig`
-  - `MatchParameters`
+  - `MatchConfig`
+  - `MatchParameters` en compatibilite
   - `GameState`
   - `GameSave`
-
-Apports V5
-- serialisation de `turn_order`
-- serialisation du format complet `GameSave`
-- conservation d'un format JSON lisible
+- serialise aussi les donnees canoniques V8 des tricks :
+  - `current_trick_data`
+  - `validated_trick_data`
+  - `failed_attack_trick_data`
 
 `game_save.py`
 - enveloppe persistable du moteur
 - contient :
-  - `match_parameters`
+  - `match_config`
   - `game_state`
 
 `game_save_repository.py`
 - sauvegarde et recharge un `GameSave`
 
-`config_repository.py`
-- sauvegarde et recharge un `MatchParameters`
-
-Capacites V5
+Capacites V8
 - sauvegarde d'une partie en cours
 - sauvegarde d'une partie terminee
-- reprise d'une partie non terminee
-- reprise d'une partie terminee en consultation
-- chargement adaptatif du bon mode
+- sauvegarde de la configuration runtime reelle
+- reprise avec l'historique canonique des tricks
+- reprise compatible avec undo reset
 
 Lien avec l'undo
 - `Snapshot` sert a la memoire interne temporaire
 - `GameSaveRepository` sert au stockage externe
 - les deux restent separes
 
-Choix semantique V5
-- le terme `session` n'est pas utilise pour la persistence metier
-- `GameSave` decrit un objet de sauvegarde, pas une session de ride
-
-Etat V5
-La persistence n'est plus seulement un export de `GameState` :
-- elle sait reconstituer une vraie partie
-- elle transporte le mode et la configuration de match
+Point a retenir
+La persistence transporte maintenant bien plus qu'un simple texte de trick :
+elle transporte aussi la forme canonique necessaire aux regles V8.

@@ -1,0 +1,50 @@
+Documentation V8 - Dossier `dictionary/`
+
+Role global
+`dictionary/` est la nouvelle feature autonome introduite en V8.
+Elle decrit ce qu'est un trick valide pour un sport et un profil donnes.
+
+Ce que `dictionary/` fait
+- definit une structure canonique de trick
+- definit segments, combos et sorties
+- valide un trick
+- produit un label affichable
+- propose les prochaines options valides
+
+Ce que `dictionary/` ne fait pas
+- ne decide pas si le trick est autorise dans la partie
+- ne gere pas l'historique du match
+- ne remplace pas `Uniqueness` ou `Repetition`
+
+Fichiers importants
+
+`types.py`
+- enums du domaine dictionnaire
+
+`models.py`
+- objets coeur :
+  - segment
+  - sortie
+  - trick construit
+
+`base.py`
+- contrats communs du systeme de dictionnaires
+
+`catalog.py`
+- logique generique de catalogue et de suggestions
+
+`inline_primary_grind.py`
+- premiere implementation concrete livree en V8
+
+`runtime.py`
+- point d'entree pratique pour le runtime moteur
+
+Vision produit actuelle
+- architecture generique multi-dictionnaires
+- implementation pratique unique en V8 :
+  - sport : `inline`
+  - profil : `inline_primary_grind`
+
+Point a retenir
+`dictionary/` est la couche qui permet maintenant au moteur de comparer des
+tricks comme des objets metier, et non plus seulement comme du texte.

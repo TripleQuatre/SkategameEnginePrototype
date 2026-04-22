@@ -1,0 +1,94 @@
+Reorganisation V6 -> V8
+
+Objectif
+Ce document explique les principes clefs de la reorganisation du code depuis la
+periode V6 jusqu'a la V8 actuelle.
+
+1. Le moteur n'est plus pense comme un bloc monolithique
+Avant
+- la lecture du projet poussait a voir un "engine" central
+
+Maintenant
+- la responsabilite est distribuee explicitement entre :
+  - `application/`
+  - `match/`
+  - `dictionary/`
+  - `validation/`
+  - `persistence/`
+
+2. `MatchConfig` est devenu le centre de configuration runtime
+Avant
+- beaucoup de raisonnements tournaient encore autour d'un ruleset ou de vues
+  setup plus plates
+
+Maintenant
+- le runtime est pilote par `MatchConfig`
+- les familles de config sont separees :
+  - structure
+  - attack
+  - defense
+  - scoring
+  - victory
+  - fine_rules
+
+3. La structure du match vit dans `match/structure/`
+Avant
+- la structure pouvait etre lue comme une logique de mode
+
+Maintenant
+- la structure est une brique runtime explicite
+- elle est construite par factory et branchee dans la session
+
+4. Le flow du tour est decompose
+Avant
+- l'orchestration pouvait sembler plus compacte mais aussi plus melangee
+
+Maintenant
+- l'attaque
+- la defense
+- le cycle de tour
+- l'etat de tour
+- les petites regles du trick
+vivent dans des fichiers distincts de `match/`
+
+5. Les tricks ne sont plus seulement du texte
+Avant
+- le moteur comparait surtout des chaines normalisees
+
+Maintenant
+- `dictionary/` fournit une identite canonique
+- le runtime garde encore des champs texte pour compatibilite
+- les regles V8 lisent en priorite les donnees canoniques
+
+6. Les reconfigurations de match sont formalisees
+Avant
+- ajouter ou retirer un joueur aurait pousse a patcher plusieurs zones
+
+Maintenant
+- `match/transitions/` formalise la transition
+- le runtime peut etre reconstruit proprement
+
+7. Le moteur est pense par familles
+Principe cle de reorganisation
+- ne pas empiler des options plates
+- distinguer les familles de responsabilite
+- faire apparaitre les frontieres metier dans les dossiers et les fichiers
+
+Exemples
+- scoring n'est pas victory
+- dictionary n'est pas validation d'autorisation
+- structure n'est pas flow detaille
+- setup n'est pas runtime
+
+8. La documentation doit suivre cette lecture
+Consequence
+- les anciens docs V5/V6 ne suffisent plus
+- il faut documenter :
+  - les nouvelles briques
+  - les nouvelles frontieres
+  - les principes de reorganisation
+
+Resume court
+Depuis la V6, le projet evolue d'un moteur surtout oriente "partie jouable"
+vers une architecture plus proprement decoupee, capable d'absorber plusieurs
+familles de regles, de structures et de dictionnaires.

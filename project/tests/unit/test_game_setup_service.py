@@ -48,6 +48,39 @@ def test_game_setup_service_can_start_custom_controller() -> None:
     assert controller.get_state().phase == Phase.TURN
 
 
+def test_game_setup_service_can_disable_uniqueness_in_custom_setup() -> None:
+    service = GameSetupService()
+
+    controller = service.create_started_controller_from_custom_setup(
+        player_ids=["Stan", "Denise"],
+        letters_word="OUT",
+        attack_attempts=1,
+        defense_attempts=1,
+        uniqueness_enabled=False,
+    )
+
+    assert controller.match_parameters.fine_rules.uniqueness_enabled is False
+    assert controller.match_config.fine_rules.uniqueness_enabled is False
+
+
+def test_game_setup_service_can_configure_repetition_in_custom_setup() -> None:
+    service = GameSetupService()
+
+    controller = service.create_started_controller_from_custom_setup(
+        player_ids=["Stan", "Denise"],
+        letters_word="OUT",
+        attack_attempts=2,
+        defense_attempts=1,
+        repetition_mode="common",
+        repetition_limit=1,
+    )
+
+    assert controller.match_parameters.fine_rules.repetition_mode == "common"
+    assert controller.match_parameters.fine_rules.repetition_limit == 1
+    assert controller.match_config.fine_rules.repetition_mode == "common"
+    assert controller.match_config.fine_rules.repetition_limit == 1
+
+
 def test_game_setup_service_can_create_loading_controller() -> None:
     service = GameSetupService()
 

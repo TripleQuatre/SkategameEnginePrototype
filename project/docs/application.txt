@@ -1,0 +1,36 @@
+Documentation V8 - Dossier `application/`
+
+Role global
+`application/` est la couche de session applicative du projet.
+Elle se place entre le controller et le runtime detaille de `match/`.
+
+Pourquoi cette couche existe
+- eviter que les interfaces ou le controller construisent eux-memes le runtime
+- centraliser undo, save/load et transitions de roster
+- proposer une facade stable a plus haut niveau que `TurnFlow`
+
+Fichiers
+
+`game_session.py`
+- facade applicative principale
+- construit la session a partir d'un `MatchConfig` ou `MatchParameters`
+- prepare :
+  - la structure
+  - le flow
+  - la validation
+  - la persistence
+  - l'undo
+  - le dictionnaire de tricks
+- expose les operations de jeu
+- expose aussi les suggestions et la resolution de tricks V8
+
+`game_setup_service.py`
+- service de creation de setup
+- cree des controllers prets a jouer a partir :
+  - d'un preset
+  - d'un setup custom
+  - d'une sauvegarde
+
+Point a retenir
+`application/` n'est pas la logique fine du match.
+Elle tient la session ensemble et rend le moteur utilisable proprement.

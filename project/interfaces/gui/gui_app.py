@@ -33,6 +33,9 @@ class GUIApp:
         self.custom_defense_attempts_var = tk.IntVar(value=1)
         self.trick_var = tk.StringVar()
         self.status_var = tk.StringVar(value="Configure the game to begin.")
+        self._suppress_trick_updates = False
+        self._selected_trick_completion: str | None = None
+        self._current_trick_suggestions = []
 
         self.title_font = tkfont.Font(size=18, weight="bold")
         self.subtitle_font = tkfont.Font(size=10)
@@ -63,6 +66,7 @@ class GUIApp:
 
         self.score_text: tk.Text | None = None
         self.trick_entry: ttk.Entry | None = None
+        self.trick_suggestions_listbox: tk.Listbox | None = None
 
         self.confirm_trick_button: ttk.Button | None = None
         self.cancel_trick_button: ttk.Button | None = None
@@ -279,6 +283,7 @@ class GUIApp:
 
         self.setup_mode_var.trace_add("write", lambda *_args: refresh_setup_controls())
         self.preset_var.trace_add("write", lambda *_args: refresh_setup_controls())
+        self.trick_var.trace_add("write", lambda *_args: self._refresh_trick_suggestions())
 
         buttons = ttk.Frame(form)
         buttons.grid(row=14, column=0, columnspan=2, pady=(6, 0))
@@ -463,9 +468,24 @@ class GUIApp:
 
         self.trick_entry = ttk.Entry(trick_zone, textvariable=self.trick_var, width=26)
         self.trick_entry.grid(row=0, column=0, pady=(0, 10))
+        self.trick_entry.bind(
+            "<KeyRelease>",
+            lambda _event: self._refresh_trick_suggestions(),
+        )
+
+        self.trick_suggestions_listbox = tk.Listbox(
+            trick_zone,
+            height=6,
+            exportselection=False,
+        )
+        self.trick_suggestions_listbox.grid(row=1, column=0, pady=(0, 10), sticky="ew")
+        self.trick_suggestions_listbox.bind(
+            "<<ListboxSelect>>",
+            lambda _event: self._handle_trick_suggestion_selection(),
+        )
 
         buttons_row = ttk.Frame(trick_zone)
-        buttons_row.grid(row=1, column=0)
+        buttons_row.grid(row=2, column=0)
 
         self.confirm_trick_button = ttk.Button(
             buttons_row,
@@ -533,7 +553,7 @@ class GUIApp:
 
     def _load_game_into_controller(self, selected_path: Path) -> None:
         self.controller = self.setup_service.load_controller(str(selected_path))
-        self.trick_var.set("")
+        self._clear_trick_selection()
 
     def _load_game_from_setup(self) -> None:
         save_files = self._list_save_files()
@@ -616,7 +636,7 @@ class GUIApp:
             return
 
         if self.controller.undo():
-            self.trick_var.set("")
+            self._clear_trick_selection()
             self.status_var.set("Undo successful.")
         else:
             self.status_var.set("Nothing to undo.")
@@ -740,7 +760,7 @@ class GUIApp:
             messagebox.showerror("Cannot start game", str(error))
             return
 
-        self.trick_var.set("")
+        self._clear_trick_selection()
         self.status_var.set("Game started.")
         self._show_view("game")
         self._refresh_game_view()
@@ -752,14 +772,15 @@ class GUIApp:
         if self.controller is None:
             return
 
-        trick = self.trick_var.get().strip()
-        if not trick:
-            messagebox.showerror("Invalid input", "The trick cannot be empty.")
+        trick = self._get_selected_trick_completion()
+        if trick is None:
+            messagebox.showerror("Invalid input", "Select a valid trick suggestion first.")
             return
 
         try:
             self.controller.start_turn(trick)
             self.status_var.set(f"Trick '{trick}' confirmed.")
+            self._clear_trick_selection()
         except InvalidActionError as error:
             self.status_var.set(f"Invalid action: {error}")
 
@@ -769,14 +790,14 @@ class GUIApp:
         if self.controller is None:
             return
 
-        trick = self.trick_var.get().strip()
-        if not trick:
-            messagebox.showerror("Invalid input", "Enter a trick before cancelling it.")
+        trick = self._get_selected_trick_completion()
+        if trick is None:
+            messagebox.showerror("Invalid input", "Select a valid trick suggestion before cancelling it.")
             return
 
         try:
             self.controller.cancel_turn(trick)
-            self.trick_var.set("")
+            self._clear_trick_selection()
             self.status_var.set("Turn failed. Next player.")
         except InvalidActionError as error:
             self.status_var.set(f"Invalid action: {error}")
@@ -805,16 +826,16 @@ class GUIApp:
                 elif resolution_status == AttackResolutionStatus.DEFENSE_READY:
                     self.status_var.set(message or "Attack succeeded. Defense begins.")
                 elif resolution_status == AttackResolutionStatus.TURN_FAILED:
-                    self.trick_var.set("")
+                    self._clear_trick_selection()
                     self.status_var.set(message or "Turn failed.")
             else:
                 if resolution_status == DefenseResolutionStatus.DEFENSE_CONTINUES:
                     self.status_var.set(message or "Defense continues.")
                 elif resolution_status == DefenseResolutionStatus.TURN_FINISHED:
-                    self.trick_var.set("")
+                    self._clear_trick_selection()
                     self.status_var.set(message or "Turn finished.")
                 elif resolution_status == DefenseResolutionStatus.GAME_FINISHED:
-                    self.trick_var.set("")
+                    self._clear_trick_selection()
                     self.status_var.set(message or "Game finished.")
         except InvalidActionError as error:
             self.status_var.set(f"Invalid action: {error}")
@@ -925,6 +946,7 @@ class GUIApp:
             self.attempts_label.config(text="")
             self._set_trick_controls_enabled(False)
             self._set_defense_controls_enabled(False)
+            self._refresh_trick_suggestions()
             return
 
         attacker = state.players[state.attacker_index]
@@ -941,6 +963,7 @@ class GUIApp:
             self.attempts_label.config(text="")
             self._set_trick_controls_enabled(True)
             self._set_defense_controls_enabled(False)
+            self._refresh_trick_suggestions()
         elif state.turn_phase == TurnPhase.ATTACK:
             pending_defenders = self._format_active_defender_names(state)
             self.phase_title_label.config(text=f"{attacker.name} attacks")
@@ -953,6 +976,7 @@ class GUIApp:
             )
             self._set_trick_controls_enabled(False)
             self._set_defense_controls_enabled(True)
+            self._refresh_trick_suggestions()
         else:
             defender = self._get_current_defender(state)
             defender_name = defender.name if defender is not None else "-"
@@ -970,6 +994,7 @@ class GUIApp:
             )
             self._set_trick_controls_enabled(False)
             self._set_defense_controls_enabled(True)
+            self._refresh_trick_suggestions()
 
     def _render_score_text(self, state: GameState) -> None:
         assert self.score_text is not None
@@ -1003,13 +1028,21 @@ class GUIApp:
 
     def _set_trick_controls_enabled(self, enabled: bool) -> None:
         assert self.trick_entry is not None
+        assert self.trick_suggestions_listbox is not None
         assert self.confirm_trick_button is not None
         assert self.cancel_trick_button is not None
 
         state = "normal" if enabled else "disabled"
         self.trick_entry.config(state=state)
-        self.confirm_trick_button.config(state=state)
-        self.cancel_trick_button.config(state=state)
+        self.trick_suggestions_listbox.config(state=state)
+
+        button_state = (
+            state
+            if enabled and self._selected_trick_completion is not None
+            else "disabled"
+        )
+        self.confirm_trick_button.config(state=button_state)
+        self.cancel_trick_button.config(state=button_state)
 
     def _set_defense_controls_enabled(self, enabled: bool) -> None:
         assert self.success_button is not None
@@ -1032,7 +1065,7 @@ class GUIApp:
 
     def _return_to_setup(self) -> None:
         self.controller = None
-        self.trick_var.set("")
+        self._clear_trick_selection()
         self.status_var.set("Configure the game to begin.")
         self._show_view("setup")
 
@@ -1150,26 +1183,27 @@ class GUIApp:
     def _format_event(self, state: GameState, event: Event) -> str:
         name = event.name
         payload = event.payload
+        trick_label = payload.get("trick_label", payload.get("trick"))
 
         if name == EventName.DEFENSE_SUCCEEDED:
             player_name = self._get_player_name(state, payload["player_id"])
-            return f"{player_name} landed '{payload['trick']}'."
+            return f"{player_name} landed '{trick_label}'."
 
         if name == EventName.ATTACK_FAILED_ATTEMPT:
             attacker_name = self._get_player_name(state, payload["attacker_id"])
             return (
-                f"{attacker_name} missed '{payload['trick']}' "
+                f"{attacker_name} missed '{trick_label}' "
                 f"({payload['attempts_left']} attack attempt(s) left)."
             )
 
         if name == EventName.ATTACK_SUCCEEDED:
             attacker_name = self._get_player_name(state, payload["attacker_id"])
-            return f"{attacker_name} landed '{payload['trick']}' to set the trick."
+            return f"{attacker_name} landed '{trick_label}' to set the trick."
 
         if name == EventName.DEFENSE_FAILED_ATTEMPT:
             player_name = self._get_player_name(state, payload["player_id"])
             return (
-                f"{player_name} missed '{payload['trick']}' "
+                f"{player_name} missed '{trick_label}' "
                 f"({payload['attempts_left']} left)."
             )
 
@@ -1239,6 +1273,87 @@ class GUIApp:
             return f"{message} Preset cleared."
 
         return message
+
+    def _refresh_trick_suggestions(self) -> None:
+        if self._suppress_trick_updates:
+            return
+
+        if self.trick_suggestions_listbox is None:
+            return
+
+        self.trick_suggestions_listbox.delete(0, tk.END)
+        self._current_trick_suggestions = []
+
+        if self.controller is None:
+            self._selected_trick_completion = None
+            self._set_trick_controls_enabled(False)
+            return
+
+        state = self.controller.get_state()
+        if state.current_trick is not None or state.phase == Phase.END:
+            self._selected_trick_completion = None
+            self._set_trick_controls_enabled(False)
+            return
+
+        raw_value = self.trick_var.get().strip()
+        if not raw_value:
+            self._selected_trick_completion = None
+            self._set_trick_controls_enabled(True)
+            return
+
+        suggestions = self.controller.suggest_tricks(raw_value)
+        self._current_trick_suggestions = suggestions
+        self._selected_trick_completion = None
+
+        for suggestion in suggestions:
+            marker = "" if suggestion.is_terminal else " ->"
+            self.trick_suggestions_listbox.insert(tk.END, f"{suggestion.label}{marker}")
+
+        if suggestions:
+            self.status_var.set("Select a valid suggestion to confirm the trick.")
+        else:
+            self.status_var.set("Invalid trick input. No suggestion matches.")
+
+        self._set_trick_controls_enabled(True)
+
+    def _handle_trick_suggestion_selection(self) -> None:
+        if self.trick_suggestions_listbox is None:
+            return
+
+        selection = self.trick_suggestions_listbox.curselection()
+        if not selection:
+            self._selected_trick_completion = None
+            self._set_trick_controls_enabled(True)
+            return
+
+        suggestion = self._current_trick_suggestions[selection[0]]
+        self._selected_trick_completion = (
+            suggestion.completion if suggestion.is_terminal else None
+        )
+
+        self._suppress_trick_updates = True
+        self.trick_var.set(suggestion.completion or suggestion.label)
+        self._suppress_trick_updates = False
+
+        if suggestion.is_terminal:
+            self.status_var.set("Valid trick selected.")
+            self._set_trick_controls_enabled(True)
+            return
+
+        self.status_var.set("Continuation selected. Refine or pick a full trick.")
+        self._refresh_trick_suggestions()
+
+    def _get_selected_trick_completion(self) -> str | None:
+        return self._selected_trick_completion
+
+    def _clear_trick_selection(self) -> None:
+        self._suppress_trick_updates = True
+        self.trick_var.set("")
+        self._suppress_trick_updates = False
+        self._selected_trick_completion = None
+        self._current_trick_suggestions = []
+        if self.trick_suggestions_listbox is not None:
+            self.trick_suggestions_listbox.delete(0, tk.END)
 
     def _show_game_over_message(self, state: GameState) -> None:
         active_players = [player for player in state.players if player.is_active]

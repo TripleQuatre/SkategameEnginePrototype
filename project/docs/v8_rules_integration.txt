@@ -1,0 +1,114 @@
+V8 RULES INTEGRATION
+
+Intent
+This document defines how V8 Dictionary integrates with Uniqueness and
+Repetition.
+
+Reference Rule Sheets
+The rule sheets in docs/sheets remain the source business reference:
+- attack.txt
+- defense.txt
+- uniqueness.txt
+- repetition.txt
+
+V8 does not replace those sheets. It defines how the engine should apply them
+using canonical tricks from the Dictionary feature.
+
+Canonical Trick Requirement
+Uniqueness and Repetition must never compare raw strings only.
+They must operate on the canonical trick identity produced by the Dictionary.
+
+History Storage Requirement
+The engine should store, for every relevant trick event:
+- display label
+- canonical structured trick
+
+Uniqueness
+Meaning
+- A validated trick cannot be imposed again if Uniqueness is enabled
+
+Options
+- Enabled
+- Disabled
+
+Default
+- Enabled
+
+History Read By Uniqueness
+- Only validated tricks
+
+Ignored By Uniqueness
+- Tricks that were attempted and failed without ever being validated
+
+Blocking Moment
+- Before trick launch / before the trick is accepted as playable input
+
+Undo And Save/Load
+- Undo removes the validated occurrence from the rule history
+- Save/Load preserves the validated history
+
+Examples
+- If Soul was validated, Soul is blocked
+- If Soul 180 was validated, Soul remains different from Soul 180
+- If Soul failed three times but was never validated, Uniqueness does not care
+
+Repetition
+Meaning
+- Repetition limits how many times a failed trick may be tried again
+
+Options
+- Choice
+- Common
+- Disabled
+
+Default
+- Choice with a configurable count, 3 by default
+
+History Read By Repetition
+- Only tricks that were launched and failed
+
+Ignored By Repetition
+- Tricks that were launched and succeeded
+- Tricks that were never launched
+
+Blocking Moment
+- Before trick launch / before the trick is accepted as playable input
+
+Scopes
+- Choice: per-attacker repetition counter
+- Common: shared repetition counter for all players
+- Disabled: no repetition limit
+
+Undo And Save/Load
+- Undo removes failed occurrences from the repetition history
+- Save/Load preserves repetition history
+
+Separation Between Uniqueness And Repetition
+- Uniqueness reads validated tricks
+- Repetition reads failed tricks
+- They are distinct rules and must remain distinct in both code and UX
+
+Examples
+- A trick failed twice and then succeeded:
+  - Repetition counts the failed launches only
+  - Uniqueness starts to apply only after validation
+- If Uniqueness is disabled and Repetition is active:
+  - a previously validated trick may be played again
+  - repetition limits still apply to failed retries according to the chosen mode
+
+Identity Examples For Both Rules
+All of these must be treated as different canonical tricks:
+- Soul
+- Soul 180
+- Negative Soul
+- Zero Soul
+- Soul Grab
+- Soul to Top Soul
+- Top Soul to Soul
+
+Future Notes
+Later versions may add:
+- banned trick filters
+- true switch rule
+- advanced comparison layers for more complex trick families
+

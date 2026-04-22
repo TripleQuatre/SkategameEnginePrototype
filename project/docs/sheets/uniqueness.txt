@@ -1,0 +1,54 @@
+Name
+Uniqueness
+
+Type
+rule
+
+Ensemble
+Fundamental Rules
+
+Parent Rule
+None
+
+Definition
+règle fondamentale qui interdit de réimposer un trick déjà validé au cours de la partie
+
+Purpose
+garantir la variété des tricks imposés au cours de la partie et éviter la répétition des mêmes figures validées
+
+Options
+Enabled : Une figure imposée et validée ne peut pas être imposée une nouvelle fois au cours de la partie
+Disabled : Toutes les figures imposées et validées peuvent être imposées et validées à nouveau au cours de la partie
+
+Activation Conditions
+aucune
+
+Dependencies
+historique des tricks imposés et validés
+définition d’équivalence entre tricks
+
+Interactions
+Repetition
+Switch
+Out
+Tolerance
+Redo
+
+Default Behavior
+Enabled
+
+Advanced Behavior
+peut être désactivée pour autoriser la réutilisation libre des tricks validés
+
+Code Impact
+validation d’action
+historique
+contrôle des tricks déjà joués
+arbitrage d’unicité
+
+UX Notes
+doit être présentée comme une règle fondamentale standard du jeu
+si activée, l’interface devra pouvoir expliquer clairement quand un trick est considéré comme déjà validé
+
+Open Questions
+comment définir précisément qu’un trick est identique à un trick déjà validé

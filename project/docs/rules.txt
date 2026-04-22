@@ -1,34 +1,42 @@
-Documentation V5 - Dossier `rules/`
+Documentation V8 - Regles et familles runtime
 
-Role global
-`rules/` contient la logique metier pure du jeu, separee du flow.
+Important
+La source de reference metier des regles reste dans `docs/sheets/`.
+Ce document explique comment les regles sont structurees dans le code actuel.
 
-Fichiers
+Familles runtime reelles
 
-`scoring_rules.py`
-- applique les penalites de score
-- calcule l'affichage du mot atteint
+1. Scoring
+- vit dans `match/scoring/`
+- actuellement :
+  - `letters_scoring.py`
+  - `scoring_factory.py`
 
-`special_rules.py`
-- normalise les tricks
-- verifie qu'un trick a deja ete consomme
-- reste la couche metier de support aux actions
+2. Victory
+- vit dans `match/victory/`
+- actuellement :
+  - `last_player_standing.py`
+  - `victory_factory.py`
 
-`rules_registry.py`
-- centralise l'acces aux groupes de regles
+3. Fine rules
+- vivent surtout dans :
+  - `config/fine_rules_config.py`
+  - `match/flow/trick_rules.py`
+- actuellement :
+  - `Uniqueness`
+  - `Repetition`
 
-Lien avec la V5
-- `normalize_trick()` reste central
-- `is_trick_already_validated()` s'appuie sur `validated_tricks`
-- les regles de score et d'elimination restent reutilisables par `one_vs_one` et `battle`
+4. Dictionary-side validity
+- vit dans `dictionary/`
+- ne decide pas si un trick est autorise dans le match
+- decide si un trick existe et quelle est son identite canonique
 
-Ce que la V5 n'a pas change en profondeur
-- pas de refonte profonde des regles
-- pas d'enum de tricks
-- pas encore de systeme de variantes complexes
-- pas encore de mode points
+Separation importante
+- `dictionary/` dit : "ce trick existe-t-il ?"
+- `match/flow/trick_rules.py` dit : "ce trick est-il autorise maintenant ?"
 
-Point a retenir
-La V5 a surtout etendu la structure des matchs.
-La couche `rules/` reste volontairement compacte en attendant de futures variantes
-de scoring et de conditions de victoire.
+Etat V8
+- `Uniqueness` compare les tricks valides canoniques
+- `Repetition` compare les tricks lances puis rates
+- les futures regles fines devront s'ajouter dans cette logique de famille,
+  pas en recodant le moteur a la main

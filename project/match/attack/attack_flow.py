@@ -1,6 +1,7 @@
 from core.events import Event
 from core.state import GameState
 from core.types import EventName
+from dictionary.runtime import build_runtime_trick_payload
 from match.flow.exchange_outcome import ExchangeOutcome
 from match.flow.turn_state import begin_attack_phase
 
@@ -28,10 +29,13 @@ class AttackFlow:
                 payload={
                     "attacker_id": attacker_id,
                     "attacker_name": attacker_name,
-                    "trick": trick,
                     "attack_attempts": attack_attempts,
                     "defender_ids": defender_ids,
                     "defender_names": defender_names,
+                    **build_runtime_trick_payload(
+                        state.current_trick,
+                        state.current_trick_data,
+                    ),
                 },
             )
         )
@@ -52,7 +56,10 @@ class AttackFlow:
                     payload={
                         "attacker_id": attacker_id,
                         "attacker_name": attacker_name,
-                        "trick": state.current_trick,
+                        **build_runtime_trick_payload(
+                            state.current_trick,
+                            state.current_trick_data,
+                        ),
                     },
                 )
             )
@@ -68,8 +75,11 @@ class AttackFlow:
                     payload={
                         "attacker_id": attacker_id,
                         "attacker_name": attacker_name,
-                        "trick": state.current_trick,
                         "attempts_left": state.attack_attempts_left,
+                        **build_runtime_trick_payload(
+                            state.current_trick,
+                            state.current_trick_data,
+                        ),
                     },
                 )
             )

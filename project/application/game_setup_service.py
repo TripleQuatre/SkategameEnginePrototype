@@ -37,6 +37,9 @@ class GameSetupService:
         attack_attempts: int,
         defense_attempts: int,
         elimination_enabled: bool = True,
+        uniqueness_enabled: bool = True,
+        repetition_mode: str = "choice",
+        repetition_limit: int = 3,
     ) -> MatchSetup:
         return MatchSetup(
             player_ids=list(player_ids),
@@ -45,6 +48,9 @@ class GameSetupService:
             attack_attempts=attack_attempts,
             defense_attempts=defense_attempts,
             elimination_enabled=elimination_enabled,
+            uniqueness_enabled=uniqueness_enabled,
+            repetition_mode=repetition_mode,
+            repetition_limit=repetition_limit,
         )
 
     def create_started_controller_from_preset(
@@ -62,6 +68,9 @@ class GameSetupService:
         attack_attempts: int,
         defense_attempts: int,
         elimination_enabled: bool = True,
+        uniqueness_enabled: bool = True,
+        repetition_mode: str = "choice",
+        repetition_limit: int = 3,
     ) -> GameController:
         setup = self.create_custom_setup(
             player_ids=player_ids,
@@ -69,6 +78,9 @@ class GameSetupService:
             attack_attempts=attack_attempts,
             defense_attempts=defense_attempts,
             elimination_enabled=elimination_enabled,
+            uniqueness_enabled=uniqueness_enabled,
+            repetition_mode=repetition_mode,
+            repetition_limit=repetition_limit,
         )
         return self.create_started_controller_from_setup(setup)
 

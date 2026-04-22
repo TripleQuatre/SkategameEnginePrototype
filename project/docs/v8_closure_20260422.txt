@@ -1,0 +1,55 @@
+V8 CLOSURE - 2026-04-22
+
+Status
+- V8 is complete.
+- The project now includes the Dictionary feature, the first inline dictionary
+  profile, assisted trick input, canonical trick identity, Uniqueness, and
+  Repetition.
+
+Delivered Features
+- Autonomous Dictionary domain
+- First concrete dictionary: inline_primary_grind
+- Canonical trick model for simple tricks, combos, and exits
+- Assisted trick input in CLI and GUI
+- Canonical trick storage in runtime/history/save-load/undo
+- Uniqueness on validated canonical tricks
+- Repetition on failed launched canonical tricks
+
+Current V8 Scope
+- sport implemented in practice: inline
+- dictionary profile implemented in practice: inline_primary_grind
+- explicit switch on simple tricks only
+- combo length up to 3 segments
+- optional exits up to 540 with reverse variants
+
+Not Yet Implemented
+- Banned Tricks
+- Randomizer
+- true Switch rule for combos
+- multi-sport product setup
+
+Important Rule Boundary
+- Uniqueness reads validated tricks only
+- Repetition reads failed launched tricks only
+- successful launches do not count for Repetition
+- cancelled turns do not count for Repetition
+
+Persistence Boundary
+- The engine still keeps some legacy text trick fields for compatibility
+- Canonical trick data now lives alongside them and is the source used by V8
+  rules
+
+Validation Result
+- Full test suite green at V8 closure time
+- Result: 298 passed, 1 warning
+- Remaining warning: Windows PytestCacheWarning on .pytest_cache
+
+Documentation State
+- docs/sheets remains the business rule reference
+- V8 specs live in:
+  - v8_dictionary_spec.txt
+  - v8_inline_primary_grind_spec.txt
+  - v8_rules_integration.txt
+  - v8_planification.txt
+- A codebase map has been added in v8_codebase_map.txt to help navigate the
+  project structure after V8

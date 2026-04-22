@@ -1,62 +1,61 @@
-Documentation V5 - Dossier `core/`
+Documentation V8 - Dossier `core/`
 
 Role global
-`core/` contient les structures fondamentales du moteur.
+`core/` contient les structures fondamentales du moteur. Il reste le socle
+commun sur lequel se branchent `match/`, `validation/`, `persistence/` et
+`application/`.
 
 Fichiers importants
 
 `player.py`
 - representation d'un joueur
-- score, activite, identifiants
+- identifiants
+- etat actif/inactif
+- score expose pour compatibilite
+
+`player_score.py`
+- representation extensible du score
+- permet de distinguer les lettres et les points
+- prepare les futures variantes de scoring
 
 `state.py`
-- etat canonique de la partie
-- contient :
+- etat runtime canonique de la partie
+- contient notamment :
   - joueurs
-  - phase
-  - `turn_order`
+  - phase et turn_phase
+  - ordre de tour
   - attaquant courant
   - defenseurs courants
   - trick courant
   - historique
-  - ruleset
-  - tricks consommes
+  - tricks valides
+  - donnees canoniques V8 des tricks
 
-Semantique V5 de `GameState`
-- `current_trick is None` : tour ouvert
-- `current_trick is not None` : tour engage
-- `validated_tricks` : tricks definitivement consommes par la partie
-- `turn_order` : ordre de rotation de la partie, persistant
+Semantique actuelle de `GameState`
+- `current_trick is None` : aucun trick engage
+- `current_trick is not None` : un trick est engage dans le tour courant
+- `validated_tricks` : vue texte legacy des tricks consommes
+- `validated_trick_data` : vue canonique V8 des tricks valides
+- `failed_attack_trick_data` : historique canonique des tricks lances puis rates
 
 `events.py`
-- structure des evenements moteur
-- `Event.name` est un `EventName`
+- structure des evenements runtime
+- `Event.name` s'appuie sur `EventName`
 
 `history.py`
-- stocke la liste brute des evenements
-- reconstruit maintenant :
-  - `build_turns()`
-  - `build_rows()` pour compatibilite temporaire
-- modele V5 :
-  - `HistoryTurn`
-  - `HistoryDefenseRow`
+- stocke l'historique brut des evenements
+- reste la trace narrative de la partie
 
 `snapshots.py`
-- `Snapshot` capture un etat complet
-- `SnapshotHistory` gere une pile de snapshots pour l'undo
-- reste la base de l'undo interne
+- `Snapshot` capture un state complet, plus la config si besoin
+- `SnapshotHistory` gere la pile de snapshots pour l'undo
 
 `types.py`
-- enums partages
-- contient notamment :
-  - `Phase`
-  - `DefenseResolutionStatus`
-  - `EventName`
-
-Vocabulaire V5 important
-- `TURN_FAILED` remplace `TURN_CANCELLED`
-- un tour rate reste un vrai evenement de partie
+- enums partages du runtime
+- phases
+- statuts de resolution
+- noms d'evenements
 
 Point a retenir
-La V5 a fait evoluer le coeur moteur pour supporter le multijoueur sans abandonner
-la lisibilite de l'etat ni la reconstruction d'historique.
+`core/` ne porte pas la logique de match detaillee, mais il porte tout ce que
+le moteur doit pouvoir restaurer, serialiser, valider et relire proprement.

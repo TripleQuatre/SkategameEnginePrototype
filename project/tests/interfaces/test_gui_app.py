@@ -196,6 +196,34 @@ def test_gui_refresh_game_view_shows_attack_phase_details(gui_app: GUIApp) -> No
     assert str(gui_app.success_button.cget("state")) == "normal"
 
 
+def test_gui_trick_input_requires_selecting_a_terminal_suggestion(
+    gui_app: GUIApp,
+) -> None:
+    gui_app.setup_mode_var.set("custom")
+    gui_app.player_name_vars[0].set("Stan")
+    gui_app.player_name_vars[1].set("Denise")
+    gui_app._start_game()
+
+    assert gui_app.confirm_trick_button is not None
+    assert gui_app.trick_suggestions_listbox is not None
+
+    gui_app.trick_var.set("switch soul")
+    gui_app._refresh_trick_suggestions()
+
+    suggestions = list(gui_app.trick_suggestions_listbox.get(0, tk.END))
+    assert any("Soul Switch" in suggestion for suggestion in suggestions)
+    assert str(gui_app.confirm_trick_button.cget("state")) == "disabled"
+
+    selected_index = next(
+        index for index, suggestion in enumerate(suggestions) if "Soul Switch" in suggestion
+    )
+    gui_app.trick_suggestions_listbox.selection_set(selected_index)
+    gui_app._handle_trick_suggestion_selection()
+
+    assert gui_app.trick_var.get() == "Soul Switch"
+    assert str(gui_app.confirm_trick_button.cget("state")) == "normal"
+
+
 def test_gui_resolve_buttons_can_drive_attack_phase(gui_app: GUIApp) -> None:
     gui_app.setup_mode_var.set("custom")
     gui_app.player_name_vars[0].set("Stan")

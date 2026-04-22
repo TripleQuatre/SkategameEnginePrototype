@@ -1,0 +1,78 @@
+Documentation V8 - Dossier `match/`
+
+Role global
+`match/` est maintenant le coeur actif du runtime de partie.
+Il porte l'orchestration metier, les structures de match, les transitions, le
+scoring et la victory.
+
+Sous-dossiers
+
+`match/attack/`
+- logique de lancement et de resolution d'attaque
+- fichier cle : `attack_flow.py`
+
+`match/defense/`
+- logique de resolution de defense
+- fichiers cles :
+  - `defense_flow.py`
+  - `defense_attempt_resolver.py`
+
+`match/flow/`
+- coeur de la chronologie d'un tour
+- fichiers cles :
+  - `turn_flow.py`
+  - `turn_cycle.py`
+  - `turn_state.py`
+  - `trick_rules.py`
+  - `exchange_outcome.py`
+
+`match/scoring/`
+- familles de scoring runtime
+- actuellement `letters_scoring.py` + `scoring_factory.py`
+
+`match/victory/`
+- familles de victory runtime
+- actuellement `last_player_standing.py` + `victory_factory.py`
+
+`match/structure/`
+- formes de match
+- `one_vs_one_structure.py`
+- `battle_structure.py`
+- `structure_factory.py`
+
+`match/transitions/`
+- transitions de roster et reconfiguration de match
+- fichiers cles :
+  - `transition_service.py`
+  - `roster_transitions.py`
+
+Lecture rapide du flow
+
+1. `GameSession` construit la structure et `TurnFlow`
+2. `TurnFlow.start_game()` initialise la partie
+3. `TurnFlow.start_turn(trick)` ouvre un echange
+4. `AttackFlow` gere les essais de lancement
+5. `DefenseFlow` gere la reponse des defenseurs
+6. `TurnCycle` consomme le trick, avance la rotation, ou termine la partie
+
+Regles fines dans `match/`
+`match/flow/trick_rules.py` porte actuellement :
+- normalisation legacy minimale
+- comparaison canonique des tricks valides
+- `Uniqueness`
+- `Repetition`
+- historisation des echec d'attaque utiles a `Repetition`
+
+Pourquoi `match/` est central
+Avant, la structure et l'orchestration etaient decrites comme un bloc moteur
+plus monolithique. Aujourd'hui, `match/` est le lieu ou vivent les decisions
+runtime reelles :
+- qui attaque
+- qui defend
+- quand un trick est consomme
+- quand un trick rate compte pour `Repetition`
+- quand une partie se termine
+
+Point a retenir
+Pour comprendre le moteur actuel, il faut lire `match/` avant de lire les
+interfaces. C'est ici que se trouve l'architecture vivante du jeu.

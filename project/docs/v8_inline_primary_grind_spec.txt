@@ -1,0 +1,124 @@
+V8 INLINE PRIMARY GRIND SPEC
+
+Intent
+This document defines the first real dictionary implementation shipped by V8:
+inline_primary_grind.
+
+Discipline And Profile
+- sport: inline
+- dictionary profile: inline_primary_grind
+
+Primary Trick Types
+- Soulplate
+- Negative
+- H-block
+
+Meaning Of Negative
+- Negative is not a normal variation
+- Negative is a dedicated trick type derived from soulplate figures
+- Negative uses the same base figures as soulplate, with the Negative prefix
+- Negative follows the same variation logic as soulplate in V8
+
+Base Figures
+The exact figure list comes from the project references and inline grind table.
+This document defines the structural rules, not the final exhaustive catalog.
+
+Segment Rules
+- A segment always has exactly one base figure
+- A segment may have zero or one normal variation
+- A segment may have grab if and only if the base figure is eligible for grab
+- A segment may have switch if and only if the full trick is a simple trick
+
+Grab Eligible Figures In V8
+For this first dictionary, grab is available only on one-foot figures:
+- Makio
+- Fish
+- Torque
+- Backslide
+- Fastslide
+- Pudslide
+- and their Back versions when the profile allows them
+
+Soulplate / Negative Variation Logic
+Soulplate and Negative segments may use:
+- one standard entry/orientation variation from the allowed family
+- or Zero
+- but never multiple normal variations at once
+
+Examples of valid logic:
+- Soul
+- True Spin Soul
+- Negative Soul
+- Zero Negative Soul
+- True Spin Makio Grab
+
+Examples of invalid logic:
+- Alley-Oop Blind Soul
+- Zero True Spin Soul
+
+H-block Variation Logic
+H-block segments may use one normal variation among:
+- 270
+- Fakie 270
+- 450
+- Fakie 450
+- Zero
+
+Examples of valid logic:
+- Back UFO
+- 270 Backslide Grab
+- Zero Backslide
+
+Examples of invalid logic:
+- Zero 270 Backslide
+- 450 Fakie 270 Backslide
+
+Combo Rules
+- Minimum combo length: 2 segments
+- Maximum combo length: 3 segments
+- A combo may mix valid segment types
+- A combo segment may have local variation(s) and grab if the segment rules
+  allow them
+- Combos do not expose explicit switch in V8
+
+Examples of valid combos:
+- Back UFO to True Spin Soul
+- Backside Grab to Fish Grab to True Spin Makio Grab
+
+Examples of invalid combos:
+- Soul Switch to Top Soul
+- Back UFO to True Spin Soul Switch
+
+Exit Rules
+- Exit is optional
+- Exit applies to the full trick or combo
+- Exit is part of trick identity
+- Only one exit may exist
+
+Examples:
+- Soul
+- Soul 180
+- Soul to Top Soul
+- Soul to Top Soul Reverse 360
+
+Identity Examples
+All of these are different tricks:
+- Soul
+- Negative Soul
+- Zero Soul
+- Zero Negative Soul
+- Soul 180
+- Soul to Top Soul
+- Top Soul to Soul
+- Back UFO to Soul
+- Back UFO to True Spin Soul
+
+V8 Boundary
+This dictionary is intentionally incomplete with regard to the full reality of
+inline practice. It is a bounded first implementation designed to support:
+- guided trick input
+- canonical trick identity
+- Uniqueness
+- Repetition
+- future extensibility
+

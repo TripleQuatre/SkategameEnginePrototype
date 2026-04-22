@@ -2,6 +2,7 @@ import pytest
 
 from config.attack_config import AttackConfig
 from config.defense_config import DefenseConfig
+from config.fine_rules_config import FineRulesConfig
 from config.match_config import MatchConfig
 from config.scoring_config import ScoringConfig
 from config.victory_config import VictoryConfig
@@ -24,6 +25,9 @@ def build_game_flow(
     defense_attempts: int = 1,
     letters_word: str = "SKATE",
     elimination_enabled: bool = True,
+    uniqueness_enabled: bool = True,
+    repetition_mode: str = "choice",
+    repetition_limit: int = 3,
 ) -> GameFlow:
     return GameFlow(
         OneVsOneStructure(),
@@ -32,6 +36,11 @@ def build_game_flow(
             defense=DefenseConfig(defense_attempts=defense_attempts),
             scoring=ScoringConfig(letters_word=letters_word),
             victory=VictoryConfig(elimination_enabled=elimination_enabled),
+            fine_rules=FineRulesConfig(
+                uniqueness_enabled=uniqueness_enabled,
+                repetition_mode=repetition_mode,
+                repetition_limit=repetition_limit,
+            ),
         ),
     )
 
@@ -259,3 +268,128 @@ def test_resolve_defense_consumes_trick_when_game_finishes(
 
     assert result == DefenseResolutionStatus.GAME_FINISHED
     assert "soul" in state.validated_tricks
+
+
+def test_start_turn_rejects_canonically_equivalent_validated_dictionary_trick(
+    state: GameState,
+) -> None:
+    game_flow = build_game_flow()
+    game_flow.start_game(state)
+    game_flow.start_turn(state, "Soul Switch")
+    game_flow.resolve_defense(state, success=True)
+
+    with pytest.raises(InvalidActionError):
+        game_flow.start_turn(state, "Switch Soul")
+
+
+def test_start_turn_allows_reusing_dictionary_trick_when_uniqueness_disabled(
+    state: GameState,
+) -> None:
+    game_flow = build_game_flow(uniqueness_enabled=False)
+    game_flow.start_game(state)
+    game_flow.start_turn(state, "Soul Switch")
+    game_flow.resolve_defense(state, success=True)
+
+    game_flow.start_turn(state, "Switch Soul")
+
+    assert state.current_trick == "Switch Soul"
+
+
+def test_repetition_blocks_same_attacker_after_failed_launch(
+    state: GameState,
+) -> None:
+    game_flow = build_game_flow(
+        attack_attempts=2,
+        uniqueness_enabled=False,
+        repetition_mode="choice",
+        repetition_limit=1,
+    )
+    game_flow.start_game(state)
+    game_flow.start_turn(state, "Soul Switch")
+    game_flow.resolve_attack(state, success=False)
+    game_flow.resolve_attack(state, success=False)
+
+    assert state.failed_attack_trick_data[0]["trick_key"]
+
+    game_flow.cancel_turn(state, "Makio")
+
+    with pytest.raises(InvalidActionError):
+        game_flow.start_turn(state, "Switch Soul")
+
+
+def test_repetition_common_blocks_other_attacker_after_failed_launch(
+    state: GameState,
+) -> None:
+    game_flow = build_game_flow(
+        attack_attempts=2,
+        repetition_mode="common",
+        repetition_limit=1,
+    )
+    game_flow.start_game(state)
+    game_flow.start_turn(state, "Soul")
+    game_flow.resolve_attack(state, success=False)
+    game_flow.resolve_attack(state, success=False)
+
+    with pytest.raises(InvalidActionError):
+        game_flow.start_turn(state, "Soul")
+
+
+def test_repetition_disabled_allows_retry_after_failed_launch(
+    state: GameState,
+) -> None:
+    game_flow = build_game_flow(
+        attack_attempts=2,
+        uniqueness_enabled=False,
+        repetition_mode="disabled",
+        repetition_limit=1,
+    )
+    game_flow.start_game(state)
+    game_flow.start_turn(state, "Soul")
+    game_flow.resolve_attack(state, success=False)
+    game_flow.resolve_attack(state, success=False)
+
+    game_flow.cancel_turn(state, "Makio")
+    game_flow.start_turn(state, "Soul")
+
+    assert state.current_trick == "Soul"
+
+
+def test_repetition_does_not_count_launch_that_eventually_succeeds(
+    state: GameState,
+) -> None:
+    game_flow = build_game_flow(
+        attack_attempts=2,
+        uniqueness_enabled=False,
+        repetition_mode="choice",
+        repetition_limit=1,
+    )
+    game_flow.start_game(state)
+    game_flow.start_turn(state, "Soul")
+    game_flow.resolve_attack(state, success=False)
+    game_flow.resolve_attack(state, success=True)
+    game_flow.resolve_defense(state, success=True)
+
+    assert state.failed_attack_trick_data == []
+
+    game_flow.cancel_turn(state, "Makio")
+    game_flow.start_turn(state, "Soul")
+
+    assert state.current_trick == "Soul"
+
+
+def test_cancelled_turn_does_not_count_for_repetition(
+    state: GameState,
+) -> None:
+    game_flow = build_game_flow(
+        attack_attempts=2,
+        repetition_mode="choice",
+        repetition_limit=1,
+    )
+    game_flow.start_game(state)
+    game_flow.cancel_turn(state, "Soul")
+
+    assert state.failed_attack_trick_data == []
+    game_flow.cancel_turn(state, "Makio")
+    game_flow.start_turn(state, "Soul")
+
+    assert state.current_trick == "Soul"

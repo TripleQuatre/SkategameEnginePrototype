@@ -1,41 +1,38 @@
-Documentation V5 - Dossier `controllers/`
+Documentation V8 - Dossier `controllers/`
 
 Role
-Le dossier `controllers/` fournit la couche de relais entre les interfaces et le moteur.
+`controllers/` fournit la couche de relais entre les interfaces et la session
+applicative.
 
 Fichier principal
 
 `game_controller.py`
-- encapsule `GameEngine`
-- expose une API simple aux interfaces
+- encapsule `GameSession`
+- expose une API stable aux interfaces et aux tests
 
-Methodes exposees en V5
+Methodes exposees
 - `start_game()`
 - `start_turn(trick)`
+- `resolve_attack(success)`
 - `resolve_defense(success)`
 - `cancel_turn(trick)`
 - `undo()`
 - `save_game(filepath)`
 - `load_game(filepath)`
 - `get_state()`
+- suggestions et resolution de tricks V8
+- operations de transition de roster
 
 Pourquoi cette couche reste utile
-- le CLI et le GUI n'accedent pas directement a l'orchestration interne
+- le CLI et le GUI n'accedent pas directement au runtime detaille
 - l'API utilisateur reste simple
-- le moteur garde son independance
+- la session applicative garde son independance
 
-Etat V5
+Etat V8
 - le controller reste volontairement fin
-- il n'ajoute pas de logique metier
-- il suit l'evolution du moteur sans la dupliquer
-
-Capacites exposees en V5
-- duel et battle
-- undo en fin de partie
-- save/load de parties terminees
-- consultation d'une partie rechargee
+- il ne duplique pas la logique metier
+- il expose les nouvelles capacites V8 sans les recoder
 
 Point a retenir
-Le controller est volontairement stable :
-il sert de point de contact unique pour toutes les interfaces et pour les futurs outils
-de simulation de scenarios.
+Le controller est le point de contact unique des interfaces.
+Il doit rester stable meme quand l'interieur du runtime continue d'evoluer.

@@ -3,6 +3,7 @@ from config.match_config import MatchConfig
 from config.match_parameters import MatchParameters
 from core.state import GameState
 from core.types import AttackResolutionStatus, DefenseResolutionStatus
+from dictionary.base import DictionaryResolution, DictionarySuggestion
 from match.structure.base_structure import BaseStructure
 
 
@@ -58,3 +59,9 @@ class GameController:
 
     def load_game(self, filepath: str) -> None:
         self.session.load_game(filepath)
+
+    def suggest_tricks(self, raw_value: str) -> list[DictionarySuggestion]:
+        return self.session.suggest_tricks(raw_value)
+
+    def resolve_trick_input(self, raw_value: str) -> DictionaryResolution | None:
+        return self.session.resolve_trick_input(raw_value)

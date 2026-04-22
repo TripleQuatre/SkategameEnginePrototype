@@ -20,6 +20,8 @@ class BattleStructure(BaseStructure):
         state.attacker_index = state.turn_order[0]
         clear_turn_runtime(state)
         state.validated_tricks = []
+        state.validated_trick_data = []
+        state.failed_attack_trick_data = []
 
     def build_defender_indices(self, state: GameState) -> list[int]:
         return self._build_defender_indices_from_turn_order(state)

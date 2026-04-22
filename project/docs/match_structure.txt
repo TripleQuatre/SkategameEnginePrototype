@@ -1,0 +1,34 @@
+Documentation V8 - Sous-systeme `match/structure/`
+
+Role global
+`match/structure/` porte la forme d'une partie.
+Cette couche decide comment la partie est initialisee et comment la rotation
+des joueurs fonctionne.
+
+Fichiers
+
+`base_structure.py`
+- contrat commun des structures
+
+`one_vs_one_structure.py`
+- duel classique
+- exactement 2 joueurs
+- ordre fixe
+
+`battle_structure.py`
+- structure multijoueur
+- au moins 3 joueurs
+- ordre initial potentiellement randomise selon les policies
+
+`structure_factory.py`
+- construit la bonne structure a partir de `MatchConfig`
+
+Ce que la structure decide
+- ordre de tour initial
+- construction des defenseurs
+- prochain attaquant
+- validation propre a la forme de match
+
+Principe cle
+La structure du match n'est plus une consequence implicite d'un vieux mode ou
+d'une logique codee en dur dans le flow. C'est une brique runtime claire.

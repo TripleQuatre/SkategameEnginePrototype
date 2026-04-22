@@ -1,9 +1,11 @@
 from core.state import GameState
 from core.types import Phase, TurnPhase
+from dictionary.runtime import resolve_runtime_trick_record
 
 
 def clear_turn_runtime(state: GameState) -> None:
     state.current_trick = None
+    state.current_trick_data = None
     state.attack_attempts_left = 0
     state.defender_indices = []
     state.current_defender_position = 0
@@ -37,9 +39,11 @@ def begin_attack_phase(
     trick: str,
     attack_attempts: int,
 ) -> None:
+    _, trick_data = resolve_runtime_trick_record(trick)
     state.phase = Phase.TURN
     state.turn_phase = TurnPhase.ATTACK
     state.current_trick = trick
+    state.current_trick_data = trick_data
     state.attack_attempts_left = attack_attempts
     state.defender_indices = []
     state.current_defender_position = 0

@@ -1,0 +1,45 @@
+Documentation V8 - Sous-systeme `match/transitions/`
+
+Role global
+`match/transitions/` gere les reconfigurations de roster et les changements de
+runtime lies a l'ajout ou au retrait de joueurs entre deux tours.
+
+Fichiers
+
+`roster_transitions.py`
+- calcule les transitions metier de roster
+- prepare le nouvel etat de configuration
+- produit l'evenement de transition
+
+`transition_service.py`
+- applique une transition au runtime
+- sait aussi :
+  - construire un runtime initial
+  - restaurer un runtime depuis save/load ou undo
+
+Objets importants
+
+`RuntimeSession`
+- regroupe :
+  - `state`
+  - `match_config`
+  - `structure`
+  - `game_flow`
+
+`TransitionApplication`
+- regroupe :
+  - l'evenement emis
+  - la nouvelle config
+  - la nouvelle structure
+  - le nouveau flow
+
+Principe cle
+Une reconfiguration de match n'est pas un patch local sur l'etat.
+C'est une operation structurelle qui peut reconstruire proprement le runtime.
+
+Pourquoi c'est important
+Cette couche permet de garder coherents :
+- ajout/retrait de joueur
+- changement `one_vs_one <-> battle`
+- save/load
+- undo apres reconfiguration

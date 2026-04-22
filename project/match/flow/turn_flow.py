@@ -133,6 +133,8 @@ class TurnFlow:
                 attacker_id=attacker.id,
                 attacker_name=attacker.name,
                 trick=state.current_trick,
+                trick_data=state.current_trick_data,
+                count_for_repetition=True,
             ),
         )
         if outcome.status == ExchangeStatus.ATTACK_CONTINUES:
@@ -188,6 +190,7 @@ class TurnFlow:
             attacker_id=attacker.id,
             attacker_name=attacker.name,
             trick=trick,
+            trick_data=None,
         )
 
     def _promote_attack_to_defense(self, state: GameState) -> None:

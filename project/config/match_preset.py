@@ -28,6 +28,8 @@ class MatchPreset:
             defense_attempts=self.rule_set.defense_attempts,
             elimination_enabled=self.rule_set.elimination_enabled,
             uniqueness_enabled=self.fine_rules.uniqueness_enabled,
+            repetition_mode=self.fine_rules.repetition_mode,
+            repetition_limit=self.fine_rules.repetition_limit,
             preset_name=self.name,
         )
 

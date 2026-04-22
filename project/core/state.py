@@ -17,5 +17,8 @@ class GameState:
     current_defender_position: int = 0
     defense_attempts_left: int = 0
     current_trick: Optional[str] = None
+    current_trick_data: dict[str, object] | None = None
     history: History = field(default_factory=History)
     validated_tricks: list[str] = field(default_factory=list)
+    validated_trick_data: list[dict[str, object]] = field(default_factory=list)
+    failed_attack_trick_data: list[dict[str, object]] = field(default_factory=list)

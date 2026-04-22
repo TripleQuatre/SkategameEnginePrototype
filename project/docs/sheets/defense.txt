@@ -1,0 +1,53 @@
+Name
+Defense
+
+Type
+parameter
+
+Ensemble
+Attack & Defense
+
+Parent Rule
+None
+
+Definition
+paramètre qui définit le nombre de tentatives accordées aux défenseurs pour reproduire le trick imposé
+
+Purpose
+définir combien d’essais chaque défenseur peut utiliser pour reproduire le trick imposé par l’attaquant
+
+Options
+Value (option) : définit le nombre de tentatives accordées aux défenseurs
+- Default Value : 3, valeur traditionnellement appliquée par défaut
+- Other Value : 1, autre valeur courante
+- Choice : permet d’entrer librement une valeur, dans une limite de 10 maximum
+
+Activation Conditions
+aucune
+
+Dependencies
+séquence de défense active
+
+Interactions
+Accumulation
+Last Chance
+Clash
+Redo
+
+Default Behavior
+chaque défenseur dispose d’un nombre fixe de tentatives défini avant la partie
+
+Advanced Behavior
+si la valeur est supérieure à 1, certaines règles avancées comme Accumulation peuvent devenir pertinentes
+
+Code Impact
+résolution des tentatives de défense
+flow de tour
+validation d’action
+
+UX Notes
+doit être présenté comme un paramètre simple
+les valeurs recommandées peuvent être affichées comme raccourcis sans masquer qu’il s’agit d’un seul choix de valeur
+
+Open Questions
+il faudra préciser plus tard si toutes les règles avancées liées à la défense restent pertinentes avec une valeur de 1

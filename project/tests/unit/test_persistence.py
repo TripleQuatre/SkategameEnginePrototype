@@ -13,6 +13,7 @@ from core.snapshots import Snapshot, SnapshotHistory
 from core.player import Player
 from core.state import GameState
 from core.types import EventName, Phase, TurnPhase
+from dictionary.runtime import resolve_runtime_trick_record
 from persistence.game_save import GameSave
 from persistence.game_save_repository import GameSaveRepository
 from persistence.serializers import Serializer
@@ -79,6 +80,71 @@ def test_serializer_can_roundtrip_game_state() -> None:
     assert restored_state.players[1].is_active is False
     assert len(restored_state.history.events) == 1
     assert restored_state.history.events[0].name == EventName.TURN_STARTED
+
+
+def test_serializer_can_roundtrip_dictionary_trick_state() -> None:
+    serializer = Serializer()
+    trick_label, trick_data = resolve_runtime_trick_record("Switch Soul")
+    assert trick_label == "Soul Switch"
+    assert trick_data is not None
+
+    state = GameState(
+        players=[
+            Player(id="p1", name="Stan"),
+            Player(id="p2", name="Denise"),
+        ],
+        phase=Phase.TURN,
+        turn_phase=TurnPhase.DEFENSE,
+        current_trick=trick_label,
+        current_trick_data=trick_data,
+        validated_trick_data=[trick_data],
+    )
+
+    restored_state = serializer.deserialize_game_state(
+        serializer.serialize_game_state(state)
+    )
+
+    assert restored_state.current_trick == "Soul Switch"
+    assert restored_state.current_trick_data is not None
+    assert restored_state.current_trick_data["label"] == "Soul Switch"
+    assert restored_state.validated_trick_data[0]["label"] == "Soul Switch"
+
+
+def test_serializer_can_roundtrip_failed_attack_trick_history() -> None:
+    serializer = Serializer()
+    trick_label, trick_data = resolve_runtime_trick_record("Soul Switch")
+    assert trick_label == "Soul Switch"
+    assert trick_data is not None
+
+    state = GameState(
+        players=[
+            Player(id="p1", name="Stan"),
+            Player(id="p2", name="Denise"),
+        ],
+        phase=Phase.TURN,
+        turn_phase=TurnPhase.TURN_OPEN,
+        failed_attack_trick_data=[
+            {
+                "attacker_id": "p1",
+                "trick": trick_label,
+                "trick_key": trick_data["canonical_key"],
+                "trick_label": trick_data["label"],
+                "trick_data": trick_data,
+            }
+        ],
+    )
+
+    restored_state = serializer.deserialize_game_state(
+        serializer.serialize_game_state(state)
+    )
+
+    assert len(restored_state.failed_attack_trick_data) == 1
+    assert restored_state.failed_attack_trick_data[0]["attacker_id"] == "p1"
+    assert restored_state.failed_attack_trick_data[0]["trick_label"] == "Soul Switch"
+    assert (
+        restored_state.failed_attack_trick_data[0]["trick_data"]["canonical_key"]
+        == trick_data["canonical_key"]
+    )
 
 
 def test_serializer_can_roundtrip_game_save() -> None:

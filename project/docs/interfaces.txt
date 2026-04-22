@@ -1,4 +1,4 @@
-Documentation V5 - Dossier `interfaces/`
+Documentation V8 - Dossier `interfaces/`
 
 Role global
 `interfaces/` contient les couches de presentation du moteur.
@@ -6,66 +6,49 @@ Role global
 Principe
 - aucune logique metier critique ne doit vivre ici
 - les interfaces lisent le state et appellent le controller
-- elles servent surtout a tester et valider le moteur
+- la logique de trick valide vient du dictionnaire, pas de l'interface
 
 CLI
 
 `interfaces/cli/cli_app.py`
 - interface texte jouable
-- permet en V5 :
-  - nouvelle partie `one_vs_one` ou `battle`
-  - chargement d'une sauvegarde au lancement
-  - saisie et confirmation de tricks
-  - resolution de plusieurs defenseurs
-  - annulation de tour via `TURN_FAILED`
+- permet :
+  - nouvelle partie preset ou custom
+  - chargement d'une sauvegarde
+  - saisie assistee des tricks
+  - choix obligatoire d'une suggestion
+  - resolution d'attaque et de defense
+  - annulation de tour
   - undo
-  - save/load pendant la partie
+  - save/load
   - affichage de l'historique
-  - mode de consultation en fin de partie
 
-Choix V5 du CLI
-- nombre de joueurs dynamique
-- mode infere automatiquement :
-  - `2` joueurs -> `one_vs_one`
-  - `3+` joueurs -> `battle`
-- historique branche sur `build_turns()`
-- mode de cloture avec :
-  - undo
-  - save
-  - history
-  - load
-  - new game
-  - quit
+Choix V8 du CLI
+- l'utilisateur peut taper librement un debut de trick
+- le trick n'est valide qu'apres selection d'une suggestion
+- l'interface affiche tricks complets et continuations valides
+- le label affiche prefere la forme canonique issue du dictionnaire
 
 GUI
 
 `interfaces/gui/gui_app.py`
-- interface Tkinter minimale
-- permet en V5 :
-  - setup dynamique du nombre de joueurs
-  - nouvelle partie `one_vs_one` ou `battle`
-  - chargement d'une sauvegarde depuis l'ecran d'accueil
-  - saisie et annulation de trick
-  - resolution de defense
+- interface Tkinter
+- permet :
+  - setup de partie
+  - chargement d'une sauvegarde
+  - saisie assistee des tricks avec liste de suggestions
+  - blocage visuel si aucun trick terminal n'est selectionne
+  - resolution d'attaque et de defense
   - undo
-  - save/load pendant la partie
+  - save/load
   - affichage de l'historique
-  - consultation d'une partie finie
-  - retour rapide a `New game`
 
-Choix V5 du GUI
-- affichage score compatible multijoueur
-- description du tour compatible defenseurs multiples
-- historique branche sur `build_turns()`
-- mode consultation explicite en `Phase.END`
+Choix V8 du GUI
+- la selection de suggestion est explicite
+- les boutons critiques restent bloques tant que la saisie n'est pas valide
+- l'affichage prefere le label canonique
 
-Etat V5
-- les interfaces sont alignees avec `battle`
-- elles exposent correctement la fin de partie
-- elles restent volontairement utilitaires
-
-Sujet a garder pour la suite
-- tests d'interface plus riches
-- snapshots texte CLI
-- scenarios GUI plus nombreux
-- corrections visuelles ponctuelles si necessaire
+Etat V8
+- CLI et GUI sont alignes sur le dictionnaire
+- la saisie libre pure n'est plus le chemin normal
+- les interfaces restent utilitaires, pas encore produit finalise

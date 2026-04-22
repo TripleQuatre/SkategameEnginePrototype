@@ -1,0 +1,70 @@
+V8 PLANIFICATION
+
+Method
+V8 is built step by step.
+We do not jump to the next step until the current step is validated.
+
+Step 1
+Specification
+- Define V8 Dictionary
+- Define inline_primary_grind
+- Define Uniqueness/Repetition integration
+- Keep docs/sheets as business references
+
+Step 2
+Autonomous Dictionary core
+- Build the domain objects
+- Build canonical trick identity
+- Keep the module independent from match runtime
+
+Step 3
+Construction/query contract
+- Resolve trick existence
+- Expose canonical trick and label
+- Expose next valid options
+- Support partial input and "to"
+
+Step 4
+inline_primary_grind implementation
+- Encode the first real dictionary profile
+- Encode segment compatibility rules
+- Encode exits and combo boundaries
+
+Step 5
+Minimal engine integration
+- Route trick creation through Dictionary
+- Store label + canonical trick
+- Connect history, undo, save/load
+
+Step 6
+V8 input UX
+- Replace free trick input with assisted suggestions
+- Block invalid inputs before launch
+- Support complete tricks and valid continuations
+
+Step 7
+Uniqueness
+- Enabled / Disabled
+- Compare validated canonical tricks
+- Block duplicates before launch
+
+Step 8
+Repetition
+- Choice / Common / Disabled
+- Count failed canonical tricks
+- Block over-limit retries before launch
+
+Step 9
+Stabilization and documentation update
+- Final tests
+- Cleanup
+- Update docs
+- Preserve rule sheets
+- Rebuild useful codebase documentation for understanding the project
+
+Validation Rule
+At the end of each step:
+- the step goal must be reached
+- tests of the affected scope must pass
+- no blocking ambiguity must remain for the next step
+

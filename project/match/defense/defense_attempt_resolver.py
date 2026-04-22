@@ -2,6 +2,7 @@ from core.events import Event
 from core.exceptions import InvalidStateError
 from core.state import GameState
 from core.types import EventName
+from dictionary.runtime import build_runtime_trick_payload
 
 
 class DefenseAttemptResolver:
@@ -25,7 +26,10 @@ class DefenseAttemptResolver:
                     payload={
                         "player_id": defender.id,
                         "player_name": defender.name,
-                        "trick": state.current_trick,
+                        **build_runtime_trick_payload(
+                            state.current_trick,
+                            state.current_trick_data,
+                        ),
                     },
                 )
             )
@@ -40,8 +44,11 @@ class DefenseAttemptResolver:
                     payload={
                         "player_id": defender.id,
                         "player_name": defender.name,
-                        "trick": state.current_trick,
                         "attempts_left": state.defense_attempts_left,
+                        **build_runtime_trick_payload(
+                            state.current_trick,
+                            state.current_trick_data,
+                        ),
                     },
                 )
             )
@@ -54,10 +61,13 @@ class DefenseAttemptResolver:
                 payload={
                     "player_id": defender.id,
                     "player_name": defender.name,
-                    "trick": state.current_trick,
                     "new_score": defender.score,
                     "penalty_display": self.scoring.get_penalty_display(
                         state, defender
+                    ),
+                    **build_runtime_trick_payload(
+                        state.current_trick,
+                        state.current_trick_data,
                     ),
                 },
             )

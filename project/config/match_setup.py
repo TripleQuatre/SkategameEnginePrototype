@@ -14,6 +14,8 @@ class MatchSetup:
     defense_attempts: int = 1
     elimination_enabled: bool = True
     uniqueness_enabled: bool = True
+    repetition_mode: str = "choice"
+    repetition_limit: int = 3
     preset_name: str | None = None
 
     def __init__(
@@ -26,6 +28,8 @@ class MatchSetup:
         defense_attempts: int = 1,
         elimination_enabled: bool = True,
         uniqueness_enabled: bool = True,
+        repetition_mode: str = "choice",
+        repetition_limit: int = 3,
         preset_name: str | None = None,
     ) -> None:
         self.player_ids = player_ids
@@ -36,6 +40,8 @@ class MatchSetup:
         self.defense_attempts = defense_attempts
         self.elimination_enabled = elimination_enabled
         self.uniqueness_enabled = uniqueness_enabled
+        self.repetition_mode = repetition_mode
+        self.repetition_limit = repetition_limit
         self.preset_name = preset_name
 
         if self.policies is None:

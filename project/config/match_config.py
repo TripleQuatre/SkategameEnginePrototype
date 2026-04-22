@@ -47,3 +47,11 @@ class MatchConfig:
     @property
     def uniqueness_enabled(self) -> bool:
         return self.fine_rules.uniqueness_enabled
+
+    @property
+    def repetition_mode(self) -> str:
+        return self.fine_rules.repetition_mode
+
+    @property
+    def repetition_limit(self) -> int:
+        return self.fine_rules.repetition_limit

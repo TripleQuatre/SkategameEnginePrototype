@@ -266,7 +266,8 @@ def test_cli_run_can_resolve_attack_phase_before_defense(
             "S",
             "2",
             "1",
-            "kickflip",
+            "switch soul",
+            "1",
             "y",
             "n",
             "y",
@@ -284,11 +285,24 @@ def test_cli_run_can_resolve_attack_phase_before_defense(
 
     output = capsys.readouterr().out
 
-    assert "Stan attacks 'kickflip' (2 attempt(s) left)" in output
-    assert "Stan missed 'kickflip' (1 attack attempt(s) left)." in output
-    assert "Stan landed 'kickflip' to set the trick." in output
-    assert "Denise tries 'kickflip' (1 attempt(s) left)" in output
+    assert "Stan attacks 'Soul Switch' (2 attempt(s) left)" in output
+    assert "Stan missed 'Soul Switch' (1 attack attempt(s) left)." in output
+    assert "Stan landed 'Soul Switch' to set the trick." in output
+    assert "Denise tries 'Soul Switch' (1 attempt(s) left)" in output
     assert "Game finished. Winner: Stan" in output
+
+
+def test_cli_trick_input_requires_selecting_a_suggestion(monkeypatch) -> None:
+    controller = GameController(MatchParameters(player_ids=["p1", "p2"]))
+    controller.start_game()
+
+    cli = CLIApp()
+    inputs = iter(["switch soul", "1", "y"])
+    monkeypatch.setattr("builtins.input", lambda _prompt="": next(inputs))
+
+    trick = cli._ask_validated_trick_input(controller)
+
+    assert trick == "Soul Switch"
 
 
 def test_cli_join_command_can_add_player_between_turns(monkeypatch, capsys) -> None:

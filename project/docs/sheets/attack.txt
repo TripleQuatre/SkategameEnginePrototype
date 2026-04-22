@@ -1,0 +1,52 @@
+Name
+Attack
+
+Type
+parameter
+
+Ensemble
+Attack & Defense
+
+Parent Rule
+None
+
+Definition
+paramètre qui définit le nombre de tentatives accordées à l’attaquant pour imposer un trick
+
+Purpose
+définir combien d’essais l’attaquant peut utiliser pour réussir le trick qu’il impose pendant son tour
+
+Options
+Value (option) : définit le nombre de tentatives accordées à l’attaquant
+- Default Value : 1, valeur traditionnellement appliquée par défaut
+- Other Value : 3, autre valeur courante
+- Choice : permet d’entrer librement une valeur, dans une limite de 10 maximum
+
+Activation Conditions
+aucune
+
+Dependencies
+tour d’attaque actif
+
+Interactions
+Multiple Attack
+Advantage
+Clash
+
+Default Behavior
+l’attaquant dispose d’un nombre fixe de tentatives défini avant la partie
+
+Advanced Behavior
+si la valeur est supérieure à 1, certaines règles avancées comme Multiple Attack peuvent devenir pertinentes
+
+Code Impact
+résolution des tentatives d’attaque
+flow de tour
+validation d’action
+
+UX Notes
+doit être présenté comme un paramètre simple
+les valeurs recommandées peuvent être affichées comme raccourcis sans masquer qu’il s’agit d’un seul choix de valeur
+
+Open Questions
+il faudra préciser plus tard si certaines disciplines limitent davantage les valeurs disponibles

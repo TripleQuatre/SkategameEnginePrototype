@@ -1,109 +1,123 @@
-SkateGame Engine Prototype - Architecture V5
+SkateGame Engine Prototype - Architecture V8
 
 Objectif
-Cette documentation decrit l'architecture reelle du projet apres la V5.
-Le but de la V5 etait d'etendre le moteur vers le multijoueur sans casser
-la robustesse acquise en V4.
+Cette documentation decrit l'architecture reelle du projet apres la V8.
+La V7.x a recentre le runtime autour de `MatchConfig` et du dossier `match/`.
+La V8 a ajoute une nouvelle couche metier autonome : `dictionary/`.
 
 Principe general
-Le projet repose sur un moteur central testable :
+Le projet repose maintenant sur une architecture articulee autour de trois
+centres clairs :
 
-Interfaces -> Controller -> Engine -> Modes
-                         -> Rules
-                         -> Validation
-                         -> Persistence
-                         -> Core
+- `core/` pour l'etat et les structures fondamentales
+- `match/` pour le runtime de partie
+- `dictionary/` pour la definition canonique des tricks
 
-Idees fortes de la V5
-- `GameState` reste la source de verite principale.
-- `History` garde la trace brute du match et reconstruit des tours lisibles.
-- `SnapshotHistory` sert a l'undo par restauration complete d'etat.
-- les noms d'evenements restent centralises via `EventName`.
-- les invariants d'etat sont verifies explicitement.
-- la structure d'un match n'est plus codee en dur dans `game_flow`.
+Lecture simplifiee
+
+Interfaces -> Controller -> Application Session -> Match Runtime
+                                           -> Validation
+                                           -> Dictionary
+                                           -> Persistence
+                                           -> Core
+                                           -> Config
+
+Idees fortes de la V8
+- `GameState` reste la source de verite du runtime courant
+- `MatchConfig` est la source de verite de configuration
+- `match/` porte l'orchestration metier reelle d'une partie
+- `dictionary/` dit ce qu'est un trick valide et quelle est son identite
+- `validation/` bloque les actions et etats incoherents avant mutation
+- `persistence/` sait conserver la configuration et le runtime complet
+- `SnapshotHistory` reste la base de l'undo
 
 Blocs principaux
 
 1. `core/`
-- contient les structures fondamentales du moteur
-- `GameState`, `Event`, `History`, `Snapshot`, `Player`, `EventName`, `Phase`
+- structures fondamentales du moteur
+- `GameState`, `Player`, `History`, `Snapshot`, enums runtime
 
-2. `modes/`
-- definit la structure d'une partie
-- initialise le match
-- construit les defenseurs
-- determine le prochain attaquant
+2. `config/`
+- modeles de configuration de match
+- presets
+- traduction setup -> runtime config
+- regles fines (`Uniqueness`, `Repetition`)
 
-3. `rules/`
-- contient la logique metier pure
-- pas d'orchestration de match
+3. `dictionary/`
+- domaine autonome du dictionnaire de tricks
+- modele canonique des segments, combos et sorties
+- premiere implementation concrete : `inline_primary_grind`
 
-4. `engine/`
-- orchestre la partie
-- applique les transitions
-- gere l'undo et le save/load au niveau moteur
+4. `match/`
+- coeur du runtime de partie
+- structure du match
+- flow d'attaque
+- flow de defense
+- scoring
+- victory
+- transitions de roster
+- regles metier de tour
 
-5. `validation/`
-- verifie config, etat et actions
-- protege les invariants les plus importants
+5. `application/`
+- session applicative de haut niveau
+- point d'entree utile pour controller, interfaces et tests
 
 6. `controllers/`
-- relais fin entre interfaces et moteur
-- expose une API simple aux interfaces
+- relais mince entre interfaces et session applicative
 
-7. `persistence/`
-- serialization, sauvegarde et rechargement de partie
+7. `validation/`
+- validation de config
+- validation d'action
+- validation d'etat
 
-8. `interfaces/`
+8. `persistence/`
+- serialization du runtime, de la config, de l'historique
+- save/load
+
+9. `interfaces/`
 - CLI et GUI utilitaires
-- pas de logique metier critique
+- saisie assistee branchee sur `dictionary/`
 
-Decisions V5 importantes
+10. `tests/`
+- unitaires
+- integration
+- interfaces
 
-Etat du tour
-- tour ouvert : l'attaquant a la main et `current_trick is None`
-- tour engage : `current_trick is not None`
-- tour termine : le tour a produit un resultat terminal
+Decisions V7.x / V8 importantes
 
-Rotation
-- `turn_order` porte l'ordre persistant du match
-- les modes l'interpretent pour la rotation
-- les joueurs elimines peuvent rester dans `turn_order`
+Configuration
+- le runtime est pilote par `MatchConfig`
+- `MatchParameters` reste une vue de compatibilite, pas le centre du moteur
+
+Structure de match
+- le vieux centre `modes/` n'est plus le coeur actif
+- la structure vit maintenant dans `match/structure/`
 
 Tricks
-- `validated_tricks` contient uniquement les tricks definitivement consommes
-- `start_turn(trick)` engage le trick du tour, sans le consommer
-- le trick est consomme a la fin terminale du tour :
-  - `TURN_FINISHED`
-  - `GAME_FINISHED`
+- `current_trick` reste present pour la compatibilite
+- les donnees canoniques V8 vivent en parallele :
+  - `current_trick_data`
+  - `validated_trick_data`
+  - `failed_attack_trick_data`
 
-Tour rate
-- `cancel_turn(trick)` produit `TURN_FAILED`
-- un tour rate reste un evenement metier normal de la partie
+Regles fines V8
+- `Uniqueness` lit les tricks valides
+- `Repetition` lit les tricks lances puis rates
+- ces regles comparent l'identite canonique du dictionnaire, pas seulement du
+  texte libre
 
 Undo
-- l'undo repose uniquement sur des snapshots complets
-- un snapshot est pris avant chaque action mutante exposee par le moteur
-- l'undo restaure un etat entier valide, sans suppression manuelle d'evenements
-- l'undo reste possible apres une fin de partie dans la session courante
+- snapshots complets de state + config
+- restauration complete sans suppression manuelle d'evenements
 
 Save / Load
-- le moteur sauvegarde et recharge un `GameSave`
-- un `GameSave` contient :
-  - `match_parameters`
-  - `game_state`
-- un chargement remet l'historique d'undo a zero
-- le mode est recharge a partir de la sauvegarde
+- une sauvegarde transporte `match_config` + `game_state`
+- l'undo local est reinitialise apres chargement
 
-Etat actuel de la V5
-- moteur multi-mode stabilise
-- `battle` present
-- fin de partie consultable
-- save/load multi-mode
-- interfaces testees sur les parcours critiques
-
-Points volontairement laisses pour la suite
-- variantes de rotation configurables
-- systemes de points alternatifs
-- gestion d'equipes
-- outillage encore plus riche de simulation de configurations
+Etat actuel de la V8
+- runtime stabilise autour de `match/`
+- dictionnaire autonome et branche au moteur
+- premiere discipline/profile utilisable : `inline / inline_primary_grind`
+- saisie assistee CLI et GUI
+- `Uniqueness` et `Repetition` actives
+- suite de tests complete verte

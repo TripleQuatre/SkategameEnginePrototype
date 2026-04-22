@@ -68,6 +68,11 @@ class StateValidator:
             seen_defender_indices.add(defender_index)
 
         if state.current_trick is None:
+            if state.current_trick_data is not None:
+                raise InvalidStateError(
+                    "current_trick_data must be None when no trick is engaged."
+                )
+
             if state.phase != Phase.END and state.turn_phase != TurnPhase.TURN_OPEN:
                 raise InvalidStateError(
                     "turn_phase must be TURN_OPEN when no trick is engaged."

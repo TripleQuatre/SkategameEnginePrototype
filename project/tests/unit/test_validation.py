@@ -1,5 +1,6 @@
 import pytest
 
+from config.fine_rules_config import FineRulesConfig
 from config.match_parameters import MatchParameters
 from config.match_policies import DefenderOrderPolicy, InitialTurnOrderPolicy, MatchPolicies
 from config.rule_set_config import RuleSetConfig
@@ -7,6 +8,7 @@ from core.player import Player
 from core.state import GameState
 from core.types import Phase, TurnPhase
 from core.exceptions import InvalidActionError, InvalidStateError
+from dictionary.runtime import resolve_runtime_trick_record
 from match.flow.trick_rules import TrickRules
 from validation.action_validator import ActionValidator
 from validation.config_validator import ConfigValidator
@@ -315,6 +317,120 @@ def test_action_validator_rejects_start_turn_with_already_consumed_trick() -> No
 
     with pytest.raises(InvalidActionError):
         validator.validate_start_turn(state, "Soul")
+
+
+def test_action_validator_rejects_canonically_equivalent_dictionary_trick() -> None:
+    validator = ActionValidator(TrickRules())
+    _, trick_data = resolve_runtime_trick_record("Soul Switch")
+    assert trick_data is not None
+    state = GameState(
+        players=[
+            Player(id="p1", name="Player 1"),
+            Player(id="p2", name="Player 2"),
+        ],
+        phase=Phase.TURN,
+        validated_trick_data=[trick_data],
+    )
+
+    with pytest.raises(InvalidActionError):
+        validator.validate_start_turn(state, "Switch Soul")
+
+
+def test_action_validator_allows_revalidated_trick_when_uniqueness_disabled() -> None:
+    validator = ActionValidator(
+        TrickRules(FineRulesConfig(uniqueness_enabled=False))
+    )
+    state = GameState(
+        players=[
+            Player(id="p1", name="Player 1"),
+            Player(id="p2", name="Player 2"),
+        ],
+        phase=Phase.TURN,
+        validated_tricks=["soul"],
+    )
+
+    validator.validate_start_turn(state, "Soul")
+
+
+def test_action_validator_rejects_dictionary_trick_when_choice_repetition_limit_is_reached() -> None:
+    validator = ActionValidator(
+        TrickRules(FineRulesConfig(repetition_mode="choice", repetition_limit=1))
+    )
+    _, trick_data = resolve_runtime_trick_record("Soul Switch")
+    assert trick_data is not None
+    state = GameState(
+        players=[
+            Player(id="p1", name="Player 1"),
+            Player(id="p2", name="Player 2"),
+        ],
+        phase=Phase.TURN,
+        failed_attack_trick_data=[
+            {
+                "attacker_id": "p1",
+                "trick": "Soul Switch",
+                "trick_key": trick_data["canonical_key"],
+                "trick_label": trick_data["label"],
+                "trick_data": trick_data,
+            }
+        ],
+    )
+
+    with pytest.raises(InvalidActionError):
+        validator.validate_start_turn(state, "Switch Soul")
+
+
+def test_action_validator_rejects_dictionary_trick_when_common_repetition_limit_is_reached() -> None:
+    validator = ActionValidator(
+        TrickRules(FineRulesConfig(repetition_mode="common", repetition_limit=1))
+    )
+    _, trick_data = resolve_runtime_trick_record("Soul")
+    assert trick_data is not None
+    state = GameState(
+        players=[
+            Player(id="p1", name="Player 1"),
+            Player(id="p2", name="Player 2"),
+        ],
+        phase=Phase.TURN,
+        attacker_index=1,
+        failed_attack_trick_data=[
+            {
+                "attacker_id": "p1",
+                "trick": "Soul",
+                "trick_key": trick_data["canonical_key"],
+                "trick_label": trick_data["label"],
+                "trick_data": trick_data,
+            }
+        ],
+    )
+
+    with pytest.raises(InvalidActionError):
+        validator.validate_start_turn(state, "Soul")
+
+
+def test_action_validator_allows_trick_when_repetition_is_disabled() -> None:
+    validator = ActionValidator(
+        TrickRules(FineRulesConfig(repetition_mode="disabled", repetition_limit=1))
+    )
+    _, trick_data = resolve_runtime_trick_record("Soul")
+    assert trick_data is not None
+    state = GameState(
+        players=[
+            Player(id="p1", name="Player 1"),
+            Player(id="p2", name="Player 2"),
+        ],
+        phase=Phase.TURN,
+        failed_attack_trick_data=[
+            {
+                "attacker_id": "p1",
+                "trick": "Soul",
+                "trick_key": trick_data["canonical_key"],
+                "trick_label": trick_data["label"],
+                "trick_data": trick_data,
+            }
+        ],
+    )
+
+    validator.validate_start_turn(state, "Soul")
 
 def test_state_validator_rejects_defender_indices_when_no_trick_is_engaged() -> None:
     validator = StateValidator()

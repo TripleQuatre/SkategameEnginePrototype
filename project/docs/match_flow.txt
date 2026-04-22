@@ -1,0 +1,46 @@
+Documentation V8 - Sous-systeme `match/flow/`
+
+Role global
+`match/flow/` porte la chronologie d'un tour et les regles immediates qui
+decident comment un echange avance.
+
+Fichiers
+
+`turn_flow.py`
+- orchestrateur principal d'un tour
+- branche attaque, defense, scoring, victory et trick rules
+
+`turn_cycle.py`
+- gere la fin d'echange
+- consomme le trick valide
+- avance a l'attaquant suivant
+- historise les echec d'attaque utiles a `Repetition`
+
+`turn_state.py`
+- helpers de mutation d'etat de bas niveau
+- nettoyage, ouverture de tour, promotion attaque -> defense
+
+`trick_rules.py`
+- petites regles metier du trick courant
+- `Uniqueness`
+- `Repetition`
+- comparaison canonique des tricks
+
+`exchange_outcome.py`
+- objet de resultat explicite d'un echange
+- permet de formaliser :
+  - l'attaque continue
+  - la defense est prete
+  - la defense continue
+  - l'attaquant a rate
+  - l'attaquant a tenu
+  - la partie est finie
+
+Principe cle
+Le flow ne manipule plus seulement des booleens ou des effets diffuses.
+Il passe par des resultats metier explicites et par des helpers specialises.
+
+Ce que cette couche debloque
+- futures regles qui changent le flow
+- lecture plus claire de la chronologie d'un tour
+- meilleure separation entre orchestration et regles fines

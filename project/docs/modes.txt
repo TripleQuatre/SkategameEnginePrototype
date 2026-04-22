@@ -1,52 +1,34 @@
-Documentation V5 - Dossier `modes/`
+Documentation V8 - Heritage de `modes/`
 
-Role global
-`modes/` porte la structure d'une partie :
-- initialisation
-- construction de la liste des defenseurs
-- rotation des attaquants
-- validation propre au mode
+Important
+Le dossier `modes/` n'est plus le centre actif du moteur.
+La logique de structure de partie vit maintenant dans `match/structure/`.
 
-Fichiers
+Equivalent actuel
+- ancien contrat `modes/` -> `match/structure/base_structure.py`
+- ancien `one_vs_one` -> `match/structure/one_vs_one_structure.py`
+- ancien `battle` -> `match/structure/battle_structure.py`
+- ancien `mode_factory` -> `match/structure/structure_factory.py`
 
-`base_mode.py`
-- contrat commun des modes
-- expose :
-  - `initialize_game`
-  - `build_defender_indices`
-  - `get_next_attacker_index`
-  - `validate`
+Role actuel de `match/structure/`
+- initialisation du match
+- construction des defenseurs
+- choix du prochain attaquant
+- validation structurelle propre a la forme de match
 
-`one_vs_one.py`
-- implemente le duel classique
+Structures actuelles
+
+`one_vs_one_structure.py`
+- duel classique
 - exige exactement 2 joueurs
-- utilise un `turn_order` fixe `[0, 1]`
+- ordre fixe
 
-`battle.py`
-- implemente le multijoueur V5
+`battle_structure.py`
+- multijoueur
 - exige au moins 3 joueurs
-- cree un ordre initial aleatoire
-- garde cet ordre pendant toute la partie
-- construit tous les defenseurs actifs sauf l'attaquant
-- saute les joueurs elimines dans la rotation
+- ordre initial potentiellement randomise selon les policies
 
-`mode_factory.py`
-- charge le bon mode a partir de `mode_name`
-- evite de disperser le branchement de mode dans l'engine
-
-Etat V5
-- `modes/` n'est plus une simple couche de validation
-- la logique de rotation n'est plus codee en dur dans `game_flow`
-- `one_vs_one` et `battle` partagent le meme contrat
-
-Choix V5 importants
-- `battle` est reserve a `3+` joueurs
-- les joueurs elimines restent dans `turn_order`
-- l'ordre des defenseurs suit `turn_order` en V5
-- cet ordre reste un choix de version, pas une verite metier definitive
-
-Ouverture pour la suite
-Cette couche est preparee pour des politiques futures :
-- ordre initial configurable
-- rotation d'attaque configurable
-- variantes de structure de match
+Point a retenir
+Si un ancien document parle encore du moteur comme s'il etait centre sur
+`modes/`, il faut le lire comme une documentation historique.
+La V8 est maintenant articulee autour de `match/structure/`.

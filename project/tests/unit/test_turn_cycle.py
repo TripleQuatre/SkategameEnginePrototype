@@ -22,6 +22,24 @@ def test_turn_cycle_can_consume_current_trick_once() -> None:
     assert state.validated_tricks == ["kickflip", "soul"]
 
 
+def test_turn_cycle_can_store_validated_trick_dictionary_data() -> None:
+    cycle = TurnCycle(OneVsOneStructure(), TrickRules())
+    state = GameState(
+        players=[Player(id="p1", name="Stan"), Player(id="p2", name="Denise")],
+        phase=Phase.TURN,
+        turn_phase=TurnPhase.DEFENSE,
+        current_trick="Switch Soul",
+    )
+
+    cycle.consume_current_trick(state)
+    cycle.consume_current_trick(state)
+
+    assert state.current_trick == "Switch Soul"
+    assert state.validated_tricks == ["switch soul"]
+    assert len(state.validated_trick_data) == 1
+    assert state.validated_trick_data[0]["label"] == "Soul Switch"
+
+
 def test_turn_cycle_can_advance_to_next_attacker_and_open_turn() -> None:
     cycle = TurnCycle(OneVsOneStructure(), TrickRules())
     state = GameState(

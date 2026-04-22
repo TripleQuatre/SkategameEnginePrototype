@@ -409,26 +409,27 @@ class CLIApp:
     def _format_event(self, event: Event) -> str:
         name = event.name
         payload = event.payload
+        trick_label = payload.get("trick_label", payload.get("trick"))
 
         if name == EventName.DEFENSE_SUCCEEDED:
             player_name = payload.get("player_name", payload["player_id"])
-            return f"{player_name} landed '{payload['trick']}'."
+            return f"{player_name} landed '{trick_label}'."
 
         if name == EventName.ATTACK_FAILED_ATTEMPT:
             attacker_name = payload.get("attacker_name", payload["attacker_id"])
             return (
-                f"{attacker_name} missed '{payload['trick']}' "
+                f"{attacker_name} missed '{trick_label}' "
                 f"({payload['attempts_left']} attack attempt(s) left)."
             )
 
         if name == EventName.ATTACK_SUCCEEDED:
             attacker_name = payload.get("attacker_name", payload["attacker_id"])
-            return f"{attacker_name} landed '{payload['trick']}' to set the trick."
+            return f"{attacker_name} landed '{trick_label}' to set the trick."
 
         if name == EventName.DEFENSE_FAILED_ATTEMPT:
             player_name = payload.get("player_name", payload["player_id"])
             return (
-                f"{player_name} missed '{payload['trick']}' "
+                f"{player_name} missed '{trick_label}' "
                 f"({payload['attempts_left']} left)."
             )
 
@@ -566,19 +567,32 @@ class CLIApp:
             print("Invalid choice.")
 
     def _ask_validated_trick_input(self, controller: GameController) -> str | None:
+        query = ""
+
         while True:
-            trick = self._read_input_with_commands(controller, "")
-            if trick is None:
+            prompt = "Trick search: " if not query else f"Trick search [{query}]: "
+            query_value = self._read_input_with_commands(controller, prompt)
+            if query_value is None:
                 return None
 
-            state = controller.get_state()
-            normalized_trick = trick.lower()
-
-            if normalized_trick in state.validated_tricks:
-                print("This trick has already been validated in this game.")
-                self._display_state(state)
+            query = query_value
+            suggestions = controller.suggest_tricks(query)
+            if not suggestions:
+                print("No valid trick suggestion for this input.")
+                self._display_state(controller.get_state())
                 continue
 
+            selected = self._select_trick_suggestion(controller, suggestions)
+            if selected is None:
+                return None
+            if selected is False:
+                continue
+
+            if not selected.is_terminal:
+                query = selected.completion or selected.label
+                continue
+
+            trick = selected.completion or selected.label
             confirm = self._ask_yes_no_with_commands(
                 controller,
                 f"Confirm trick '{trick}'? (y/n): ",
@@ -596,6 +610,34 @@ class CLIApp:
             except InvalidActionError as error:
                 print(f"Action invalide: {error}\n")
             return None
+
+    def _select_trick_suggestion(
+        self,
+        controller: GameController,
+        suggestions,
+    ):
+        while True:
+            print("\nSuggestions:")
+            for index, suggestion in enumerate(suggestions, start=1):
+                marker = "trick" if suggestion.is_terminal else "continue"
+                print(f"{index}. {suggestion.label} [{marker}]")
+
+            value = self._read_input_with_commands(
+                controller,
+                "Choose a suggestion number (or 0 to refine): ",
+            )
+            if value is None:
+                return None
+
+            if value == "0":
+                return False
+
+            if value.isdigit():
+                selected_index = int(value)
+                if 1 <= selected_index <= len(suggestions):
+                    return suggestions[selected_index - 1]
+
+            print("Invalid choice.")
 
     def _ask_defense_action(
         self, controller: GameController, defender_name: str

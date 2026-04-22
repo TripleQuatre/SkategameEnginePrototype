@@ -1,0 +1,122 @@
+V8 DICTIONARY SPEC
+
+Intent
+This document defines the V8 Dictionary feature as an autonomous domain of the
+project. It is the functional contract for the first V8 implementation. It
+must stay independent from direct turn-flow logic, while exposing the services
+the engine needs to validate, build, compare, and later filter tricks.
+
+Role Of The Dictionary Feature
+- Define what a valid trick is for a given sport/profile pair
+- Guide trick construction from partial user input
+- Produce a canonical trick structure
+- Produce a display label
+- Expose next valid options from a partial input state
+- Prepare future filtering such as banned tricks, max combo length, or
+  disabled families/modifiers
+
+Role Of The Engine
+- Decide whether a valid trick is allowed in the current match
+- Maintain match history
+- Apply Uniqueness and Repetition
+- Persist trick history through save/load and undo
+
+V8 Product Scope
+- The Dictionary feature is generic in architecture
+- V8 only ships one real sport implementation: inline
+- V8 only ships one real dictionary profile: inline_primary_grind
+- Sport/profile choice is not yet a visible product setup feature in V8
+
+Input Philosophy
+- The user may type freely in the input
+- The trick is only accepted through dictionary suggestions
+- Input must show valid complete tricks and valid continuations
+- Input must clearly indicate when the current typed value is not valid
+- The keyword "to" opens a new segment
+
+Output Required From Dictionary
+- Does this trick exist?
+- If yes, what is its canonical structured form?
+- What is its canonical display label?
+- What are the next valid options from this partial state?
+
+Canonical Display Rules
+- Switch is displayed as a suffix
+- Switch may later be accepted in input as both prefix and suffix, but the
+  display form remains suffix
+- Combos are displayed with "to" between segments
+- Exit rotations are displayed at the end of the full trick
+
+Core Trick Shapes In V8
+- Simple trick
+- Simple trick with local modifiers/variations
+- Simple trick with optional exit rotation
+- Combo with 2 or 3 segments
+- Combo with optional exit rotation
+
+Explicitly Out Of Scope In V8
+- Randomizer
+- Banned Tricks rule
+- True Switch rule for combos
+- Hidden stance/switch annotations per combo segment
+- Multi-sport UI
+
+Segment Model
+The logical order of one segment is:
+[entry/orientation variation if any] + [negative or not] + figure
++ [grab if any] + [switch if any]
+
+Notes
+- Grab is a local modifier, not a normal variation
+- Switch is treated as the last local modifier of a simple trick
+- In V8, explicit switch only applies to simple tricks, not combos
+
+Combo Model
+- A combo contains 2 or 3 segments
+- Segment order is part of trick identity
+- V8 ignores hidden switch details required by rider stance in real practice
+- A future global combo switch may exist later, but is not part of V8
+
+Exit Model
+- Exit is optional
+- Exit is not a segment
+- Exit always comes at the end of the full trick or combo
+- Exactly one exit may be present
+- V8 exits are:
+  - 180
+  - 360
+  - 540
+  - Reverse 180
+  - Reverse 360
+  - Reverse 540
+
+Canonical Identity
+The canonical identity of a trick must include:
+- segment count
+- segment order
+- segment type
+- base figure
+- local variation
+- negative status
+- grab status
+- switch status when allowed
+- exit identity
+
+The canonical identity of a trick must not include:
+- free-form raw input form
+- user typing style
+- hidden stance corrections inside combos
+
+History Data Expected By Engine
+When the engine stores a trick event, it should keep:
+- display label
+- canonical structured trick
+
+Future Filtering Requirement
+The Dictionary feature must be designed so that later filters can constrain the
+available trick space without rewriting the whole domain. Examples:
+- forbid negative
+- forbid some exits
+- max 2 segments
+- restrict some variation families
+

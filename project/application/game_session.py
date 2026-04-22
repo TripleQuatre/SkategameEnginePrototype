@@ -4,6 +4,8 @@ from config.setup_translator import SetupTranslator
 from core.snapshots import SnapshotHistory
 from core.state import GameState
 from core.types import AttackResolutionStatus, DefenseResolutionStatus
+from dictionary.base import DictionaryResolution, DictionarySuggestion
+from dictionary.runtime import get_runtime_dictionary
 from match.transitions import MatchTransitionService
 from match.transitions.transition_service import RuntimeSession
 from persistence.game_save import GameSave
@@ -16,6 +18,7 @@ class GameSession:
     def __init__(self, match_config: MatchConfig | MatchParameters) -> None:
         self.setup_translator = SetupTranslator()
         self._match_config = self._coerce_match_config(match_config)
+        self.trick_dictionary = get_runtime_dictionary()
         self.config_validator = ConfigValidator()
         self.state_validator = StateValidator()
         self.snapshot_history = SnapshotHistory()
@@ -156,3 +159,9 @@ class GameSession:
         )
         self._apply_runtime_session(runtime)
         self.snapshot_history.clear()
+
+    def suggest_tricks(self, raw_value: str) -> list[DictionarySuggestion]:
+        return self.trick_dictionary.suggest(raw_value)
+
+    def resolve_trick_input(self, raw_value: str) -> DictionaryResolution | None:
+        return self.trick_dictionary.resolve(raw_value)

@@ -188,8 +188,11 @@ class Serializer:
             "current_defender_position": state.current_defender_position,
             "defense_attempts_left": state.defense_attempts_left,
             "current_trick": state.current_trick,
+            "current_trick_data": state.current_trick_data,
             "history": self.serialize_history(state.history),
             "validated_tricks": state.validated_tricks,
+            "validated_trick_data": state.validated_trick_data,
+            "failed_attack_trick_data": state.failed_attack_trick_data,
         }
 
     def deserialize_game_state(self, data: dict) -> GameState:
@@ -214,8 +217,11 @@ class Serializer:
             current_defender_position=data["current_defender_position"],
             defense_attempts_left=data["defense_attempts_left"],
             current_trick=data.get("current_trick"),
+            current_trick_data=data.get("current_trick_data"),
             history=self.deserialize_history(data["history"]),
             validated_tricks=data.get("validated_tricks", []),
+            validated_trick_data=data.get("validated_trick_data", []),
+            failed_attack_trick_data=data.get("failed_attack_trick_data", []),
         )
 
     def serialize_game_save(self, game_save: GameSave) -> dict:

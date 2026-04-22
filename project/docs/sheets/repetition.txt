@@ -1,0 +1,51 @@
+Name
+Repetition
+
+Type
+rule
+
+Ensemble
+Attack & Defense
+
+Parent Rule
+None
+
+Definition
+règle qui définit combien de fois un trick déjà tenté par l’attaquant peut encore être essayé au cours de la partie
+
+Purpose
+encadrer la répétition des tricks ratés par l’attaquant au cours de la partie
+
+Options
+Choice (option) : définit le nombre de fois qu’un même trick peut encore être essayé, avec 3 par défaut
+Common (option) : le nombre de répétitions défini dans Choice est commun à tous les joueurs
+Disabled (option) : désactive la limite de répétition des tricks ratés par l’attaquant
+
+Activation Conditions
+aucune
+
+Dependencies
+historique des tricks tentés par l’attaquant
+
+Interactions
+Uniqueness
+Attack
+Multiple Attack
+
+Default Behavior
+un trick raté peut être réessayé un nombre limité de fois selon la valeur choisie
+
+Advanced Behavior
+l’option Common permet de mutualiser cette limite entre les joueurs
+
+Code Impact
+historique des tricks
+validation d’action
+contrôle de répétition
+
+UX Notes
+doit être présentée comme une règle distincte de Uniqueness
+la différence entre trick raté réessayable et trick validé non réimposable doit être très claire
+
+Open Questions
+il faudra préciser plus tard comment la répétition interagit avec les variantes complexes d’un même trick
