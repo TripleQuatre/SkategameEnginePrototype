@@ -33,6 +33,13 @@ class CLIApp:
         while True:
             state = controller.get_state()
 
+            if state.phase == Phase.SETUP:
+                print("Returned to setup. Configure a new game.\n")
+                controller = self._create_new_game_controller()
+                self.controller = controller
+                print()
+                continue
+
             if state.phase == Phase.END:
                 controller = self._run_end_of_game_loop(controller)
                 self.controller = controller
@@ -539,7 +546,11 @@ class CLIApp:
 
             if choice == "1":
                 if controller.undo():
-                    print("Undo successful.")
+                    restored_state = controller.get_state()
+                    if restored_state.phase == Phase.SETUP:
+                        print("Undo successful. Returned to setup.")
+                    else:
+                        print("Undo successful.")
                     return controller
 
                 print("Nothing to undo.")

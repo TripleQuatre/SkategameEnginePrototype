@@ -7,7 +7,7 @@ from config.match_parameters import MatchParameters
 from config.rule_set_config import RuleSetConfig
 from controllers.game_controller import GameController
 from core.events import Event
-from core.types import EventName
+from core.types import EventName, Phase
 from interfaces.cli.cli_app import CLIApp
 
 
@@ -49,6 +49,25 @@ def test_cli_end_of_game_loop_can_undo_finished_game(monkeypatch, capsys) -> Non
     state = returned_controller.get_state()
     assert state.phase.value == "turn"
     assert state.current_trick == "soul"
+
+
+def test_cli_end_of_game_loop_reports_return_to_setup_after_undo_of_initial_snapshot(
+    monkeypatch, capsys
+) -> None:
+    controller = GameController(MatchParameters(player_ids=["p1", "p2"]))
+    controller.start_game()
+
+    cli = CLIApp()
+
+    inputs = iter(["1"])
+    monkeypatch.setattr("builtins.input", lambda _prompt="": next(inputs))
+
+    returned_controller = cli._run_end_of_game_loop(controller)
+    output = capsys.readouterr().out
+
+    assert returned_controller is controller
+    assert "Undo successful. Returned to setup." in output
+    assert returned_controller.get_state().phase == Phase.SETUP
 
 
 def test_cli_load_saved_game_controller_reports_consultation_for_finished_game(
@@ -235,6 +254,34 @@ def test_cli_new_game_can_start_without_preset(monkeypatch) -> None:
     assert match_parameters.fine_rules.uniqueness_enabled is False
     assert match_parameters.fine_rules.repetition_mode == "common"
     assert match_parameters.fine_rules.repetition_limit == 2
+
+
+def test_cli_run_recovers_by_restarting_setup_after_undo_to_initial_snapshot(
+    monkeypatch, capsys
+) -> None:
+    initial_controller = GameController(MatchParameters(player_ids=["p1", "p2"]))
+    initial_controller.start_game()
+
+    replacement_controller = GameController(MatchParameters(player_ids=["a", "b"]))
+    replacement_controller.start_game()
+
+    cli = CLIApp()
+    cli._setup_or_load_game = lambda: initial_controller
+    cli._create_new_game_controller = lambda: replacement_controller
+
+    answers = iter(["/undo", "/quit"])
+    monkeypatch.setattr("builtins.input", lambda _prompt="": next(answers))
+
+    try:
+        cli.run()
+    except SystemExit:
+        pass
+
+    output = capsys.readouterr().out
+
+    assert "Undo successful." in output
+    assert "Returned to setup. Configure a new game." in output
+    assert cli.controller is replacement_controller
 
 
 def test_cli_display_state_shows_attack_phase_details(capsys) -> None:
