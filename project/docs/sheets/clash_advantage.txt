@@ -1,0 +1,59 @@
+Name
+Clash Advantage
+
+Type
+rule
+
+Ensemble
+Advanced Attack & Defense
+
+Parent Rule
+Clash
+
+Definition
+regle avancee qui definit les parametres et les consequences du clash, notamment le nombre de tentatives accordees et la maniere dont le role d'attaquant est conserve ou transfere apres sa resolution
+
+Purpose
+personnaliser la resolution d'un clash au-dela des variantes Normal et Total
+
+Options
+Value 1 (option) : nombre d'essais accordes a l'opposant qui tente de reproduire la figure ratee par le lanceur, 1 par defaut et 1 minimum
+Value 2 (option) : nombre d'essais accordes au lanceur qui subit le clash, 0 pour le Clash Total, 1 pour le Clash Normal
+Turn (option) : si active, le clash est considere comme un tour et l'opposant conserve le statut d'attaquant au tour suivant quel que soit le resultat
+Success (option) : si active, le statut d'attaquant est conserve selon la reussite du clash
+
+Activation Conditions
+Clash doit etre regle sur Choice
+Turn et Success ne peuvent pas etre activees en meme temps
+
+Dependencies
+Clash
+Attack
+Defense
+
+Interactions
+Clash
+Order
+Attack Order
+Defense Order
+Points
+Round
+
+Default Behavior
+le clash suit les parametres definis par les valeurs choisies ; Turn est active par defaut et Success desactive par defaut
+
+Advanced Behavior
+Turn et Success modifient la logique de transfert du role d'attaquant apres un clash
+
+Code Impact
+resolution du clash
+gestion des essais specifiques
+rotation des joueurs
+score ou issue de manche eventuels
+
+UX Notes
+ne doit apparaitre que si Clash = Choice
+Turn et Success doivent etre presentees comme incompatibles
+
+Open Questions
+aucune pour l'instant

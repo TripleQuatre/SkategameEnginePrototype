@@ -1,0 +1,58 @@
+Name
+Clash
+
+Type
+rule
+
+Ensemble
+Attack & Defense
+
+Parent Rule
+None
+
+Definition
+regle qui definit dans quelles conditions un defenseur peut contester un trick rate par l'attaquant et en modifier l'issue
+
+Purpose
+ajouter une logique de contestation permettant au defenseur de transformer un echec de l'attaquant en opportunite de gain ou de renversement
+
+Options
+Normal (option) : si le lanceur rate sa figure, l'opposant a un essai pour la reproduire et, s'il reussit, le lanceur a un essai unique pour ne pas perdre la manche
+Total (option) : si le lanceur rate sa figure, l'opposant peut essayer de la reproduire et ainsi gagner directement la manche
+Choice (option) : permet de definir le nombre d'essais de l'opposant, le nombre d'essais du lanceur qui subit le clash, ainsi que l'avantage qui en decoule
+Disabled (option) : desactive completement le principe de clash
+
+Activation Conditions
+le lanceur doit avoir rate le trick qu'il tentait d'imposer
+limite au 1v1 pour l'instant
+
+Dependencies
+resolution d'attaque
+presence d'un defenseur actif
+
+Interactions
+Defense
+Advantage
+Clash Advantage
+Points
+Defense Order
+Round
+
+Default Behavior
+si le clash est active, un defenseur peut contester l'echec de l'attaquant selon l'option choisie
+
+Advanced Behavior
+l'option Choice ouvre une logique avancee de parametrage du clash et de ses consequences
+
+Code Impact
+resolution d'echange
+changement d'issue d'un tour
+rotation des joueurs
+score ou gain de manche eventuels
+
+UX Notes
+doit etre presente comme une regle avancee importante
+doit etre masque ou desactive en battle pour l'instant
+
+Open Questions
+note d'intention : adapter plus tard le clash au battle

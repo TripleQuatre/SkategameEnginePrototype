@@ -1,0 +1,40 @@
+Socle
+- definitions stables du jeu et de son vocabulaire
+- contient notamment Trick, Imposer, Attaquant, Defenseur, Tour et Manche
+- ne correspond pas a des regles configurables
+
+Game Data
+- donnees de partie qui decrivent le cadre de jeu sans modifier directement la logique moteur
+- contient actuellement Announcement et Tolerance
+
+Rules
+- ensemble des regles et parametres configurables de la partie
+- se subdivise en familles metier
+
+Fundamental Rules
+- regles fondamentales qui definissent la forme standard d'une partie
+- contient Elimination, Uniqueness et Order
+
+Advanced Order
+- regles avancees qui modifient la logique standard de l'ordre d'attaque ou organisent le passage des defenseurs
+- contient Attack Order et Defense Order
+
+Victory
+- regles de base qui definissent sur quoi et a quel moment la victoire d'un joueur est evaluee
+- contient Letters, Points, Time et Round
+
+Advanced Victory
+- regles avancees qui ajoutent des conditions supplementaires de victoire ou precisent la maniere dont elles s'appliquent lorsqu'elles sont combinees
+- contient Difference et Priority
+
+Attack & Defense
+- ensemble principal des parametres et regles qui structurent l'imposition d'un trick, sa reproduction et leurs consequences
+- contient les parametres Attack et Defense, ainsi que les regles Repetition, Advantage et Clash
+
+Advanced Attack & Defense
+- regles avancees qui modifient ou enrichissent la phase principale de jeu
+- contient Multiple Attack, Accumulation, Redo, Last Chance, Normal Advantage, Total Advantage et Clash Advantage
+
+Special Rules
+- regles specifiques a une discipline ou a une pratique donnee, qui completent les regles generales
+- contient actuellement Switch et Out

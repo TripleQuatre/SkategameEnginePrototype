@@ -1,0 +1,55 @@
+Name
+Out
+
+Type
+rule
+
+Ensemble
+Special Rules
+
+Parent Rule
+None
+
+Definition
+regle specifique qui definit dans quelles conditions la sortie d'un trick fait partie des criteres pris en compte pour sa validation
+
+Purpose
+definir si la sortie du trick est prise en compte, et avec quel niveau d'exigence, dans l'arbitrage de la tentative
+
+Options
+Normal (option) : tout type de sortie est autorise et doit etre realise dans un sens precis
++ Value (option) : les sorties ne sont prises en compte qu'au-dessus d'une certaine valeur, au-dela de 180 degres par defaut, ou selon une valeur choisie parmi 180, 360, 540
+No Direction (option) : le sens de rotation n'est pas pris en compte
+Not Relevant (option) : les sorties ne sont pas prises en compte
+
+Activation Conditions
+la discipline ou la pratique doit considerer la sortie comme un critere pertinent de validation
+
+Dependencies
+arbitrage de validation
+definition technique des sorties pertinentes
+
+Interactions
+Tolerance
+Redo
+Switch
+
+Default Behavior
+la sortie est evaluee selon l'option choisie dans la validation du trick
+
+Advanced Behavior
+l'option + Value ajoute un seuil minimal a partir duquel la sortie devient pertinente
+l'option No Direction peut se combiner avec + Value
+
+Code Impact
+validation de trick
+arbitrage
+lecture technique de l'execution
+inventaire des tricks
+
+UX Notes
+ne doit apparaitre que dans les disciplines ou la sortie d'un trick fait partie de son evaluation
+l'option + Value doit rester simple a configurer
+
+Open Questions
+aucune pour l'instant

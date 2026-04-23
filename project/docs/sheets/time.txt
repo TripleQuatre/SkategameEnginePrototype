@@ -1,0 +1,56 @@
+Name
+Time
+
+Type
+rule
+
+Ensemble
+Victory
+
+Parent Rule
+None
+
+Definition
+regle de victoire qui definit un moment d'evaluation de la victoire a partir d'une duree de partie
+
+Purpose
+definir un cadre temporel au terme duquel la victoire est evaluee selon les autres regles actives
+
+Options
+Chrono (option) : active le chronometrage de la partie
+Value 1 (option) : definit la duree de base en minutes et est obligatoire, dans une limite de 180 minutes maximum
+Value 2 (option) : definit le nombre d'unites de temps de Value 1 pour creer des mi-temps, tiers-temps, quart-temps, etc., de 1 a 9
+Value 3 (option) : definit le temps de pause en minutes entre les unites de temps definies par Value 2, dans une limite de 30 minutes maximum
+
+Activation Conditions
+aucune
+
+Dependencies
+au moins une regle de victoire ou de scoring a evaluer dans le temps
+
+Interactions
+Letters
+Points
+Round
+Difference
+Priority
+Last Chance
+
+Default Behavior
+la partie est chronometree a partir de Value 1 et la victoire est evaluee au terme du temps defini
+
+Advanced Behavior
+Value 2 et Value 3 permettent de segmenter la duree totale en plusieurs periodes separees par des pauses
+
+Code Impact
+timer de partie
+declenchement de fin
+gestion des periodes et pauses
+evaluation de victoire
+
+UX Notes
+Value 1 doit toujours etre visible et obligatoire
+Value 2 et Value 3 peuvent etre affichees comme options avancees
+
+Open Questions
+aucune pour l'instant

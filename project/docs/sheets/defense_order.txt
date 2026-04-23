@@ -1,0 +1,58 @@
+Name
+Defense Order
+
+Type
+rule
+
+Ensemble
+Advanced Order
+
+Parent Rule
+None
+
+Definition
+regle avancee qui impose ou structure un ordre de passage des defenseurs
+
+Purpose
+definir une logique explicite de passage des defenseurs dans les parties ou un ordre defensif doit etre impose
+
+Options
+Order : les defenseurs passent selon l'ordre d'attaque courant, en excluant l'attaquant
+Random : l'ordre des defenseurs est tire au sort a chaque trick impose
+Ranking : l'ordre des defenseurs est redefini selon l'etat courant de la partie
+- Score Low : les joueurs avec le score le plus faible passent en priorite
+- Score High : les joueurs avec le score le plus eleve passent en priorite
+
+Activation Conditions
+la partie doit comporter plusieurs defenseurs ou necessiter un ordre explicite de defense
+
+Dependencies
+Order
+etat courant de la partie
+
+Interactions
+Attack Order
+Round
+Letters
+Points
+Elimination
+Clash
+
+Default Behavior
+un ordre de defense est impose selon l'option choisie a chaque sequence de defense
+
+Advanced Behavior
+l'option Ranking ajoute une logique de redefinition dependante du score courant des joueurs
+
+Code Impact
+ordre de resolution des defenses
+flow de tour
+rotation des joueurs
+evaluation de l'etat de partie
+
+UX Notes
+ne doit apparaitre que dans les contextes ou un ordre defensif explicite est pertinent
+les sous-options de Ranking ne doivent apparaitre que si Ranking est selectionne
+
+Open Questions
+il faudra preciser plus tard si l'ordre de defense est recalcule a chaque trick ou seulement a chaque nouvelle manche selon l'option choisie

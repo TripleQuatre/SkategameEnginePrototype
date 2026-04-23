@@ -3,6 +3,7 @@ from config.match_config import MatchConfig
 from config.match_parameters import MatchParameters
 from core.state import GameState
 from core.types import AttackResolutionStatus, DefenseResolutionStatus
+from dictionary.base import DictionaryDefinition
 from dictionary.base import DictionaryResolution, DictionarySuggestion
 from match.structure.base_structure import BaseStructure
 
@@ -26,6 +27,10 @@ class GameController:
     @property
     def structure_name(self) -> str:
         return self.session.structure_name
+
+    @property
+    def dictionary_definition(self) -> DictionaryDefinition:
+        return self.session.trick_dictionary.definition
 
     def start_game(self) -> None:
         self.session.start_game()

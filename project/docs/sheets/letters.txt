@@ -1,0 +1,57 @@
+Name
+Letters
+
+Type
+rule
+
+Ensemble
+Victory
+
+Parent Rule
+None
+
+Definition
+regle de victoire qui definit la victoire a partir du systeme de lettres pris par les joueurs
+
+Purpose
+definir une logique de victoire fondee sur l'accumulation de lettres jusqu'a elimination ou evaluation de l'etat des joueurs
+
+Options
+Choice (option) : definit un mot clef correspondant aux lettres prises par l'opposition, de 10 caracteres maximum
+Time (link) : permet de lier la regle Letters a une evaluation de victoire declenchee par le temps
+Round (link) : permet de lier la regle Letters a une evaluation de victoire declenchee par un nombre de manches
+Difference (link) : permet de lier la regle Letters a une victoire definie par un ecart de lettres entre les joueurs
+
+Activation Conditions
+aucune
+
+Dependencies
+mot de lettres defini
+joueurs actifs dans la partie
+
+Interactions
+Elimination
+Time
+Round
+Difference
+Priority
+Last Chance
+
+Default Behavior
+la partie se joue selon un mot de lettres defini, et la victoire revient au dernier joueur n'ayant pas atteint la condition de defaite
+
+Advanced Behavior
+peut etre combinee a Time, Round ou Difference pour modifier le moment ou la maniere dont la victoire est evaluee
+
+Code Impact
+score par lettres
+elimination
+evaluation de victoire
+etat des joueurs
+
+UX Notes
+doit apparaitre comme une regle de victoire principale
+le mot choisi doit etre facile a configurer et clairement visible
+
+Open Questions
+faut-il limiter certains mots de lettres a des presets ou disciplines particulieres

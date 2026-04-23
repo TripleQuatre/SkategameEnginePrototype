@@ -1,0 +1,23 @@
+Name
+Announcement
+
+Type
+data
+
+Definition
+donnee de partie qui definit si le trick impose doit, peut ou ne doit pas etre annonce verbalement avant d'etre tente
+
+Purpose
+preciser le cadre declaratif de la partie avant ou pendant l'imposition d'un trick
+
+Options
+With : le trick impose doit etre annonce
+Hidden : le trick impose est annonce uniquement a l'arbitre
+Choice : le trick impose peut etre annonce ou non
+Without : le trick impose ne doit pas etre annonce
+
+UX Notes
+doit apparaitre dans les donnees de partie ou les reglages essentiels de preparation
+
+Open Questions
+aucune pour l'instant

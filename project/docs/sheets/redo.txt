@@ -1,0 +1,51 @@
+Name
+Redo
+
+Type
+rule
+
+Ensemble
+Advanced Attack & Defense
+
+Parent Rule
+None
+
+Definition
+regle avancee qui definit si un joueur peut rejouer une tentative apres une execution jugee discutable, incomplete ou insuffisamment claire par l'arbitrage
+
+Purpose
+encadrer les cas ou l'arbitrage autorise une tentative rejouee au lieu de juger immediatement l'essai comme rate
+
+Options
+Enabled (option) : autorise un redo en cas d'execution discutable
+Disabled (option) : aucune tentative supplementaire n'est autorisee ; une execution discutable est jugee comme non validee
+
+Activation Conditions
+une tentative doit etre jugee discutable par l'arbitrage
+
+Dependencies
+Tolerance
+arbitrage de validation
+
+Interactions
+Tolerance
+Attack
+Defense
+
+Default Behavior
+un redo n'est possible que si la regle est activee
+
+Advanced Behavior
+un redo ne valide pas la tentative litigieuse et la remplace par une nouvelle tentative rejouee
+
+Code Impact
+validation des tentatives
+arbitrage
+historique des essais
+compte des essais consommes
+
+UX Notes
+doit rester proche de Tolerance dans l'interface sans etre fusionnee avec elle
+
+Open Questions
+il faudra preciser plus tard si l'historique affiche explicitement la tentative litigieuse remplacee

@@ -1,0 +1,48 @@
+V9.1 CLOSURE - 2026-04-23
+
+Status
+- V9.1 is complete.
+- This version focuses on GUI/UX refinement and on preparing the project for
+  V9.2, the future GUI Simulation Harness.
+
+Delivered Features
+- Taller GUI window with a scrollable root layout
+- Refined match view with compact score tables for one_vs_one and battle
+- Clear attacker marker in the score display
+- Improved status line integration
+- Single trick search bar with integrated dropdown suggestions
+- Keyboard navigation on the main GUI flows
+- New `Setup details` view exposing the active runtime configuration
+- Stronger GUI tests covering the new visible behaviors
+- Formalized GUI oracles for future automated simulation
+
+Current V9.1 Scope
+- no new gameplay rule added
+- no harness implemented yet
+- no visual marketing redesign
+- focus kept on clarity, usability, and testability of the GUI
+
+Important GUI Behaviors Locked In
+- setup, match, history, and setup_details are now explicit GUI views
+- trick suggestions live in a dropdown attached to the search field
+- roster changes are only available between turns
+- consultation mode keeps secondary views available but blocks gameplay actions
+- keyboard flow supports Enter on the main actions and trick selection flow
+
+Preparation for V9.2
+- GUI expectations are formalized in `v9_1_gui_oracles.txt`
+- the future harness should use these oracles as the source of truth
+- the current GUI is now stable enough to be targeted by deeper automation
+
+Validation Result
+- Full test suite green at V9.1 closure time
+- Result: 317 passed, 1 warning
+- Remaining warning: Windows PytestCacheWarning on `.pytest_cache`
+
+Documentation State
+- V8 functional specs remain valid
+- GUI oracle specification now lives in:
+  - `v9_1_gui_oracles.txt`
+- GUI/interface documentation was updated in:
+  - `interfaces.txt`
+  - `tests.txt`

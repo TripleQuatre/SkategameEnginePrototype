@@ -47,6 +47,19 @@ Ce que la V8 a ajoute en pratique
 - couverture de `Repetition`
 - couverture de la persistence des tricks canoniques
 
+Ce que la V9.1 ajoute en pratique
+- couverture du layout scrollable du GUI
+- couverture du nouveau rendu de score `1v1` / `battle`
+- couverture de la recherche de trick avec dropdown integre
+- couverture de la navigation clavier utile
+- couverture de la vue `setup_details`
+- couverture de la coherence des etats GUI (`turn open`, `attack`,
+  `defense`, `end`)
+
+Preparation de V9.2
+- `docs/v9_1_gui_oracles.txt` formalise les attentes visibles du GUI
+- cette spec servira d'oracle pour le futur GUI Simulation Harness
+
 Etat V8
 - la suite complete valide le moteur, les interfaces et les parcours critiques
 - le warning residuel connu est un `PytestCacheWarning` Windows sur

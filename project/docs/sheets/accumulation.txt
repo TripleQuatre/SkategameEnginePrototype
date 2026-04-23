@@ -1,0 +1,51 @@
+Name
+Accumulation
+
+Type
+rule
+
+Ensemble
+Advanced Attack & Defense
+
+Parent Rule
+Defense
+
+Definition
+regle avancee qui permet a chaque defenseur de conserver et cumuler au fil de la partie ses tentatives defensives non utilisees
+
+Purpose
+faire evoluer le nombre d'essais defensifs disponibles en recompensant les defenses reussies rapidement
+
+Options
+Disabled (option) : par defaut, les essais defensifs non consommes ne sont pas conserves
+Enabled (option) : les essais defensifs non consommes sont ajoutes a la tentative de defense suivante du joueur
+Limit (option) : impose une limite au stock total d'essais defensifs cumules et disponibles si Accumulation est active
+
+Activation Conditions
+Defense doit etre superieur a 1
+
+Dependencies
+Defense
+
+Interactions
+Defense
+Last Chance
+Clash
+
+Default Behavior
+les essais non utilises sont perdus a la fin de chaque defense
+
+Advanced Behavior
+l'option Limit borne le stock total accumule disponible au moment d'une defense
+
+Code Impact
+gestion du stock d'essais par joueur
+resolution des defenses
+etat des joueurs
+
+UX Notes
+ne doit apparaitre que si Defense est superieur a 1
+l'option Limit ne doit apparaitre que si Accumulation est active
+
+Open Questions
+aucune pour l'instant

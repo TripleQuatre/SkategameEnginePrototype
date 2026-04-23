@@ -1,0 +1,54 @@
+Name
+Elimination
+
+Type
+rule
+
+Ensemble
+Fundamental Rules
+
+Parent Rule
+None
+
+Definition
+regle fondamentale qui definit si les joueurs sortent progressivement de la partie lorsqu'ils atteignent la condition d'elimination
+
+Purpose
+definir si la partie suit une logique d'elimination progressive des joueurs selon les conditions de defaite actives
+
+Options
+Enabled : En fonction des conditions d'elimination, le(s) joueur(s) sont elimine(s) au terme de celles-ci
+Disabled : Aucun joueur ne peut etre elimine au cours de la partie ; si aucune autre condition de fin n'est fixee, la partie peut durer indefiniment
+
+Activation Conditions
+aucune
+
+Dependencies
+conditions de defaite ou de sortie de partie actives
+
+Interactions
+Letters
+Points
+Time
+Round
+Difference
+Priority
+
+Default Behavior
+Enabled
+
+Advanced Behavior
+peut etre desactivee pour permettre des parties sans elimination
+
+Code Impact
+conditions de fin
+statut des joueurs
+evaluation de victoire
+flow global de la partie
+
+UX Notes
+doit apparaitre comme une regle fondamentale simple a activer ou desactiver
+si desactivee, l'interface devrait signaler qu'une autre condition de fin est recommandee
+
+Open Questions
+faut-il autoriser des formes partielles d'elimination selon le mode de jeu

@@ -1,0 +1,57 @@
+Name
+Points
+
+Type
+rule
+
+Ensemble
+Victory
+
+Parent Rule
+None
+
+Definition
+regle de victoire qui definit la victoire a partir du score en points des joueurs
+
+Purpose
+definir une logique de victoire fondee sur l'accumulation de points au cours de la partie
+
+Options
+Limit (option) : permet de definir un nombre maximum de points a atteindre pour gagner la partie
+Time (link) : permet de lier la regle Points a une evaluation de victoire declenchee par le temps
+Round (link) : permet de lier la regle Points a une evaluation de victoire declenchee par un nombre de manches
+Difference (link) : permet de lier la regle Points a une victoire definie par un ecart de points entre les joueurs
+
+Activation Conditions
+un systeme de points doit etre actif dans la partie
+
+Dependencies
+scoring en points
+joueurs actifs dans la partie
+
+Interactions
+Time
+Round
+Difference
+Priority
+Clash
+Advantage
+
+Default Behavior
+la victoire est determinee a partir du score en points selon l'option active ou les regles liees
+
+Advanced Behavior
+peut etre combinee a Time, Round ou Difference pour modifier le moment ou la maniere dont la victoire est evaluee
+
+Code Impact
+score en points
+evaluation de victoire
+classement des joueurs
+etat des joueurs
+
+UX Notes
+ne doit apparaitre que si une logique de score en points est activee
+les liens vers Time, Round et Difference doivent rester lisibles sans alourdir la configuration
+
+Open Questions
+faut-il permettre une coexistence complete entre Letters et Points dans toutes les configurations

@@ -1,0 +1,272 @@
+Documentation V9.1 - Oracles GUI
+
+Objectif
+Ce document formalise les attentes visibles du GUI apres la refonte V9.1.
+Il sert de base a la future V9.2, qui devra piloter le GUI et verifier ces
+attentes automatiquement.
+
+Definition
+Un oracle GUI est une regle simple de verite :
+- dans un etat donne du moteur
+- sur une vue donnee
+- certains elements doivent etre visibles
+- certains controles doivent etre actifs ou inactifs
+- certaines transitions doivent produire un resultat visible attendu
+
+Portee V9.1
+Les oracles ci-dessous couvrent :
+- `setup`
+- `match`
+- `history`
+- `setup_details`
+- les transitions critiques entre ces vues
+
+Hors portee V9.1
+- verification de style pixel perfect
+- verification de couleurs precises
+- verification de placement exact a l'ecran
+- analyse libre de captures
+
+1. Oracles de vue `setup`
+
+Attente generale
+- au demarrage de l'application, la vue active est `setup`
+- le texte de statut affiche : `Configure the game to begin.`
+
+Controles visibles
+- choix `preset` / `custom`
+- combobox de preset
+- nombre de joueurs
+- noms des joueurs
+- mot
+- attack attempts
+- defense attempts
+- `Uniqueness`
+- `Repetition`
+- bouton `Start game`
+- bouton `Load saved game`
+
+Mode preset
+- le preset actif est visible dans la combobox
+- les champs derives du preset sont verrouilles
+- `Uniqueness` et `Repetition` reflètent les valeurs du preset
+
+Mode custom
+- les champs de configuration sont modifiables
+- `Repetition limit` est desactive si `Repetition = disabled`
+- `Repetition limit` est active sinon
+
+Navigation clavier
+- le focus clavier logique arrive sur le preset en entree de vue
+- le bouton `Start game` supporte `Entree`
+
+Transition attendue
+- si `Start game` reussit, la vue active devient `match`
+
+2. Oracles de vue `match`
+
+Attente generale
+- la vue `match` presente toujours :
+  - score
+  - contexte de phase
+  - statut
+  - actions de session
+  - zone de recherche de trick
+
+Score `1v1`
+- le score affiche le meme mot de reference des deux cotes
+- chaque joueur montre uniquement sa progression reelle sur ce mot
+- le joueur attaquant est indique par une barre au-dessus de sa colonne
+
+Score `battle`
+- le score est un tableau compact horizontal
+- chaque joueur occupe une colonne
+- la premiere ligne affiche le marqueur d'attaquant
+- la deuxieme ligne affiche les noms
+- la troisieme ligne affiche la progression du mot
+
+Etat `turn open`
+Condition :
+- `phase = TURN`
+- `current_trick = None`
+
+Attentes
+- le titre indique que l'attaquant definit le prochain trick
+- la description liste les defenseurs actifs
+- la barre de recherche est active
+- `Landed` / `Missed` sont desactives
+- `Set trick` / `Fail turn` restent desactives tant qu'aucun trick terminal
+  n'est selectionne
+- `Add player` / `Remove player` sont actifs
+- le focus clavier logique arrive sur la barre de recherche
+
+Etat `attack`
+Condition :
+- `phase = TURN`
+- `current_trick != None`
+- `turn_phase = ATTACK`
+
+Attentes
+- le titre indique que l'attaquant attaque
+- le trick courant est visible
+- la description affiche les defenseurs restants
+- `Landed` / `Missed` sont actifs
+- la barre de recherche est inactive
+- `Set trick` / `Fail turn` sont inactifs
+- `Add player` / `Remove player` sont desactives
+- le focus clavier logique arrive sur `Landed`
+
+Etat `defense`
+Condition :
+- `phase = TURN`
+- `current_trick != None`
+- `turn_phase = DEFENSE`
+
+Attentes
+- le titre reste sur l'attaque en cours
+- le trick courant est visible
+- la description affiche le defenseur courant et les suivants
+- `Landed` / `Missed` sont actifs
+- la barre de recherche est inactive
+- `Add player` / `Remove player` sont desactives
+- le focus clavier logique arrive sur `Landed`
+
+Etat `end`
+Condition :
+- `phase = END`
+
+Attentes
+- le titre affiche `Game over`
+- la description affiche explicitement le mode consultation
+- la description cite : `Undo, Save, Load, History, Setup details or New game`
+- la barre de recherche est inactive
+- `Landed` / `Missed` sont desactives
+- `Add player` / `Remove player` sont desactives
+- `History`, `Setup details`, `Undo`, `Save`, `Load`, `New game` restent
+  disponibles
+- le focus clavier logique arrive sur `Undo`
+
+3. Oracles de recherche de trick
+
+Attente generale
+- la recherche de trick se fait dans une seule barre de recherche
+- les suggestions apparaissent dans un dropdown rattache au champ
+
+Entrée vide
+- si le champ est vide, aucun dropdown ne doit rester ouvert
+- aucun trick n'est selectionne
+- `Set trick` et `Fail turn` sont desactives
+
+Entrée invalide
+- si aucune suggestion ne correspond, le dropdown est replie
+- le statut informe qu'aucune suggestion ne correspond
+- `Set trick` et `Fail turn` restent desactives
+
+Entrée partielle valide
+- si des suggestions existent, le dropdown est visible
+- les suggestions terminales et continuations peuvent coexister
+- tant qu'une suggestion terminale n'est pas selectionnee,
+  `Set trick` et `Fail turn` restent desactives
+
+Selection d'une suggestion terminale
+- la barre prend la forme canonique du trick
+- le statut indique qu'un trick valide est selectionne
+- `Set trick` et `Fail turn` deviennent actifs
+- le focus logique peut aller vers `Set trick`
+
+Selection d'une continuation
+- la barre prend la continuation choisie
+- le statut indique qu'il faut affiner
+- le dropdown est recalculé
+- le focus logique retourne sur la barre
+
+Navigation clavier
+- `Fleche bas` depuis la barre selectionne la premiere suggestion
+- `Entree` dans la barre :
+  - confirme le trick si un terminal est deja selectionne
+  - sinon descend sur la premiere suggestion disponible
+- `Entree` sur une suggestion applique cette suggestion
+
+4. Oracles de vue `history`
+
+Attente generale
+- la vue `history` presente l'historique tabulaire de la partie
+- le bouton `Back to game` est visible
+
+Transitions attendues
+- ouvrir `History` depuis `match` affiche la vue `history`
+- `Back to game` retourne a `match`
+- le focus logique arrive sur `Back to game`
+
+5. Oracles de vue `setup_details`
+
+Attente generale
+- la vue `setup_details` est accessible depuis `match`
+- elle affiche la configuration active reelle de la partie
+- elle ne depend pas d'une copie locale des champs setup
+
+Contenu minimum attendu
+- preset ou `custom`
+- structure
+- liste des joueurs
+- mot
+- attack attempts
+- defense attempts
+- `Uniqueness`
+- `Repetition`
+- dictionnaire actif :
+  - sport
+  - profile
+  - max segments
+
+Transitions attendues
+- ouvrir `Setup details` depuis `match` affiche la vue `setup_details`
+- `Back to game` retourne a `match`
+- le focus logique arrive sur `Back to game`
+
+6. Oracles de transitions critiques
+
+Demarrage de partie
+- `setup` -> `match`
+- statut mis a jour
+- score visible
+- boutons et champs coherents avec un `turn open`
+
+Undo vers setup initial
+- si `undo` restaure un snapshot `Phase.SETUP`, la vue active redevient `setup`
+- la saisie de trick ne doit plus proposer de suggestions actives
+- les controles de match ne doivent pas rester utilisables
+
+Retour manuel au setup
+- `New game` vide le controller
+- la vue redevient `setup`
+- le champ trick est vide
+- le statut revient a `Configure the game to begin.`
+
+Consultation de fin de partie
+- une partie finie reste consultable
+- `History` et `Setup details` restent accessibles
+- les controles de resolution et de roster sont bloques
+
+7. Oracles de robustesse minimale pour V9.2
+
+Le futur harness devra etre capable de verifier automatiquement :
+- la vue active
+- le texte de statut
+- l'etat `normal/disabled` des boutons critiques
+- la presence ou non du dropdown de trick
+- le texte principal de phase
+- le texte du score visible
+- le contenu textuel de `setup_details`
+- les transitions `setup <-> match <-> history <-> setup_details`
+
+8. Liens avec la suite
+
+V9.1
+- stabilise le GUI et fige ces attentes
+
+V9.2
+- devra piloter le GUI reel
+- lire l'etat visible
+- comparer l'etat observe aux oracles ci-dessus
+- produire un rapport lisible en cas d'ecart

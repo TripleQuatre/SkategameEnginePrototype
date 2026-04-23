@@ -1,0 +1,57 @@
+Name
+Advantage
+
+Type
+rule
+
+Ensemble
+Attack & Defense
+
+Parent Rule
+None
+
+Definition
+regle qui definit dans quelles conditions l'attaquant conserve son role apres un echange
+
+Purpose
+modifier la rotation standard des joueurs en permettant a l'attaquant de conserver la main selon le resultat de l'echange
+
+Options
+Normal (option) : tant que l'opposant ne reussit pas sa figure, le lanceur continue d'attaquer
+Total (option) : tant que le lanceur reussit sa figure, il continue d'attaquer, que les opposants reussissent ou non
+Disabled (option) : desactive l'avantage, le premier defenseur devient le lanceur suivant
+
+Activation Conditions
+aucune
+
+Dependencies
+rotation standard des joueurs
+resolution d'attaque et de defense
+
+Interactions
+Order
+Attack Order
+Defense Order
+Normal Advantage
+Total Advantage
+Clash
+Points
+
+Default Behavior
+si l'avantage est active, l'attaquant peut conserver son role selon l'option choisie
+
+Advanced Behavior
+les variantes Normal et Total peuvent etre precisees par des regles avancees dediees
+
+Code Impact
+rotation des joueurs
+flow de tour
+logique de manche
+evaluation de score eventuelle
+
+UX Notes
+doit etre presentee comme une regle structurante du deroulement de la partie
+la difference entre Normal et Total doit etre explicitee tres clairement
+
+Open Questions
+il faudra preciser plus tard comment l'avantage interagit avec certains cas de clash ou d'elimination

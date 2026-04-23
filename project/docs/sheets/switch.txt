@@ -1,0 +1,55 @@
+Name
+Switch
+
+Type
+rule
+
+Ensemble
+Special Rules
+
+Parent Rule
+None
+
+Definition
+regle specifique qui definit dans quelles conditions les tricks realises en switch sont autorises au cours de la partie
+
+Purpose
+encadrer l'autorisation des tricks en switch selon le niveau d'exigence choisi pour la discipline ou la partie
+
+Options
+Enabled (option) : tous les switch sont autorises
+Normal (option) : pour lancer un switch, l'attaquant doit avoir deja valide lui-meme la figure dans son sens normal au cours de la partie, variations incluses
+Verified (option) : pour lancer un switch, l'attaquant doit d'abord valider la figure dans son sens normal puis reussir sa version switch dans le cadre du meme enchainement d'imposition ; la version normale n'est pas comptee comme validee separement pour l'instant
+Disabled (option) : aucun switch n'est autorise
+
+Activation Conditions
+la discipline ou la pratique doit reconnaitre le switch comme variation pertinente
+
+Dependencies
+Attack
+historique des tricks valides
+equivalence entre figure normale et figure switch
+
+Interactions
+Uniqueness
+Attack
+Tolerance
+Out
+
+Default Behavior
+les switch sont autorises ou non selon l'option choisie
+
+Advanced Behavior
+les options Normal et Verified ajoutent une condition prealable de validation du trick en sens normal
+
+Code Impact
+validation d'action
+historique des tricks valides
+arbitrage d'autorisation des tricks
+
+UX Notes
+ne doit apparaitre que dans les disciplines ou la notion de switch a un sens clair
+la difference entre Normal et Verified doit etre expliquee simplement
+
+Open Questions
+note d'intention : envisager plus tard que la version normale realisee dans Verified puisse etre comptee comme validee

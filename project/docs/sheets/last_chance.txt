@@ -1,0 +1,61 @@
+Name
+Last Chance
+
+Type
+rule
+
+Ensemble
+Advanced Attack & Defense
+
+Parent Rule
+Defense
+
+Definition
+regle avancee qui definit si un defenseur peut beneficier d'une ultime tentative supplementaire au cours de la partie
+
+Purpose
+ajouter une possibilite exceptionnelle de survie ou de rattrapage en defense
+
+Options
+Last Try (option) : un essai defensif supplementaire est accorde au dernier tour possible tant que celui-ci peut etre le dernier
+Free (option) : un seul et unique essai defensif supplementaire peut etre consomme au cours de toute la partie
+Disabled (option) : aucune derniere chance n'est accordee
+
+Activation Conditions
+un dernier tour possible doit pouvoir etre determine
+la regle depend d'au moins une logique de fin comme Time, Round ou Difference selon la configuration active
+
+Dependencies
+Defense
+Letters
+Time
+Round
+Difference
+
+Interactions
+Defense
+Letters
+Elimination
+Accumulation
+Time
+Round
+Difference
+
+Default Behavior
+aucune derniere chance n'est accordee si la regle est desactivee
+
+Advanced Behavior
+l'option Last Try depend de la capacite du systeme a identifier qu'un tour peut etre le dernier
+
+Code Impact
+resolution des defenses
+conditions d'elimination
+suivi des bonus consommes
+detection de fin possible de partie
+
+UX Notes
+doit etre presentee comme une regle exceptionnelle de survie
+l'option Last Try ne devrait apparaitre que si la configuration permet d'identifier un dernier tour possible
+
+Open Questions
+il faudra preciser plus tard tous les cas exacts ou un tour est considere comme potentiellement dernier

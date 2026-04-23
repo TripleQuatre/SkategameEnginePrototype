@@ -36,19 +36,29 @@ GUI
 - permet :
   - setup de partie
   - chargement d'une sauvegarde
-  - saisie assistee des tricks avec liste de suggestions
+  - saisie assistee des tricks avec barre de recherche et dropdown integre
   - blocage visuel si aucun trick terminal n'est selectionne
   - resolution d'attaque et de defense
   - undo
   - save/load
   - affichage de l'historique
+  - affichage de `setup_details`
 
-Choix V8 du GUI
+Choix V9.1 du GUI
 - la selection de suggestion est explicite
 - les boutons critiques restent bloques tant que la saisie n'est pas valide
 - l'affichage prefere le label canonique
+- la fenetre utilise un conteneur scrollable global
+- le score `1v1` et `battle` passent par un rendu tabulaire compact
+- la navigation clavier couvre les actions principales
+- une vue `setup_details` expose la configuration active de la partie
 
-Etat V8
+Oracles GUI
+- les attentes visibles du GUI sont formalisees dans `docs/v9_1_gui_oracles.txt`
+- ce document prepare le futur simulateur GUI de V9.2
+
+Etat V9.1
 - CLI et GUI sont alignes sur le dictionnaire
 - la saisie libre pure n'est plus le chemin normal
+- le GUI est plus lisible et plus testable
 - les interfaces restent utilitaires, pas encore produit finalise

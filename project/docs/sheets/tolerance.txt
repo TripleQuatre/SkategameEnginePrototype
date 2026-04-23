@@ -1,0 +1,22 @@
+Name
+Tolerance
+
+Type
+data
+
+Definition
+donnee de partie qui definit le niveau d'exigence de l'arbitrage dans la validation d'un trick
+
+Purpose
+preciser a quel point l'arbitrage de la partie est souple ou strict dans l'evaluation d'un trick
+
+Options
+Maximum : permet une validation plus souple, adaptee a l'apprentissage
+Normal : applique le niveau d'exigence standard
+Minimum : impose une validation tres stricte, sans approximation
+
+UX Notes
+doit apparaitre dans les donnees de partie, potentiellement a proximite de Redo
+
+Open Questions
+il faudra verifier plus tard si les noms Maximum / Normal / Minimum sont les plus clairs

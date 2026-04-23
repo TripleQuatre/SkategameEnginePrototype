@@ -1,0 +1,57 @@
+Name
+Difference
+
+Type
+rule
+
+Ensemble
+Advanced Victory
+
+Parent Rule
+None
+
+Definition
+regle avancee de victoire qui definit la victoire a partir d'un ecart de score ou de lettres entre les joueurs
+
+Purpose
+ajouter une condition de victoire fondee sur l'ecart entre les joueurs, immediatement ou a partir d'un certain moment de la partie
+
+Options
+Choice (option) : par defaut le nombre de lettres devient l'ecart necessaire pour gagner la partie, sinon une valeur personnalisee peut etre entree
+Round (link) : permet d'activer la prise en compte de l'ecart seulement apres un certain nombre de manches, sans depasser la limite de Round
+Time (link) : permet d'activer la prise en compte de l'ecart seulement apres un certain temps, sans depasser la limite de Time
+
+Activation Conditions
+au moins une logique de score ou de lettres doit etre active dans la partie
+desactivee en battle pour l'instant
+
+Dependencies
+Letters ou Points
+ecart mesurable entre joueurs
+
+Interactions
+Letters
+Points
+Time
+Round
+Priority
+Elimination
+
+Default Behavior
+la victoire peut etre declenchee lorsqu'un ecart defini entre les joueurs est atteint
+
+Advanced Behavior
+peut etre retardee ou conditionnee par Time ou Round avant de devenir active
+
+Code Impact
+evaluation d'ecart
+declenchement de victoire
+classement des joueurs
+conditions de fin
+
+UX Notes
+doit apparaitre comme une regle avancee de victoire
+doit etre masquee ou desactivee en battle pour l'instant
+
+Open Questions
+note d'intention : envisager plus tard une adaptation au battle

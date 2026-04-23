@@ -1,0 +1,57 @@
+Name
+Attack Order
+
+Type
+rule
+
+Ensemble
+Advanced Order
+
+Parent Rule
+None
+
+Definition
+regle avancee qui permet de modifier la logique de l'ordre d'attaque en cours de partie
+
+Purpose
+faire evoluer l'ordre d'attaque standard entre les manches selon une logique differente de celle fixee au debut de la partie
+
+Options
+Rotation : a chaque nouvelle manche, l'ordre d'attaque est decale pour changer le premier attaquant
+Random : a chaque nouvelle manche, un nouvel ordre d'attaque est tire au sort
+Ranking : a chaque nouvelle manche, l'ordre d'attaque est redefini selon l'etat courant de la partie
+- Score Low : les joueurs avec le score le plus faible passent en priorite
+- Score High : les joueurs avec le score le plus eleve passent en priorite
+
+Activation Conditions
+la partie doit comporter au moins deux manches ou une logique de reordonnancement entre manches
+
+Dependencies
+Order
+etat courant de la partie
+
+Interactions
+Round
+Letters
+Points
+Elimination
+Advantage
+
+Default Behavior
+l'ordre d'attaque est redefini uniquement entre deux manches selon l'option choisie
+
+Advanced Behavior
+l'option Ranking ajoute une logique de redefinition dependante du score courant des joueurs
+
+Code Impact
+ordre de tour
+rotation des joueurs
+logique de manche
+evaluation de l'etat de partie
+
+UX Notes
+doit apparaitre comme une regle avancee liee a l'ordre
+les sous-options de Ranking ne doivent apparaitre que si Ranking est selectionne
+
+Open Questions
+il faudra definir plus tard comment le score est compare precisement selon le mode de victoire actif

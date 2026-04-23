@@ -1,0 +1,55 @@
+Name
+Order
+
+Type
+rule
+
+Ensemble
+Fundamental Rules
+
+Parent Rule
+None
+
+Definition
+regle fondamentale qui definit l'ordre d'attaque standard des joueurs, fixe au debut de la partie
+
+Purpose
+determiner dans quel ordre les joueurs occupent le role d'attaquant tout au long de la partie selon une logique initiale stable
+
+Options
+Relevance : Defini selon un nombre d'options fixes : age, temps de pratique, alphabetique...
+Random : Le choix de l'ordre du passage des joueurs est defini aleatoirement
+Choice : Defini selon un choix personnalise lors de la selection des joueurs
+
+Activation Conditions
+aucune
+
+Dependencies
+liste des joueurs
+criteres de classement disponibles si l'option Relevance est utilisee
+
+Interactions
+Attack Order
+Defense Order
+Advantage
+Clash
+Round
+
+Default Behavior
+ordre fixe au debut de la partie et conserve pendant toute sa duree
+
+Advanced Behavior
+peut servir de base a des regles avancees qui modifient ensuite l'ordre d'attaque ou structurent celui des defenseurs
+
+Code Impact
+ordre de tour
+rotation des joueurs
+initialisation de partie
+logique de manche
+
+UX Notes
+doit etre configure tres tot dans la preparation de partie
+si Relevance est choisi, l'interface doit ensuite proposer clairement le critere applique
+
+Open Questions
+quels criteres exacts doivent etre inclus dans Relevance des la premiere version

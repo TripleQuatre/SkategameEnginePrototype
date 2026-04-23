@@ -55,10 +55,17 @@ def test_gui_refresh_game_view_shows_consultation_mode_for_finished_game(
     assert gui_app.phase_title_label.cget("text") == "Game over"
     assert (
         gui_app.phase_description_label.cget("text")
-        == "Consultation mode. Use Undo, Save, Load, History or New game."
+        == "Consultation mode. Use Undo, Save, Load, History, Setup details or New game."
     )
     assert str(gui_app.confirm_trick_button.cget("state")) == "disabled"
     assert str(gui_app.success_button.cget("state")) == "disabled"
+
+
+def test_gui_uses_scrollable_root_layout(gui_app: GUIApp) -> None:
+    assert gui_app.scroll_host is not None
+    assert gui_app.scroll_canvas is not None
+    assert gui_app.scrollbar is not None
+    assert gui_app.current_view == "setup"
 
 
 def test_gui_history_view_renders_battle_turns(
@@ -128,13 +135,22 @@ def test_gui_start_game_with_three_players_uses_battle_mode(
 
     assert gui_app.matchup_label is not None
     assert gui_app.preset_label is not None
+    assert gui_app.score_frame is not None
     assert gui_app.phase_title_label is not None
     assert gui_app.phase_description_label is not None
 
-    assert gui_app.matchup_label.cget("text") == "STAN / DENISE / MARGAUX"
     assert gui_app.preset_label.cget("text") == "Preset: battle_standard"
     assert gui_app.phase_title_label.cget("text") == "Denise sets the next trick"
     assert gui_app.phase_description_label.cget("text") == "Defenders: Stan, Margaux"
+
+    texts = {
+        (int(child.grid_info()["row"]), int(child.grid_info()["column"])): child.cget("text")
+        for child in gui_app.score_frame.winfo_children()
+    }
+    assert texts[(0, 2)] == "━━━━"
+    assert texts[(1, 0)] == "STAN"
+    assert texts[(1, 2)] == "DENISE"
+    assert texts[(1, 4)] == "MARGAUX"
 
 
 def test_gui_two_players_default_to_classic_skate_preset(gui_app: GUIApp) -> None:
@@ -217,6 +233,159 @@ def test_gui_refresh_game_view_shows_attack_phase_details(gui_app: GUIApp) -> No
     assert str(gui_app.success_button.cget("state")) == "normal"
 
 
+def test_gui_roster_buttons_are_only_enabled_between_turns(gui_app: GUIApp) -> None:
+    gui_app.setup_mode_var.set("custom")
+    gui_app.player_name_vars[0].set("Stan")
+    gui_app.player_name_vars[1].set("Denise")
+    gui_app._start_game()
+
+    assert gui_app.add_player_button is not None
+    assert gui_app.remove_player_button is not None
+    assert str(gui_app.add_player_button.cget("state")) == "normal"
+    assert str(gui_app.remove_player_button.cget("state")) == "normal"
+
+    assert gui_app.controller is not None
+    gui_app.controller.start_turn("kickflip")
+    gui_app._refresh_game_view()
+
+    assert str(gui_app.add_player_button.cget("state")) == "disabled"
+    assert str(gui_app.remove_player_button.cget("state")) == "disabled"
+
+
+def test_gui_setup_details_view_renders_custom_match_configuration(
+    gui_app: GUIApp,
+) -> None:
+    gui_app.setup_mode_var.set("custom")
+    gui_app.player_count_var.set(3)
+    gui_app._rebuild_player_inputs()
+    gui_app.player_name_vars[0].set("Stan")
+    gui_app.player_name_vars[1].set("Denise")
+    gui_app.player_name_vars[2].set("Frank")
+    gui_app.custom_word_var.set("BLADE")
+    gui_app.custom_attack_attempts_var.set(2)
+    gui_app.custom_defense_attempts_var.set(3)
+    gui_app.custom_uniqueness_var.set(False)
+    gui_app.custom_repetition_mode_var.set("common")
+    gui_app.custom_repetition_limit_var.set(4)
+    gui_app._start_game()
+
+    assert gui_app.setup_details_button is not None
+    assert gui_app.setup_details_body_label is not None
+
+    gui_app.setup_details_button.invoke()
+
+    body = gui_app.setup_details_body_label.cget("text")
+    assert gui_app.current_view == "setup_details"
+    assert "Preset: custom" in body
+    assert "Structure: battle" in body
+    assert "Players: Stan, Denise, Frank" in body
+    assert "Word: BLADE" in body
+    assert "Attack attempts: 2" in body
+    assert "Defense attempts: 3" in body
+    assert "Uniqueness: disabled" in body
+    assert "Repetition: common (limit 4)" in body
+    assert "Dictionary sport: inline" in body
+    assert "Dictionary profile: inline_primary_grind" in body
+
+
+def test_gui_setup_details_view_renders_preset_configuration(
+    gui_app: GUIApp,
+) -> None:
+    gui_app.player_count_var.set(3)
+    gui_app._rebuild_player_inputs()
+    gui_app.player_name_vars[0].set("Stan")
+    gui_app.player_name_vars[1].set("Denise")
+    gui_app.player_name_vars[2].set("Frank")
+    gui_app.preset_var.set("battle_common_v8")
+    gui_app._start_game()
+
+    assert gui_app.setup_details_body_label is not None
+    gui_app._show_setup_details_view()
+
+    body = gui_app.setup_details_body_label.cget("text")
+    assert "Preset: battle_common_v8" in body
+    assert "Uniqueness: enabled" in body
+    assert "Repetition: common (limit 3)" in body
+
+
+def test_gui_setup_details_view_can_return_to_game(gui_app: GUIApp) -> None:
+    gui_app.player_name_vars[0].set("Stan")
+    gui_app.player_name_vars[1].set("Denise")
+    gui_app._start_game()
+
+    assert gui_app.back_from_setup_details_button is not None
+    gui_app._show_setup_details_view()
+    assert gui_app.current_view == "setup_details"
+
+    gui_app.back_from_setup_details_button.invoke()
+    assert gui_app.current_view == "game"
+
+
+def test_gui_match_view_renders_one_vs_one_score_table(gui_app: GUIApp) -> None:
+    gui_app.player_name_vars[0].set("Stan")
+    gui_app.player_name_vars[1].set("Denise")
+    gui_app.custom_word_var.set("SKATE")
+    gui_app._start_game()
+
+    assert gui_app.controller is not None
+    state = gui_app.controller.get_state()
+    state.players[0].score = 2
+    state.players[1].score = 5
+
+    gui_app._refresh_game_view()
+
+    assert gui_app.score_frame is not None
+    texts = {
+        (int(child.grid_info()["row"]), int(child.grid_info()["column"])): child.cget("text")
+        for child in gui_app.score_frame.winfo_children()
+    }
+
+    assert texts[(0, 0)] == "━━━━"
+    assert texts[(1, 0)] == "STAN"
+    assert texts[(1, 2)] == "DENISE"
+    assert texts[(2, 0)] == "SK"
+    assert texts[(2, 2)] == "SKATE"
+
+
+def test_gui_match_view_renders_battle_score_table(gui_app: GUIApp, monkeypatch) -> None:
+    def fixed_shuffle(values: list[int]) -> None:
+        values[:] = [1, 2, 0]
+
+    monkeypatch.setattr(battle_structure_module.random, "shuffle", fixed_shuffle)
+
+    gui_app.player_count_var.set(3)
+    gui_app._rebuild_player_inputs()
+    gui_app.player_name_vars[0].set("Stan")
+    gui_app.player_name_vars[1].set("Denise")
+    gui_app.player_name_vars[2].set("Frank")
+    gui_app.custom_word_var.set("SKATE")
+    gui_app.setup_mode_var.set("custom")
+    gui_app._start_game()
+
+    assert gui_app.controller is not None
+    state = gui_app.controller.get_state()
+    state.players[0].score = 2
+    state.players[1].score = 3
+    state.players[2].score = 4
+
+    gui_app._refresh_game_view()
+
+    assert gui_app.score_frame is not None
+    texts = {
+        (int(child.grid_info()["row"]), int(child.grid_info()["column"])): child.cget("text")
+        for child in gui_app.score_frame.winfo_children()
+    }
+
+    assert texts[(0, 0)] == ""
+    assert texts[(0, 2)] == "━━━━"
+    assert texts[(1, 0)] == "STAN"
+    assert texts[(1, 2)] == "DENISE"
+    assert texts[(1, 4)] == "FRANK"
+    assert texts[(2, 0)] == "SK"
+    assert texts[(2, 2)] == "SKA"
+    assert texts[(2, 4)] == "SKAT"
+
+
 def test_gui_trick_input_requires_selecting_a_terminal_suggestion(
     gui_app: GUIApp,
 ) -> None:
@@ -226,6 +395,7 @@ def test_gui_trick_input_requires_selecting_a_terminal_suggestion(
     gui_app._start_game()
 
     assert gui_app.confirm_trick_button is not None
+    assert gui_app.trick_dropdown_frame is not None
     assert gui_app.trick_suggestions_listbox is not None
 
     gui_app.trick_var.set("switch soul")
@@ -233,6 +403,7 @@ def test_gui_trick_input_requires_selecting_a_terminal_suggestion(
 
     suggestions = list(gui_app.trick_suggestions_listbox.get(0, tk.END))
     assert any("Soul Switch" in suggestion for suggestion in suggestions)
+    assert gui_app.trick_dropdown_frame.winfo_manager() == "grid"
     assert str(gui_app.confirm_trick_button.cget("state")) == "disabled"
 
     selected_index = next(
@@ -243,6 +414,110 @@ def test_gui_trick_input_requires_selecting_a_terminal_suggestion(
 
     assert gui_app.trick_var.get() == "Soul Switch"
     assert str(gui_app.confirm_trick_button.cget("state")) == "normal"
+
+
+def test_gui_keyboard_navigation_can_select_and_confirm_trick(
+    gui_app: GUIApp,
+) -> None:
+    gui_app.setup_mode_var.set("custom")
+    gui_app.player_name_vars[0].set("Stan")
+    gui_app.player_name_vars[1].set("Denise")
+    gui_app._start_game()
+
+    assert gui_app.controller is not None
+    assert gui_app.trick_suggestions_listbox is not None
+    assert gui_app.confirm_trick_button is not None
+
+    gui_app.trick_var.set("switch soul")
+    gui_app._refresh_trick_suggestions()
+
+    selected_index = next(
+        index
+        for index, suggestion in enumerate(gui_app._current_trick_suggestions)
+        if suggestion.label == "Soul Switch"
+    )
+    gui_app.trick_suggestions_listbox.selection_clear(0, tk.END)
+    gui_app.trick_suggestions_listbox.selection_set(selected_index)
+    gui_app.trick_suggestions_listbox.activate(selected_index)
+    gui_app._handle_trick_suggestion_activate()
+
+    assert gui_app.trick_var.get() == "Soul Switch"
+    assert str(gui_app.confirm_trick_button.cget("state")) == "normal"
+
+    assert gui_app.confirm_trick_button.bind("<Return>") != ""
+    gui_app.confirm_trick_button.invoke()
+
+    assert gui_app.controller.get_state().current_trick == "Soul Switch"
+    assert gui_app.controller.get_state().phase == Phase.TURN
+
+
+def test_gui_trick_entry_submit_selects_first_suggestion_when_needed(
+    gui_app: GUIApp,
+) -> None:
+    gui_app.setup_mode_var.set("custom")
+    gui_app.player_name_vars[0].set("Stan")
+    gui_app.player_name_vars[1].set("Denise")
+    gui_app._start_game()
+
+    assert gui_app.trick_suggestions_listbox is not None
+
+    gui_app.trick_var.set("switch soul")
+    gui_app._refresh_trick_suggestions()
+
+    result = gui_app._handle_trick_entry_submit()
+
+    assert result == "break"
+    assert gui_app.trick_suggestions_listbox.curselection() == (0,)
+
+
+def test_gui_trick_entry_submit_confirms_selected_terminal_trick(
+    gui_app: GUIApp,
+) -> None:
+    gui_app.setup_mode_var.set("custom")
+    gui_app.player_name_vars[0].set("Stan")
+    gui_app.player_name_vars[1].set("Denise")
+    gui_app._start_game()
+
+    assert gui_app.controller is not None
+    assert gui_app.trick_suggestions_listbox is not None
+
+    gui_app.trick_var.set("switch soul")
+    gui_app._refresh_trick_suggestions()
+
+    selected_index = next(
+        index
+        for index, suggestion in enumerate(gui_app._current_trick_suggestions)
+        if suggestion.label == "Soul Switch"
+    )
+    gui_app.trick_suggestions_listbox.selection_clear(0, tk.END)
+    gui_app.trick_suggestions_listbox.selection_set(selected_index)
+    gui_app.trick_suggestions_listbox.activate(selected_index)
+    gui_app._handle_trick_suggestion_selection()
+
+    result = gui_app._handle_trick_entry_submit()
+
+    assert result == "break"
+    assert gui_app.controller.get_state().current_trick == "Soul Switch"
+
+
+def test_gui_start_button_supports_return_activation(gui_app: GUIApp) -> None:
+    assert gui_app.start_game_button is not None
+    assert gui_app.start_game_button.bind("<Return>") != ""
+
+    gui_app.player_name_vars[0].set("Stan")
+    gui_app.player_name_vars[1].set("Denise")
+    gui_app.start_game_button.invoke()
+
+    assert gui_app.controller is not None
+    assert gui_app.current_view == "game"
+
+
+def test_gui_show_game_view_without_controller_returns_to_setup(gui_app: GUIApp) -> None:
+    gui_app._show_view("history")
+
+    gui_app._show_game_view()
+
+    assert gui_app.current_view == "setup"
 
 
 def test_gui_resolve_buttons_can_drive_attack_phase(gui_app: GUIApp) -> None:
@@ -267,6 +542,33 @@ def test_gui_resolve_buttons_can_drive_attack_phase(gui_app: GUIApp) -> None:
     gui_app._resolve_defense(True)
     assert gui_app.controller.get_state().turn_phase == TurnPhase.DEFENSE
     assert gui_app.status_var.get() == "Stan landed 'kickflip' to set the trick."
+
+
+def test_gui_finished_game_keeps_secondary_views_available_but_roster_locked(
+    gui_app: GUIApp,
+) -> None:
+    gui_app.setup_mode_var.set("custom")
+    gui_app.player_name_vars[0].set("Stan")
+    gui_app.player_name_vars[1].set("Denise")
+    gui_app.custom_word_var.set("S")
+    gui_app.custom_defense_attempts_var.set(1)
+    gui_app._start_game()
+
+    assert gui_app.controller is not None
+    assert gui_app.setup_details_button is not None
+    assert gui_app.history_button is not None
+    assert gui_app.add_player_button is not None
+    assert gui_app.remove_player_button is not None
+
+    gui_app.controller.start_turn("soul")
+    gui_app.controller.resolve_defense(False)
+    gui_app._refresh_game_view()
+
+    assert gui_app.controller.get_state().phase == Phase.END
+    assert str(gui_app.setup_details_button.cget("state")) == "normal"
+    assert str(gui_app.history_button.cget("state")) == "normal"
+    assert str(gui_app.add_player_button.cget("state")) == "disabled"
+    assert str(gui_app.remove_player_button.cget("state")) == "disabled"
 
 
 def test_gui_can_add_player_between_turns(gui_app: GUIApp, monkeypatch) -> None:
@@ -410,6 +712,8 @@ def test_gui_undo_to_initial_snapshot_returns_to_setup_without_trick_input_bug(
     gui_app._refresh_trick_suggestions()
 
     assert list(gui_app.trick_suggestions_listbox.get(0, tk.END)) == []
+    assert gui_app.trick_dropdown_frame is not None
+    assert gui_app.trick_dropdown_frame.winfo_manager() == ""
     assert str(gui_app.confirm_trick_button.cget("state")) == "disabled"
 
     gui_app._undo_action()

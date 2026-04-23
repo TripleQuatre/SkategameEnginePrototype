@@ -1,0 +1,51 @@
+Name
+Multiple Attack
+
+Type
+rule
+
+Ensemble
+Advanced Attack & Defense
+
+Parent Rule
+Attack
+
+Definition
+regle avancee qui definit si l'attaquant peut changer de trick au cours de ses differentes tentatives pendant un meme tour
+
+Purpose
+preciser si plusieurs tentatives d'attaque permettent de rejouer le meme trick ou d'en tenter un autre
+
+Options
+Disabled (option) : par defaut, le lanceur ne peut pas changer de figure au cours des essais suivant le premier
+No Repetition (option) : les essais effectues pendant un meme tour d'attaque n'affectent pas la regle Repetition comme des repetitions distinctes
+Enabled (option) : le lanceur peut changer de figure au cours de ses differentes tentatives d'attaque
+
+Activation Conditions
+Attack doit etre superieur a 1
+
+Dependencies
+Attack
+Repetition
+
+Interactions
+Attack
+Repetition
+Uniqueness
+
+Default Behavior
+le lanceur ne peut pas changer de trick pendant son tour d'attaque
+
+Advanced Behavior
+l'option No Repetition modifie la maniere dont les essais d'un meme tour sont comptabilises pour Repetition
+
+Code Impact
+resolution des tentatives d'attaque
+historique des tricks tentes
+controle de repetition
+
+UX Notes
+ne doit apparaitre que si Attack est superieur a 1
+
+Open Questions
+il faudra preciser plus tard comment traiter les variantes proches d'un meme trick dans un meme tour

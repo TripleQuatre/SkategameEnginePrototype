@@ -1,0 +1,56 @@
+Name
+Total Advantage
+
+Type
+rule
+
+Ensemble
+Advanced Attack & Defense
+
+Parent Rule
+Advantage
+
+Definition
+regle avancee qui definit les conditions mettant fin a l'avantage total, ou l'attaquant conserve son role tant qu'il continue de valider les tricks qu'il impose
+
+Purpose
+borner l'avantage total en ajoutant une condition de fin explicite
+
+Options
+Choice (option) : definit un nombre de tricks reussis apres lequel le lanceur doit passer son tour
+Letters (option) : definit un nombre de lettres apres lequel le lanceur doit passer son tour
+Time (option) : definit un temps apres lequel le lanceur doit passer son tour
+Disabled (option) : parametrage de base ; tant que le lanceur reussit sa figure, il continue d'attaquer
+
+Activation Conditions
+Advantage doit etre regle sur Total
+
+Dependencies
+Advantage
+Letters
+Time
+
+Interactions
+Order
+Attack Order
+Points
+Letters
+Time
+Round
+
+Default Behavior
+sans condition supplementaire, l'attaquant conserve son role tant qu'il reussit ses tricks
+
+Advanced Behavior
+les options Choice, Letters et Time ajoutent une limite explicite a la duree de l'avantage
+
+Code Impact
+rotation des joueurs
+compteurs de reussites
+declenchement de fin d'avantage
+
+UX Notes
+ne doit apparaitre que si Advantage = Total
+
+Open Questions
+il faudra preciser plus tard si la condition Choice compte tous les tricks valides ou seulement ceux valides dans une meme sequence continue d'avantage

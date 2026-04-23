@@ -1,0 +1,54 @@
+Name
+Normal Advantage
+
+Type
+rule
+
+Ensemble
+Advanced Attack & Defense
+
+Parent Rule
+Advantage
+
+Definition
+regle avancee qui definit les conditions mettant fin a l'avantage standard, ou l'attaquant conserve son role tant que les defenseurs ne valident pas le trick impose
+
+Purpose
+borner l'avantage standard en ajoutant une condition de fin explicite
+
+Options
+Choice (option) : definit un nombre de tricks rates par l'opposant apres lequel le lanceur doit passer son tour
+Letters (option) : definit un nombre de lettres apres lequel le lanceur doit passer son tour
+Time (option) : definit un temps apres lequel le lanceur doit passer son tour
+Disabled (option) : parametrage de base ; tant que l'opposant ne reussit pas sa figure, le lanceur continue d'attaquer
+
+Activation Conditions
+Advantage doit etre regle sur Normal
+
+Dependencies
+Advantage
+Letters
+Time
+
+Interactions
+Order
+Attack Order
+Letters
+Time
+
+Default Behavior
+sans condition supplementaire, l'attaquant conserve son role tant que les defenseurs echouent
+
+Advanced Behavior
+les options Choice, Letters et Time ajoutent une limite explicite a la duree de l'avantage
+
+Code Impact
+rotation des joueurs
+compteurs d'echecs
+declenchement de fin d'avantage
+
+UX Notes
+ne doit apparaitre que si Advantage = Normal
+
+Open Questions
+il faudra preciser plus tard si la condition Choice est comptee par joueur ou globalement

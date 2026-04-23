@@ -1,0 +1,58 @@
+Name
+Priority
+
+Type
+rule
+
+Ensemble
+Advanced Victory
+
+Parent Rule
+None
+
+Definition
+regle d'arbitrage qui definit quelle condition de victoire l'emporte lorsque plusieurs conditions sont actives simultanement
+
+Purpose
+determiner la logique prioritaire de resolution lorsqu'une partie peut etre arretee par plusieurs conditions de victoire concurrentes
+
+Options
+Score (option) : priorite aux lettres ou aux points, selon ce qui est configure dans Letters ou Points
+Time (option) : priorite au temps de jeu
+Round (option) : priorite au nombre de manches jouees
+Difference (option) : priorite a l'ecart de points ou de lettres
+
+Activation Conditions
+au moins deux conditions de victoire doivent etre actives simultanement
+une seule option doit etre choisie
+
+Dependencies
+Letters ou Points
+Time
+Round
+Difference
+
+Interactions
+Letters
+Points
+Time
+Round
+Difference
+
+Default Behavior
+si plusieurs conditions de victoire sont actives, Priority doit etre active et une option de priorite doit etre choisie
+
+Advanced Behavior
+aucun pour l'instant
+
+Code Impact
+arbitrage de fin de partie
+resolution des conflits entre conditions
+evaluation finale de victoire
+
+UX Notes
+ne doit apparaitre que si plusieurs conditions de victoire sont activees
+une seule option selectionnable a la fois
+
+Open Questions
+note d'intention : permettre plus tard le cumul de plusieurs priorites

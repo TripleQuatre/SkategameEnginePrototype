@@ -1,0 +1,59 @@
+Name
+Round
+
+Type
+rule
+
+Ensemble
+Victory
+
+Parent Rule
+None
+
+Definition
+regle de victoire qui definit un moment d'evaluation de la victoire a partir d'un nombre de manches jouees
+
+Purpose
+definir une limite de manches au terme de laquelle la victoire est evaluee selon les autres regles actives
+
+Options
+Choice (option) : permet d'entrer librement le nombre maximum de manches
+Time (link) : permet d'activer la limite de manches seulement apres un certain temps defini dans Time
+Disabled (option) : desactive l'impact du nombre de manches sur l'arret de la partie
+
+Activation Conditions
+la partie doit etre structuree en manches
+
+Dependencies
+definition canonique de la manche
+progression de la partie par manches
+
+Interactions
+Letters
+Points
+Time
+Difference
+Priority
+Attack Order
+Advantage
+Clash
+Last Chance
+
+Default Behavior
+la victoire est evaluee lorsque le nombre de manches defini est atteint, sauf si la regle est desactivee
+
+Advanced Behavior
+peut etre combinee a Time pour differer l'activation de la limite de manches
+
+Code Impact
+compteur de manches
+declenchement de fin
+evaluation de victoire
+flow global de partie
+
+UX Notes
+doit rester simple a configurer malgre son lien possible avec Time
+l'option Disabled doit etre clairement identifiable
+
+Open Questions
+la definition canonique de la manche reste stable ; certaines regles comme Advantage peuvent en modifier l'interpretation pratique sans remplacer sa definition de base
