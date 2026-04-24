@@ -1,0 +1,49 @@
+metadata:
+  id: save_smoke
+  title: Save action smoke flow
+  tags:
+    - reference
+    - save
+
+setup:
+  mode: preset
+  preset: classic_skate
+  players:
+    - Stan
+    - Denise
+
+steps:
+  - name: launch app
+    action: launch_app
+    expect:
+      view: setup
+
+  - name: enter first player
+    action: type
+    target: setup.player_name_entry.1
+    value: Stan
+    expect:
+      view: setup
+
+  - name: enter second player
+    action: type
+    target: setup.player_name_entry.2
+    value: Denise
+    expect:
+      view: setup
+
+  - name: start game
+    action: click
+    target: setup.start_game_button
+    expect:
+      view: match
+
+  - name: save game
+    action: click
+    target: match.save_button
+    expect:
+      view: match
+      status_text_contains: Game saved to
+
+  - name: shutdown app
+    action: shutdown_app

@@ -56,11 +56,14 @@ Ce que la V9.1 ajoute en pratique
 - couverture de la coherence des etats GUI (`turn open`, `attack`,
   `defense`, `end`)
 
-Preparation de V9.2
-- `docs/v9_1_gui_oracles.txt` formalise les attentes visibles du GUI
-- cette spec servira d'oracle pour le futur GUI Simulation Harness
+Apport V9.2
+- `docs/code/v9_1_gui_oracles.txt` formalise les attentes visibles du GUI
+- `harness/` fournit le GUI Simulation Harness
+- `test_harness_reference_scenarios.py` execute les scenarios de reference
+- `test_harness_random_explorer.py` couvre le semi-aleatoire borne
+- le harness peut aussi etre lance via `python -m harness.cli`
 
-Etat V8
+Etat V9.2
 - la suite complete valide le moteur, les interfaces et les parcours critiques
 - le warning residuel connu est un `PytestCacheWarning` Windows sur
   `.pytest_cache`

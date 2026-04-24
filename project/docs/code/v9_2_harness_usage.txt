@@ -1,0 +1,52 @@
+V9.2 Harness Usage
+
+Objective
+The GUI harness can run in two ways:
+- integrated through pytest for critical reference scenarios
+- manually through a dedicated CLI entry point for focused local runs
+
+Integrated tests
+- reference scenarios are covered by
+  `tests/interfaces/test_harness_reference_scenarios.py`
+- this keeps the V9.2 harness connected to the normal test suite
+
+Run one scenario manually
+
+python -m harness.cli --scenario harness/scenarios/reference/preset_one_vs_one_smoke.yaml
+
+Run the reference suite manually
+
+python -m harness.cli --reference-suite
+
+Run one bounded semi-random scenario
+
+python -m harness.cli --random-bounded --seed 5 --max-random-steps 18
+
+Semi-random replay
+- the same seed produces the same generated scenario
+- reports keep the seed and generated sequence
+- the exploration is bounded to safe GUI actions and known stable fragments
+- this is not free-form fuzzing
+
+Optional flags
+- `--show-window`
+  keeps the Tk window visible during the run
+- `--saves-dir <path>`
+  controls where save-game artifacts are written during harness runs
+
+Reference scenarios
+- `preset_one_vs_one_smoke.yaml`
+- `custom_battle_smoke.yaml`
+- `history_and_setup_details_navigation.yaml`
+- `undo_to_setup_regression.yaml`
+- `save_smoke.yaml`
+
+Expected output
+- each scenario prints `[PASS]` or `[FAIL]`
+- failures print the failing step, error message, expected value, observed value,
+  and artifact path when available
+
+Boundary reminder
+- the harness remains a tooling layer
+- it drives the GUI through instrumented widgets
+- it does not become a dependency of the game engine

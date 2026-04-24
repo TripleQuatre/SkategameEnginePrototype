@@ -161,17 +161,17 @@ docs
 - Important files:
   - docs/sheets/*.txt
     Business rule sheets kept as the source reference.
-  - docs/v8_dictionary_spec.txt
-  - docs/v8_inline_primary_grind_spec.txt
-  - docs/v8_rules_integration.txt
-  - docs/v8_planification.txt
-  - docs/v8_closure_20260422.txt
-  - docs/v8_codebase_map.txt
+  - docs/code/v8_dictionary_spec.txt
+  - docs/code/v8_inline_primary_grind_spec.txt
+  - docs/code/v8_rules_integration.txt
+  - docs/code/v8_planification.txt
+  - docs/code/v8_closure_20260422.txt
+  - docs/code/v8_codebase_map.txt
 
 Suggested Reading Order
 1. docs/sheets/uniqueness.txt and docs/sheets/repetition.txt
-2. docs/v8_dictionary_spec.txt
-3. docs/v8_inline_primary_grind_spec.txt
+2. docs/code/v8_dictionary_spec.txt
+3. docs/code/v8_inline_primary_grind_spec.txt
 4. dictionary/models.py
 5. dictionary/inline_primary_grind.py
 6. match/flow/trick_rules.py

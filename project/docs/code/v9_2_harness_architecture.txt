@@ -1,0 +1,125 @@
+V9.2 Harness Architecture
+
+Objective
+V9.2 introduces a GUI Simulation Harness that remains fully separate from the
+game engine.
+
+Boundary
+- the harness is a tool layer
+- it must not become a dependency of the match runtime
+- it may drive the GUI and observe the GUI
+- it may use limited internal state only for debugging payloads
+- it must not change gameplay rules or engine architecture
+
+Project location
+- the harness lives in `harness/`
+- it is not placed in `match/`, `core/`, `dictionary/`, or `interfaces/`
+- it can be used both by tests and by standalone runs later
+
+Core components
+
+1. `harness/models.py`
+- immutable data objects for run configuration, visible GUI snapshots,
+  step records, failures, and final reports
+
+2. `harness/contracts.py`
+- protocols describing the harness boundary:
+  - scenario source
+  - GUI driver
+  - GUI observer
+  - oracle engine
+  - reporter
+
+3. `harness/runner.py`
+- orchestration entry point
+- receives every dependency by injection
+- does not know the GUI internals by itself
+- does not import gameplay runtime modules
+
+4. `harness/scenario_loader.py`
+- loads scenario files from YAML
+- validates the supported V9.2 DSL shape
+
+5. `harness/driver.py`
+- Tk GUI driver V1
+- launches and shuts down the GUI
+- clicks buttons
+- types in entries
+- presses keys
+- selects combobox options
+- selects trick suggestions from the integrated dropdown
+
+6. `harness/observer.py`
+- visible-state reader V1
+- reads the active view
+- reads visible texts
+- reads visible button states
+- reads the score table
+- reads dropdown items
+- reads history tree rows
+
+7. `harness/oracle.py`
+- oracle engine V1
+- compares YAML expectations with visible GUI state
+- fails fast on important visible mismatches
+- exposes expected and observed values for future reports
+
+8. `harness/reporter.py`
+- structured reporter V1
+- builds failure payloads with scenario summary, step history,
+  visible-state dump, expected/observed values, and screenshot path
+- builds final `GUIHarnessReport` objects
+
+9. `harness/cli.py`
+- standalone execution entry point
+- can run one scenario
+- can run the full reference suite
+- prints pass/fail summaries and failure details
+
+10. `harness/random_explorer.py`
+- bounded semi-random scenario builder V1
+- generates safe GUI flows from a seed
+- never explores arbitrary widgets or arbitrary actions
+- stores the seed and generated sequence in the final report
+
+Current step coverage
+- V9.2 step 1 defines architecture and boundaries
+- V9.2 step 2 adds minimal GUI instrumentation
+- V9.2 step 3 adds YAML scenario loading and validation
+- V9.2 step 4 adds a real Tk GUI driver V1
+- V9.2 step 5 adds a real visible-state observer V1
+- V9.2 step 6 adds oracle evaluation V1
+- V9.2 step 7 adds reporting and debug payloads V1
+- V9.2 step 8 turns the runner into an executable flow and adds
+  reference scenarios V1
+- V9.2 step 9 integrates the harness into pytest and adds a standalone
+  CLI execution mode
+- V9.2 step 10 adds bounded semi-random exploration V1
+
+Reference scenarios V1
+- `harness/scenarios/reference/preset_one_vs_one_smoke.yaml`
+- `harness/scenarios/reference/custom_battle_smoke.yaml`
+- `harness/scenarios/reference/history_and_setup_details_navigation.yaml`
+- `harness/scenarios/reference/undo_to_setup_regression.yaml`
+- `harness/scenarios/reference/save_smoke.yaml`
+
+Future step mapping
+- step 2: minimal GUI instrumentation
+- step 3: YAML scenario DSL
+- step 4: GUI driver V1
+- step 5: visible state reader
+- step 6: oracle engine
+- step 7: reporting and screenshot support
+
+Design rules
+- dependency injection first
+- no business logic in the harness
+- GUI assertions must be based on visible state
+- internal state access is allowed later for debugging only
+- the game must still run normally if `harness/` is removed
+
+Minimal GUI instrumentation rule
+- the GUI may expose stable harness targets and lightweight access helpers
+- these helpers exist only to make widgets discoverable and readable
+- they must not move gameplay logic out of the engine
+- they must not become a second source of truth for rules or runtime state

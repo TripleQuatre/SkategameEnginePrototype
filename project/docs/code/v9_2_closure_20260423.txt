@@ -1,0 +1,64 @@
+V9.2 Closure - 2026-04-23
+
+Objective
+V9.2 delivers the first complete GUI Simulation Harness for the prototype.
+This version does not add gameplay rules. It strengthens product validation
+around the real Tk GUI.
+
+Delivered
+- autonomous `harness/` module
+- YAML scenario DSL
+- controlled YAML subset parser
+- Tk GUI driver V1
+- visible-state observer V1
+- oracle engine V1
+- structured reporter V1
+- reference scenario suite
+- standalone CLI execution mode
+- bounded semi-random exploration V1
+
+Harness boundaries
+- the harness is a tooling layer
+- it does not become a dependency of the match runtime
+- it drives the GUI through stable widget targets
+- it observes visible GUI state
+- limited internal state remains reserved for debug payloads only
+- gameplay rules remain owned by the engine, validation, match, dictionary,
+  and config layers
+
+Reference scenarios
+- `preset_one_vs_one_smoke`
+- `custom_battle_smoke`
+- `history_and_setup_details_navigation`
+- `undo_to_setup_regression`
+- `save_smoke`
+
+Standalone commands
+- run one scenario:
+  `python -m harness.cli --scenario harness/scenarios/reference/preset_one_vs_one_smoke.yaml`
+- run all reference scenarios:
+  `python -m harness.cli --reference-suite`
+- run one bounded semi-random scenario:
+  `python -m harness.cli --random-bounded --seed 5 --max-random-steps 18`
+
+Testing status
+- the harness is integrated into the normal pytest suite
+- reference scenarios run through the real GUI
+- bounded semi-random runs are reproducible by seed
+- expected/observed values are preserved in failure reports
+
+Known limitation
+- screenshot capture is still represented by a placeholder text artifact in the
+  Tk driver. This is enough for V9.2 reporting structure, but a future version
+  can replace it with real image capture if needed.
+
+Residual environment warning
+- the remaining known warning is the Windows `PytestCacheWarning` on
+  `.pytest_cache`
+- it does not indicate a product or harness failure
+
+Next recommended direction
+- use this harness before and during future rule versions
+- expand scenario coverage when adding `Multiple Attack`, `Switch`, `Order`,
+  `Points`, or other rule families
+- keep GUI oracles explicit before broadening random exploration

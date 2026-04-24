@@ -1,0 +1,102 @@
+metadata:
+  id: history_and_setup_details_navigation
+  title: History and setup details navigation flow
+  tags:
+    - reference
+    - navigation
+
+setup:
+  mode: preset
+  preset: classic_skate
+  players:
+    - Stan
+    - Denise
+
+steps:
+  - name: launch app
+    action: launch_app
+    expect:
+      view: setup
+
+  - name: enter first player
+    action: type
+    target: setup.player_name_entry.1
+    value: Stan
+    expect:
+      view: setup
+
+  - name: enter second player
+    action: type
+    target: setup.player_name_entry.2
+    value: Denise
+    expect:
+      view: setup
+
+  - name: start game
+    action: click
+    target: setup.start_game_button
+    expect:
+      view: match
+
+  - name: search soul
+    action: type
+    target: match.trick_entry
+    value: soul
+    expect:
+      view: match
+      dropdown_contains:
+        - Soul
+
+  - name: select soul
+    action: select_suggestion
+    target: match.trick_suggestions_listbox
+    value: Soul
+    expect:
+      view: match
+      status_text_equals: Valid trick selected.
+
+  - name: confirm soul
+    action: click
+    target: match.confirm_trick_button
+    expect:
+      view: match
+      text_equals:
+        match.trick_label: "Trick: Soul"
+
+  - name: miss attack
+    action: click
+    target: match.failure_button
+    expect:
+      view: match
+      status_text_contains: missed
+
+  - name: open history
+    action: click
+    target: match.history_button
+    expect:
+      view: history
+      button_states:
+        history.back_to_game_button: normal
+
+  - name: back to match
+    action: click
+    target: history.back_to_game_button
+    expect:
+      view: match
+
+  - name: open setup details
+    action: click
+    target: match.setup_details_button
+    expect:
+      view: setup_details
+      text_contains:
+        setup_details.body_label: "Preset: classic_skate"
+
+  - name: back from setup details
+    action: click
+    target: setup_details.back_to_game_button
+    expect:
+      view: match
+
+  - name: shutdown app
+    action: shutdown_app

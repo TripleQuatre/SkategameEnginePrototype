@@ -1,0 +1,112 @@
+V9.2 Scenario DSL
+
+Objective
+V9.2 uses a YAML scenario DSL to describe GUI simulation runs without coding
+each scenario directly in Python.
+
+Why YAML
+- readable by humans
+- easy to diff
+- well suited to ordered steps
+
+Environment note
+- the current project environment does not provide `PyYAML`
+- V9.2 therefore uses a controlled YAML subset parser implemented locally
+- this parser is intentionally limited to the scenario DSL needs
+
+Root structure
+- `metadata`
+- `setup`
+- `steps`
+
+Example shape
+
+metadata:
+  id: smoke_custom_one_vs_one
+  title: Custom one versus one smoke flow
+  tags:
+    - smoke
+    - custom
+
+setup:
+  mode: custom
+  players:
+    - Stan
+    - Denise
+  word: SKATE
+  attack_attempts: 1
+  defense_attempts: 1
+  uniqueness: true
+  repetition_mode: choice
+  repetition_limit: 3
+
+steps:
+  - name: launch app
+    action: launch_app
+    expect:
+      view: setup
+
+  - name: start game
+    action: click
+    target: setup.start_game_button
+    expect:
+      view: match
+
+Metadata keys
+- `id` required
+- `title` optional
+- `tags` optional
+
+Setup keys
+- `mode`
+- `preset`
+- `structure`
+- `players`
+- `word`
+- `attack_attempts`
+- `defense_attempts`
+- `uniqueness`
+- `repetition_mode`
+- `repetition_limit`
+
+Step keys
+- `name` required
+- `action` required
+- `target` optional depending on action
+- `value` optional depending on action
+- `key` optional depending on action
+- `expect` optional
+
+Action vocabulary V1
+- `launch_app`
+- `shutdown_app`
+- `click`
+- `type`
+- `press_key`
+- `select_option`
+- `select_suggestion`
+
+Expectation vocabulary V1
+- `view`
+- `status_text_equals`
+- `status_text_contains`
+- `button_states`
+- `text_equals`
+- `text_contains`
+- `score_cells`
+- `dropdown_contains`
+
+Validation rule
+- every scenario file is validated on load
+- unsupported keys or unsupported actions fail fast
+- invalid expectation shapes fail fast
+
+Design rule
+- one step = one action + immediate expectations
+- the DSL should stay small, explicit, and easy to reason about
+
+Reference scenarios V1
+- reference scenarios live in `harness/scenarios/reference/`
+- they are executable by `GUIHarnessRunner`
+- they cover preset setup, custom setup, match flow, trick search, history,
+  setup details, undo regression, and save smoke behavior

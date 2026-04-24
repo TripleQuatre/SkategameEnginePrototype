@@ -1,0 +1,97 @@
+metadata:
+  id: preset_one_vs_one_smoke
+  title: Preset one versus one smoke flow
+  tags:
+    - reference
+    - preset
+    - one_vs_one
+
+setup:
+  mode: preset
+  preset: classic_skate
+  players:
+    - Stan
+    - Denise
+
+steps:
+  - name: launch app
+    action: launch_app
+    expect:
+      view: setup
+      status_text_equals: Configure the game to begin.
+      button_states:
+        setup.start_game_button: normal
+      text_equals:
+        setup.preset_combo: classic_skate
+        setup.word_entry: SKATE
+
+  - name: enter first player
+    action: type
+    target: setup.player_name_entry.1
+    value: Stan
+    expect:
+      view: setup
+
+  - name: enter second player
+    action: type
+    target: setup.player_name_entry.2
+    value: Denise
+    expect:
+      view: setup
+
+  - name: start preset game
+    action: click
+    target: setup.start_game_button
+    expect:
+      view: match
+      status_text_equals: Game started.
+      text_equals:
+        match.phase_title_label: Stan sets the next trick
+      score_cells:
+        1,0: STAN
+        1,2: DENISE
+        2,0: "-"
+        2,2: "-"
+      button_states:
+        match.confirm_trick_button: disabled
+        match.add_player_button: normal
+
+  - name: search switch soul
+    action: type
+    target: match.trick_entry
+    value: switch soul
+    expect:
+      view: match
+      status_text_contains: Select a valid suggestion
+      dropdown_contains:
+        - Soul Switch
+      button_states:
+        match.confirm_trick_button: disabled
+
+  - name: select soul switch
+    action: select_suggestion
+    target: match.trick_suggestions_listbox
+    value: Soul Switch
+    expect:
+      view: match
+      status_text_equals: Valid trick selected.
+      text_equals:
+        match.trick_entry: Soul Switch
+      button_states:
+        match.confirm_trick_button: normal
+
+  - name: confirm trick
+    action: click
+    target: match.confirm_trick_button
+    expect:
+      view: match
+      status_text_equals: Trick 'Soul Switch' confirmed.
+      text_equals:
+        match.phase_title_label: Stan attacks
+        match.trick_label: "Trick: Soul Switch"
+      button_states:
+        match.failure_button: normal
+        match.add_player_button: disabled
+
+  - name: shutdown app
+    action: shutdown_app

@@ -54,11 +54,12 @@ Choix V9.1 du GUI
 - une vue `setup_details` expose la configuration active de la partie
 
 Oracles GUI
-- les attentes visibles du GUI sont formalisees dans `docs/v9_1_gui_oracles.txt`
-- ce document prepare le futur simulateur GUI de V9.2
+- les attentes visibles du GUI sont formalisees dans `docs/code/v9_1_gui_oracles.txt`
+- le simulateur GUI de V9.2 les utilise comme base d'attentes visibles
 
-Etat V9.1
+Etat V9.2
 - CLI et GUI sont alignes sur le dictionnaire
 - la saisie libre pure n'est plus le chemin normal
 - le GUI est plus lisible et plus testable
-- les interfaces restent utilitaires, pas encore produit finalise
+- le GUI expose des cibles stables pour le harness
+- le harness pilote et observe le GUI sans devenir une dependance metier

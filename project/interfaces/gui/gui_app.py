@@ -41,6 +41,7 @@ class GUIApp:
         self._suppress_trick_updates = False
         self._selected_trick_completion: str | None = None
         self._current_trick_suggestions = []
+        self._harness_targets: dict[str, tk.Widget] = {}
 
         self.title_font = tkfont.Font(size=18, weight="bold")
         self.subtitle_font = tkfont.Font(size=10)
@@ -65,6 +66,7 @@ class GUIApp:
             borderwidth=0,
         )
         self.scroll_canvas.pack(side="left", fill="both", expand=True)
+        self._register_harness_target("root.scroll_canvas", self.scroll_canvas)
 
         self.scrollbar = ttk.Scrollbar(
             self.scroll_host,
@@ -87,6 +89,10 @@ class GUIApp:
         self.game_frame = ttk.Frame(self.container)
         self.history_frame = ttk.Frame(self.container)
         self.setup_details_frame = ttk.Frame(self.container)
+        self._register_harness_target("view.setup", self.setup_frame)
+        self._register_harness_target("view.match", self.game_frame)
+        self._register_harness_target("view.history", self.history_frame)
+        self._register_harness_target("view.setup_details", self.setup_details_frame)
         self.players_frame: ttk.Frame | None = None
 
         self.matchup_label: ttk.Label | None = None
@@ -123,6 +129,8 @@ class GUIApp:
 
         self.history_tree: ttk.Treeview | None = None
         self.preset_combo: ttk.Combobox | None = None
+        self.preset_mode_radiobutton: ttk.Radiobutton | None = None
+        self.custom_mode_radiobutton: ttk.Radiobutton | None = None
         self.player_count_spinbox: ttk.Spinbox | None = None
         self.word_entry: ttk.Entry | None = None
         self.attack_attempts_spinbox: ttk.Spinbox | None = None
@@ -139,6 +147,27 @@ class GUIApp:
 
     def run(self) -> None:
         self.root.mainloop()
+
+    def _register_harness_target(self, target_id: str, widget: tk.Widget) -> None:
+        self._harness_targets[target_id] = widget
+
+    def get_harness_target(self, target_id: str) -> tk.Widget | None:
+        return self._harness_targets.get(target_id)
+
+    def list_harness_targets(self) -> tuple[str, ...]:
+        return tuple(sorted(self._harness_targets))
+
+    def get_harness_active_view(self) -> str:
+        return self.current_view
+
+    def get_harness_target_state(self, target_id: str) -> str | None:
+        widget = self.get_harness_target(target_id)
+        if widget is None:
+            return None
+        try:
+            return str(widget.cget("state"))
+        except tk.TclError:
+            return None
 
     def _ensure_saves_dir(self) -> Path:
         self.SAVES_DIR.mkdir(parents=True, exist_ok=True)
@@ -218,19 +247,29 @@ class GUIApp:
         setup_mode_frame = ttk.Frame(form)
         setup_mode_frame.grid(row=1, column=0, columnspan=2, sticky="w", pady=(0, 18))
 
-        ttk.Radiobutton(
+        self.preset_mode_radiobutton = ttk.Radiobutton(
             setup_mode_frame,
             text="Official preset",
             variable=self.setup_mode_var,
             value="preset",
-        ).pack(side="left", padx=(0, 10))
+        )
+        self.preset_mode_radiobutton.pack(side="left", padx=(0, 10))
+        self._register_harness_target(
+            "setup.mode_preset_radiobutton",
+            self.preset_mode_radiobutton,
+        )
 
-        ttk.Radiobutton(
+        self.custom_mode_radiobutton = ttk.Radiobutton(
             setup_mode_frame,
             text="No preset",
             variable=self.setup_mode_var,
             value="custom",
-        ).pack(side="left")
+        )
+        self.custom_mode_radiobutton.pack(side="left")
+        self._register_harness_target(
+            "setup.mode_custom_radiobutton",
+            self.custom_mode_radiobutton,
+        )
 
         ttk.Label(form, text="Preset:", font=self.body_font).grid(
             row=2, column=0, sticky="w", pady=(0, 6)
@@ -244,6 +283,7 @@ class GUIApp:
             width=36,
         )
         self.preset_combo.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(0, 18))
+        self._register_harness_target("setup.preset_combo", self.preset_combo)
 
         ttk.Label(form, text="Number of players:", font=self.body_font).grid(
             row=4, column=0, sticky="w", pady=(0, 6)
@@ -260,6 +300,7 @@ class GUIApp:
         self.player_count_spinbox.grid(row=5, column=0, sticky="w", pady=(0, 18))
         self.player_count_spinbox.bind("<FocusOut>", lambda _event: self._rebuild_player_inputs())
         self.player_count_spinbox.bind("<Return>", lambda _event: self._rebuild_player_inputs())
+        self._register_harness_target("setup.player_count_spinbox", self.player_count_spinbox)
 
         ttk.Label(form, text="Players:", font=self.body_font).grid(
             row=6, column=0, sticky="w", pady=(0, 6)
@@ -277,6 +318,7 @@ class GUIApp:
             textvariable=self.custom_word_var,
         )
         self.word_entry.grid(row=9, column=0, columnspan=2, sticky="ew", pady=(0, 18))
+        self._register_harness_target("setup.word_entry", self.word_entry)
 
         ttk.Label(form, text="Attack attempts:", font=self.body_font).grid(
             row=10, column=0, sticky="w", pady=(0, 6)
@@ -290,6 +332,10 @@ class GUIApp:
             width=6,
         )
         self.attack_attempts_spinbox.grid(row=11, column=0, sticky="w", pady=(0, 18))
+        self._register_harness_target(
+            "setup.attack_attempts_spinbox",
+            self.attack_attempts_spinbox,
+        )
 
         ttk.Label(form, text="Defense attempts:", font=self.body_font).grid(
             row=12, column=0, sticky="w", pady=(0, 6)
@@ -303,6 +349,10 @@ class GUIApp:
             width=6,
         )
         self.attempts_spinbox.grid(row=13, column=0, sticky="w", pady=(0, 24))
+        self._register_harness_target(
+            "setup.defense_attempts_spinbox",
+            self.attempts_spinbox,
+        )
 
         ttk.Label(form, text="Uniqueness:", font=self.body_font).grid(
             row=14, column=0, sticky="w", pady=(0, 6)
@@ -317,6 +367,10 @@ class GUIApp:
         )
         self.uniqueness_checkbutton.grid(
             row=15, column=0, columnspan=2, sticky="w", pady=(0, 18)
+        )
+        self._register_harness_target(
+            "setup.uniqueness_checkbutton",
+            self.uniqueness_checkbutton,
         )
 
         ttk.Label(form, text="Repetition mode:", font=self.body_font).grid(
@@ -333,6 +387,10 @@ class GUIApp:
         self.repetition_mode_combo.grid(
             row=17, column=0, columnspan=2, sticky="w", pady=(0, 18)
         )
+        self._register_harness_target(
+            "setup.repetition_mode_combo",
+            self.repetition_mode_combo,
+        )
 
         ttk.Label(form, text="Repetition limit:", font=self.body_font).grid(
             row=18, column=0, sticky="w", pady=(0, 6)
@@ -347,6 +405,10 @@ class GUIApp:
         )
         self.repetition_limit_spinbox.grid(
             row=19, column=0, sticky="w", pady=(0, 24)
+        )
+        self._register_harness_target(
+            "setup.repetition_limit_spinbox",
+            self.repetition_limit_spinbox,
         )
 
         def refresh_setup_controls() -> None:
@@ -418,6 +480,9 @@ class GUIApp:
 
         self.setup_mode_var.trace_add("write", lambda *_args: refresh_setup_controls())
         self.preset_var.trace_add("write", lambda *_args: refresh_setup_controls())
+        self.player_count_var.trace_add(
+            "write", lambda *_args: self._rebuild_player_inputs()
+        )
         self.custom_repetition_mode_var.trace_add(
             "write", lambda *_args: refresh_setup_controls()
         )
@@ -434,6 +499,7 @@ class GUIApp:
         )
         self.start_game_button.pack(side="left", padx=6)
         self._bind_button_keyboard_activation(self.start_game_button)
+        self._register_harness_target("setup.start_game_button", self.start_game_button)
 
         self.load_from_setup_button = ttk.Button(
             buttons,
@@ -443,6 +509,10 @@ class GUIApp:
         )
         self.load_from_setup_button.pack(side="left", padx=6)
         self._bind_button_keyboard_activation(self.load_from_setup_button)
+        self._register_harness_target(
+            "setup.load_from_setup_button",
+            self.load_from_setup_button,
+        )
 
         self._rebuild_player_inputs()
         refresh_setup_controls()
@@ -451,6 +521,9 @@ class GUIApp:
         assert self.players_frame is not None
 
         existing_values = [var.get() for var in self.player_name_vars]
+        for target_id in tuple(self._harness_targets):
+            if target_id.startswith("setup.player_name_entry."):
+                self._harness_targets.pop(target_id, None)
 
         for child in self.players_frame.winfo_children():
             child.destroy()
@@ -469,11 +542,16 @@ class GUIApp:
                 text=f"Player {index} name:",
                 font=self.body_font,
             ).grid(row=(index - 1) * 2, column=0, sticky="w", pady=(0, 6))
-            ttk.Entry(
+            entry = ttk.Entry(
                 self.players_frame,
                 textvariable=player_var,
                 width=36,
-            ).grid(row=(index - 1) * 2 + 1, column=0, sticky="ew", pady=(0, 12))
+            )
+            entry.grid(row=(index - 1) * 2 + 1, column=0, sticky="ew", pady=(0, 12))
+            self._register_harness_target(
+                f"setup.player_name_entry.{index}",
+                entry,
+            )
 
     # =========================
     # Game view
@@ -488,21 +566,29 @@ class GUIApp:
 
         self.score_frame = ttk.Frame(frame)
         self.score_frame.grid(row=1, column=0, sticky="ew", pady=(0, 24))
+        self._register_harness_target("match.score_frame", self.score_frame)
 
         self.preset_label = ttk.Label(frame, text="", font=self.small_font)
         self.preset_label.grid(row=2, column=0, pady=(0, 10))
 
         self.phase_title_label = ttk.Label(frame, text="", font=self.section_font)
         self.phase_title_label.grid(row=3, column=0, pady=(0, 14))
+        self._register_harness_target("match.phase_title_label", self.phase_title_label)
 
         self.trick_label = ttk.Label(frame, text="", font=self.section_font)
         self.trick_label.grid(row=4, column=0, pady=(0, 10))
+        self._register_harness_target("match.trick_label", self.trick_label)
 
         self.phase_description_label = ttk.Label(frame, text="", font=self.body_font)
         self.phase_description_label.grid(row=5, column=0, pady=(0, 8))
+        self._register_harness_target(
+            "match.phase_description_label",
+            self.phase_description_label,
+        )
 
         self.attempts_label = ttk.Label(frame, text="", font=self.body_font)
         self.attempts_label.grid(row=6, column=0, pady=(0, 18))
+        self._register_harness_target("match.attempts_label", self.attempts_label)
 
         action_buttons = ttk.Frame(frame)
         action_buttons.grid(row=7, column=0, pady=(0, 14))
@@ -514,6 +600,7 @@ class GUIApp:
             width=14,
         )
         self.success_button.pack(side="left", padx=8)
+        self._register_harness_target("match.success_button", self.success_button)
 
         self.failure_button = ttk.Button(
             action_buttons,
@@ -522,6 +609,7 @@ class GUIApp:
             width=14,
         )
         self.failure_button.pack(side="left", padx=8)
+        self._register_harness_target("match.failure_button", self.failure_button)
 
         session_buttons = ttk.Frame(frame)
         session_buttons.grid(row=8, column=0, pady=(0, 20))
@@ -533,6 +621,7 @@ class GUIApp:
             width=10,
         )
         self.undo_button.pack(side="left", padx=6)
+        self._register_harness_target("match.undo_button", self.undo_button)
 
         self.save_button = ttk.Button(
             session_buttons,
@@ -541,6 +630,7 @@ class GUIApp:
             width=10,
         )
         self.save_button.pack(side="left", padx=6)
+        self._register_harness_target("match.save_button", self.save_button)
 
         self.load_button = ttk.Button(
             session_buttons,
@@ -549,6 +639,7 @@ class GUIApp:
             width=10,
         )
         self.load_button.pack(side="left", padx=6)
+        self._register_harness_target("match.load_button", self.load_button)
 
         self.history_button = ttk.Button(
             session_buttons,
@@ -558,6 +649,7 @@ class GUIApp:
         )
         self.history_button.pack(side="left", padx=6)
         self._bind_button_keyboard_activation(self.history_button)
+        self._register_harness_target("match.history_button", self.history_button)
 
         self.setup_details_button = ttk.Button(
             session_buttons,
@@ -567,6 +659,10 @@ class GUIApp:
         )
         self.setup_details_button.pack(side="left", padx=6)
         self._bind_button_keyboard_activation(self.setup_details_button)
+        self._register_harness_target(
+            "match.setup_details_button",
+            self.setup_details_button,
+        )
 
         self.add_player_button = ttk.Button(
             session_buttons,
@@ -576,6 +672,7 @@ class GUIApp:
         )
         self.add_player_button.pack(side="left", padx=6)
         self._bind_button_keyboard_activation(self.add_player_button)
+        self._register_harness_target("match.add_player_button", self.add_player_button)
 
         self.remove_player_button = ttk.Button(
             session_buttons,
@@ -585,6 +682,10 @@ class GUIApp:
         )
         self.remove_player_button.pack(side="left", padx=6)
         self._bind_button_keyboard_activation(self.remove_player_button)
+        self._register_harness_target(
+            "match.remove_player_button",
+            self.remove_player_button,
+        )
 
         self.new_game_button = ttk.Button(
             session_buttons,
@@ -594,6 +695,7 @@ class GUIApp:
         )
         self.new_game_button.pack(side="left", padx=6)
         self._bind_button_keyboard_activation(self.new_game_button)
+        self._register_harness_target("match.new_game_button", self.new_game_button)
 
         self.status_label = ttk.Label(
             frame,
@@ -604,6 +706,7 @@ class GUIApp:
             wraplength=760,
         )
         self.status_label.grid(row=9, column=0, sticky="ew", pady=(0, 14))
+        self._register_harness_target("match.status_label", self.status_label)
 
         trick_zone = ttk.Frame(frame)
         trick_zone.grid(row=10, column=0, sticky="ew")
@@ -625,6 +728,7 @@ class GUIApp:
             width=40,
         )
         self.trick_entry.grid(row=0, column=0, sticky="ew")
+        self._register_harness_target("match.trick_entry", self.trick_entry)
         self.trick_entry.bind(
             "<KeyRelease>",
             lambda _event: self._refresh_trick_suggestions(),
@@ -639,6 +743,10 @@ class GUIApp:
             highlightthickness=0,
         )
         self.trick_dropdown_frame.grid(row=1, column=0, sticky="ew", pady=(4, 10))
+        self._register_harness_target(
+            "match.trick_dropdown_frame",
+            self.trick_dropdown_frame,
+        )
 
         self.trick_suggestions_listbox = tk.Listbox(
             self.trick_dropdown_frame,
@@ -650,6 +758,10 @@ class GUIApp:
             relief="flat",
         )
         self.trick_suggestions_listbox.pack(fill="both", expand=True, padx=1, pady=1)
+        self._register_harness_target(
+            "match.trick_suggestions_listbox",
+            self.trick_suggestions_listbox,
+        )
         self.trick_suggestions_listbox.bind(
             "<<ListboxSelect>>",
             lambda _event: self._handle_trick_suggestion_selection(),
@@ -675,6 +787,10 @@ class GUIApp:
         )
         self.confirm_trick_button.pack(side="left", padx=6)
         self._bind_button_keyboard_activation(self.confirm_trick_button)
+        self._register_harness_target(
+            "match.confirm_trick_button",
+            self.confirm_trick_button,
+        )
 
         self.cancel_trick_button = ttk.Button(
             buttons_row,
@@ -684,6 +800,10 @@ class GUIApp:
         )
         self.cancel_trick_button.pack(side="left", padx=6)
         self._bind_button_keyboard_activation(self.cancel_trick_button)
+        self._register_harness_target(
+            "match.cancel_trick_button",
+            self.cancel_trick_button,
+        )
 
     # =========================
     # History view
@@ -717,6 +837,7 @@ class GUIApp:
         self.history_tree.column("letters", width=90, anchor="center")
 
         self.history_tree.grid(row=1, column=0, sticky="nsew")
+        self._register_harness_target("history.tree", self.history_tree)
 
         controls = ttk.Frame(frame)
         controls.grid(row=2, column=0, pady=(14, 0))
@@ -729,6 +850,10 @@ class GUIApp:
         )
         self.back_to_game_button.pack()
         self._bind_button_keyboard_activation(self.back_to_game_button)
+        self._register_harness_target(
+            "history.back_to_game_button",
+            self.back_to_game_button,
+        )
 
     def _build_setup_details_view(self) -> None:
         frame = self.setup_details_frame
@@ -757,6 +882,10 @@ class GUIApp:
             wraplength=760,
         )
         self.setup_details_body_label.grid(row=1, column=0, sticky="ew")
+        self._register_harness_target(
+            "setup_details.body_label",
+            self.setup_details_body_label,
+        )
 
         controls = ttk.Frame(frame)
         controls.grid(row=2, column=0, pady=(18, 0))
@@ -769,6 +898,10 @@ class GUIApp:
         )
         self.back_from_setup_details_button.pack()
         self._bind_button_keyboard_activation(self.back_from_setup_details_button)
+        self._register_harness_target(
+            "setup_details.back_to_game_button",
+            self.back_from_setup_details_button,
+        )
 
     # =========================
     # Game actions

@@ -1,0 +1,58 @@
+metadata:
+  id: undo_to_setup_regression
+  title: Undo to setup regression flow
+  tags:
+    - reference
+    - undo
+    - regression
+
+setup:
+  mode: custom
+  players:
+    - Stan
+    - Denise
+
+steps:
+  - name: launch app
+    action: launch_app
+    expect:
+      view: setup
+
+  - name: switch to custom mode
+    action: click
+    target: setup.mode_custom_radiobutton
+    expect:
+      view: setup
+
+  - name: enter first player
+    action: type
+    target: setup.player_name_entry.1
+    value: Stan
+    expect:
+      view: setup
+
+  - name: enter second player
+    action: type
+    target: setup.player_name_entry.2
+    value: Denise
+    expect:
+      view: setup
+
+  - name: start game
+    action: click
+    target: setup.start_game_button
+    expect:
+      view: match
+      status_text_equals: Game started.
+
+  - name: undo back to setup
+    action: click
+    target: match.undo_button
+    expect:
+      view: setup
+      status_text_equals: Undo successful. Returned to setup.
+      button_states:
+        setup.start_game_button: normal
+
+  - name: shutdown app
+    action: shutdown_app

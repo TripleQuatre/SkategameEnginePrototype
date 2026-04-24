@@ -1,13 +1,14 @@
 import match.structure.battle_structure as battle_structure_module
 import pytest
 import tkinter as tk
+from collections.abc import Iterator
 
 from core.types import Phase, TurnPhase
 from interfaces.gui.gui_app import GUIApp
 
 
 @pytest.fixture
-def gui_app(monkeypatch) -> GUIApp:
+def gui_app(monkeypatch) -> Iterator[GUIApp]:
     monkeypatch.setattr(
         "interfaces.gui.gui_app.messagebox.showinfo",
         lambda *args, **kwargs: None,
@@ -66,6 +67,47 @@ def test_gui_uses_scrollable_root_layout(gui_app: GUIApp) -> None:
     assert gui_app.scroll_canvas is not None
     assert gui_app.scrollbar is not None
     assert gui_app.current_view == "setup"
+
+
+def test_gui_exposes_harness_targets_for_critical_widgets(gui_app: GUIApp) -> None:
+    target_ids = gui_app.list_harness_targets()
+
+    assert "root.scroll_canvas" in target_ids
+    assert "view.setup" in target_ids
+    assert "view.match" in target_ids
+    assert "view.history" in target_ids
+    assert "view.setup_details" in target_ids
+    assert "setup.start_game_button" in target_ids
+    assert "setup.player_name_entry.1" in target_ids
+    assert "match.trick_entry" in target_ids
+    assert "match.setup_details_button" in target_ids
+    assert "history.tree" in target_ids
+    assert "setup_details.body_label" in target_ids
+
+    assert gui_app.get_harness_target("setup.start_game_button") is gui_app.start_game_button
+    assert gui_app.get_harness_target("match.trick_entry") is gui_app.trick_entry
+    assert gui_app.get_harness_target("history.tree") is gui_app.history_tree
+
+
+def test_harness_helpers_track_active_view_and_button_state(gui_app: GUIApp) -> None:
+    assert gui_app.get_harness_active_view() == "setup"
+
+    gui_app.setup_mode_var.set("custom")
+    gui_app.player_name_vars[0].set("Stan")
+    gui_app.player_name_vars[1].set("Denise")
+    gui_app._start_game()
+
+    assert gui_app.get_harness_active_view() == "game"
+    assert gui_app.get_harness_target_state("match.add_player_button") == "normal"
+
+    assert gui_app.controller is not None
+    gui_app.controller.start_turn("kickflip")
+    gui_app._refresh_game_view()
+
+    assert gui_app.get_harness_target_state("match.add_player_button") == "disabled"
+
+    gui_app._show_setup_details_view()
+    assert gui_app.get_harness_active_view() == "setup_details"
 
 
 def test_gui_history_view_renders_battle_turns(
