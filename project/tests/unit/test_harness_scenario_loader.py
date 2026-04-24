@@ -137,3 +137,60 @@ steps:
         source.load(scenario_path)
 
     assert "requires a non-empty target" in str(error.value)
+
+
+def test_yaml_scenario_source_rejects_invalid_setup_mode_and_repetition_mode() -> None:
+    case_dir = _make_case_dir("invalid_setup_values")
+    scenario_path = case_dir / "invalid_setup.yaml"
+    scenario_path.write_text(
+        """
+metadata:
+  id: invalid_setup_values
+setup:
+  mode: arcade
+  repetition_mode: loop
+  players:
+    - Stan
+    - Denise
+steps:
+  - name: launch app
+    action: launch_app
+""".strip(),
+        encoding="utf-8",
+    )
+
+    source = YAMLScenarioSource()
+
+    with pytest.raises(ScenarioValidationError) as error:
+        source.load(scenario_path)
+
+    assert "setup.mode must be one of: custom, preset." in str(error.value)
+
+
+def test_yaml_scenario_source_rejects_invalid_expected_view() -> None:
+    case_dir = _make_case_dir("invalid_expect_view")
+    scenario_path = case_dir / "invalid_expect_view.yaml"
+    scenario_path.write_text(
+        """
+metadata:
+  id: invalid_expect_view
+setup:
+  mode: custom
+  players:
+    - Stan
+    - Denise
+steps:
+  - name: launch app
+    action: launch_app
+    expect:
+      view: overlay
+""".strip(),
+        encoding="utf-8",
+    )
+
+    source = YAMLScenarioSource()
+
+    with pytest.raises(ScenarioValidationError) as error:
+        source.load(scenario_path)
+
+    assert "must be one of: history, match, setup, setup_details" in str(error.value)

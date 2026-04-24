@@ -1,0 +1,110 @@
+metadata:
+  id: consultation_undo_restores_engaged_turn_regression
+  title: Consultation undo restores the engaged turn cleanly
+  tags:
+    - regression
+    - consultation
+    - undo
+
+setup:
+  mode: preset
+  preset: duel_short_strict_v9_3
+  players:
+    - Stan
+    - Denise
+
+steps:
+  - name: launch app
+    action: launch_app
+    expect:
+      view: setup
+
+  - name: select short strict duel preset
+    action: select_option
+    target: setup.preset_combo
+    value: duel_short_strict_v9_3
+    expect:
+      view: setup
+
+  - name: enter first player
+    action: type
+    target: setup.player_name_entry.1
+    value: Stan
+    expect:
+      view: setup
+
+  - name: enter second player
+    action: type
+    target: setup.player_name_entry.2
+    value: Denise
+    expect:
+      view: setup
+
+  - name: start game
+    action: click
+    target: setup.start_game_button
+    expect:
+      view: match
+
+  - name: search soul
+    action: type
+    target: match.trick_entry
+    value: soul
+    expect:
+      view: match
+      dropdown_contains:
+        - Soul
+
+  - name: select soul
+    action: select_suggestion
+    target: match.trick_suggestions_listbox
+    value: Soul
+    expect:
+      view: match
+      status_text_equals: Valid trick selected.
+
+  - name: confirm soul
+    action: click
+    target: match.confirm_trick_button
+    expect:
+      view: match
+      text_equals:
+        match.trick_label: "Trick: Soul"
+
+  - name: land attack
+    action: click
+    target: match.success_button
+    expect:
+      view: match
+      text_contains:
+        match.phase_description_label: "Current defender: Denise"
+
+  - name: miss defense and finish game
+    action: click
+    target: match.failure_button
+    expect:
+      view: match
+      text_equals:
+        match.phase_title_label: Game over
+      text_contains:
+        match.phase_description_label: "Consultation mode"
+      button_states:
+        match.history_button: normal
+        match.setup_details_button: normal
+        match.undo_button: normal
+
+  - name: undo out of consultation
+    action: click
+    target: match.undo_button
+    expect:
+      view: match
+      status_text_contains: Undo successful
+      text_equals:
+        match.phase_title_label: Stan attacks
+        match.trick_label: "Trick: Soul"
+      button_states:
+        match.success_button: normal
+        match.failure_button: normal
+
+  - name: shutdown app
+    action: shutdown_app

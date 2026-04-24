@@ -1,0 +1,32 @@
+V9.3 Regression Library
+
+Objective
+This document records the dedicated regression scenarios introduced during V9.3.
+
+These scenarios are intentionally narrower than the stress library:
+- each one protects a concrete bug or a very specific fragile sequence
+- each one is named after the failure it prevents from coming back
+- they complement the broader stress scenarios instead of replacing them
+
+Regression scenarios
+
+1. deep_undo_restores_trick_input_regression
+- protects the bug where undoing back to setup and restarting the game could
+  leave trick entry in a broken state
+
+2. load_restores_engaged_turn_controls_regression
+- protects the flow where loading a saved engaged turn must restore the right
+  match controls and keep invalid controls disabled
+
+3. consultation_undo_restores_engaged_turn_regression
+- protects end-of-game consultation mode and the undo path that exits it
+
+4. player_count_rebuilds_fields_regression
+- protects the custom setup flow where changing the player count must rebuild
+  the corresponding player input fields
+
+Design note
+The regression library should stay small and concrete.
+Future bugs found manually should be added here when they correspond to one
+specific broken sequence, instead of being hidden only inside a larger stress
+scenario.

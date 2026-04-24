@@ -1,0 +1,130 @@
+metadata:
+  id: mixed_save_load_roster_stress
+  title: Mixed save load and roster stress flow
+  tags:
+    - stress
+    - mixed
+    - save_load
+    - roster
+
+setup:
+  mode: preset
+  preset: classic_skate_v8
+  players:
+    - Stan
+    - Denise
+
+steps:
+  - name: launch app
+    action: launch_app
+    expect:
+      view: setup
+
+  - name: select V9 duel preset
+    action: select_option
+    target: setup.preset_combo
+    value: classic_skate_v8
+    expect:
+      view: setup
+
+  - name: enter first player
+    action: type
+    target: setup.player_name_entry.1
+    value: Stan
+    expect:
+      view: setup
+
+  - name: enter second player
+    action: type
+    target: setup.player_name_entry.2
+    value: Denise
+    expect:
+      view: setup
+
+  - name: start game
+    action: click
+    target: setup.start_game_button
+    expect:
+      view: match
+
+  - name: queue join response
+    action: queue_prompt_response
+    value: Frank
+
+  - name: add Frank
+    action: click
+    target: match.add_player_button
+    expect:
+      view: match
+      score_cells:
+        1,0: STAN
+        1,2: DENISE
+        1,4: FRANK
+
+  - name: save battle transition
+    action: click
+    target: match.save_button
+    expect:
+      view: match
+      status_text_contains: Game saved to
+
+  - name: return to setup
+    action: click
+    target: match.new_game_button
+    expect:
+      view: setup
+      status_text_equals: Configure the game to begin.
+
+  - name: select latest save
+    action: set_load_selection
+    value: latest
+
+  - name: load saved transition
+    action: click
+    target: setup.load_from_setup_button
+    expect:
+      view: match
+      status_text_contains: Game loaded from
+      score_cells:
+        1,0: STAN
+        1,2: DENISE
+        1,4: FRANK
+
+  - name: open setup details after load
+    action: click
+    target: match.setup_details_button
+    expect:
+      view: setup_details
+      text_contains:
+        setup_details.body_label: "Players: Stan, Denise, Frank"
+
+  - name: back from setup details after load
+    action: click
+    target: setup_details.back_to_game_button
+    expect:
+      view: match
+
+  - name: queue removal response
+    action: queue_prompt_response
+    value: Frank
+
+  - name: remove Frank after load
+    action: click
+    target: match.remove_player_button
+    expect:
+      view: match
+      status_text_contains: left the game
+      score_cells:
+        1,0: STAN
+        1,2: DENISE
+
+  - name: open setup details after removal
+    action: click
+    target: match.setup_details_button
+    expect:
+      view: setup_details
+      text_contains:
+        setup_details.body_label: "Structure: one_vs_one"
+
+  - name: shutdown app
+    action: shutdown_app

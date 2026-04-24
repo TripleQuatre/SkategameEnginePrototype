@@ -9,6 +9,10 @@ class GUIHarnessDriver(Protocol):
 
     def shutdown(self) -> None: ...
 
+    def queue_prompt_response(self, value: str | None) -> None: ...
+
+    def set_load_selection(self, value: str) -> None: ...
+
     def click(self, target: str) -> None: ...
 
     def type_text(self, target: str, value: str, *, replace: bool = True) -> None: ...
@@ -41,6 +45,13 @@ class GUIHarnessOracleEngine(Protocol):
 
 
 class GUIHarnessReporter(Protocol):
+    def scenario_summary(
+        self,
+        scenario: dict[str, Any],
+        *,
+        scenario_path: Path | None = None,
+    ) -> dict[str, Any]: ...
+
     def build_failure_payload(
         self,
         *,
@@ -49,6 +60,7 @@ class GUIHarnessReporter(Protocol):
         visible_state: GUIVisibleState | None,
         error: Exception,
         screenshot_path: Path | None,
+        scenario_path: Path | None = None,
     ) -> dict[str, Any]: ...
 
     def finalize(

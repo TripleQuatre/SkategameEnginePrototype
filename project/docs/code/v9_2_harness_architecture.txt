@@ -82,6 +82,13 @@ Core components
 - never explores arbitrary widgets or arbitrary actions
 - stores the seed and generated sequence in the final report
 
+11. `harness/stress_matrix.py`
+- explicit cross-execution catalog for V9.3
+- keeps a readable list of useful `preset x stress scenario` combinations
+- applies controlled scenario rewrites when the same stress family is replayed
+  under another fixed preset
+- deliberately avoids a giant opaque matrix at this stage
+
 Current step coverage
 - V9.2 step 1 defines architecture and boundaries
 - V9.2 step 2 adds minimal GUI instrumentation
@@ -102,6 +109,15 @@ Reference scenarios V1
 - `harness/scenarios/reference/history_and_setup_details_navigation.yaml`
 - `harness/scenarios/reference/undo_to_setup_regression.yaml`
 - `harness/scenarios/reference/save_smoke.yaml`
+
+Scenario families after V9.3
+- `harness/scenarios/reference/`
+  smoke and baseline navigation flows
+- `harness/scenarios/stress/`
+  broader deterministic stress sequences around undo, load, roster, and mixed
+  transitions
+- `harness/scenarios/regression/`
+  small dedicated scenarios that permanently protect concrete bugs already found
 
 Future step mapping
 - step 2: minimal GUI instrumentation

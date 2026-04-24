@@ -9,6 +9,10 @@ class ScenarioValidationError(ValueError):
 
 
 class YAMLScenarioSource:
+    ALLOWED_SETUP_MODES = {"preset", "custom"}
+    ALLOWED_STRUCTURES = {"one_vs_one", "battle"}
+    ALLOWED_REPETITION_MODES = {"choice", "common", "disabled"}
+    ALLOWED_VIEWS = {"setup", "match", "history", "setup_details"}
     ALLOWED_METADATA_KEYS = {"id", "title", "tags"}
     ALLOWED_SETUP_KEYS = {
         "mode",
@@ -26,6 +30,8 @@ class YAMLScenarioSource:
     ALLOWED_ACTIONS = {
         "launch_app",
         "shutdown_app",
+        "queue_prompt_response",
+        "set_load_selection",
         "click",
         "type",
         "press_key",
@@ -103,6 +109,22 @@ class YAMLScenarioSource:
                 f"Unknown setup keys: {sorted(unknown_keys)}"
             )
 
+        mode = setup.get("mode")
+        if mode is not None and mode not in self.ALLOWED_SETUP_MODES:
+            raise ScenarioValidationError(
+                "setup.mode must be one of: custom, preset."
+            )
+
+        preset = setup.get("preset")
+        if preset is not None and (not isinstance(preset, str) or not preset.strip()):
+            raise ScenarioValidationError("setup.preset must be a non-empty string.")
+
+        structure = setup.get("structure")
+        if structure is not None and structure not in self.ALLOWED_STRUCTURES:
+            raise ScenarioValidationError(
+                "setup.structure must be one of: battle, one_vs_one."
+            )
+
         players = setup.get("players")
         if players is not None:
             if not isinstance(players, list) or not all(
@@ -110,14 +132,34 @@ class YAMLScenarioSource:
             ):
                 raise ScenarioValidationError("setup.players must be a list of names.")
 
+        word = setup.get("word")
+        if word is not None and (not isinstance(word, str) or not word.strip()):
+            raise ScenarioValidationError("setup.word must be a non-empty string.")
+
         for int_key in ("attack_attempts", "defense_attempts", "repetition_limit"):
             value = setup.get(int_key)
-            if value is not None and not isinstance(value, int):
-                raise ScenarioValidationError(f"setup.{int_key} must be an integer.")
+            if value is not None:
+                if not isinstance(value, int):
+                    raise ScenarioValidationError(
+                        f"setup.{int_key} must be an integer."
+                    )
+                if value < 1:
+                    raise ScenarioValidationError(
+                        f"setup.{int_key} must be greater than or equal to 1."
+                    )
 
         uniqueness = setup.get("uniqueness")
         if uniqueness is not None and not isinstance(uniqueness, bool):
             raise ScenarioValidationError("setup.uniqueness must be a boolean.")
+
+        repetition_mode = setup.get("repetition_mode")
+        if (
+            repetition_mode is not None
+            and repetition_mode not in self.ALLOWED_REPETITION_MODES
+        ):
+            raise ScenarioValidationError(
+                "setup.repetition_mode must be one of: choice, common, disabled."
+            )
 
     def _validate_steps(self, steps: list[Any]) -> None:
         for index, step in enumerate(steps, start=1):
@@ -154,7 +196,13 @@ class YAMLScenarioSource:
                         f"Step {index} action '{action}' requires a non-empty target."
                     )
 
-            if action in {"type", "select_option", "select_suggestion"}:
+            if action in {
+                "type",
+                "select_option",
+                "select_suggestion",
+                "queue_prompt_response",
+                "set_load_selection",
+            }:
                 value = step.get("value")
                 if not isinstance(value, str):
                     raise ScenarioValidationError(
@@ -183,6 +231,13 @@ class YAMLScenarioSource:
                 raise ScenarioValidationError(
                     f"Expectation '{string_key}' at step {step_index} must be a string."
                 )
+
+        expected_view = expect.get("view")
+        if expected_view is not None and expected_view not in self.ALLOWED_VIEWS:
+            raise ScenarioValidationError(
+                "Expectation 'view' at step "
+                f"{step_index} must be one of: history, match, setup, setup_details."
+            )
 
         for mapping_key in ("button_states", "text_equals", "text_contains", "score_cells"):
             value = expect.get(mapping_key)

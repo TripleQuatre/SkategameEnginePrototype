@@ -1,0 +1,116 @@
+metadata:
+  id: load_restores_engaged_turn_controls_regression
+  title: Loading an engaged turn restores the correct match controls
+  tags:
+    - regression
+    - load
+    - engaged_turn
+
+setup:
+  mode: preset
+  preset: classic_skate_v8
+  players:
+    - Stan
+    - Denise
+
+steps:
+  - name: launch app
+    action: launch_app
+    expect:
+      view: setup
+
+  - name: select V8 duel preset
+    action: select_option
+    target: setup.preset_combo
+    value: classic_skate_v8
+    expect:
+      view: setup
+      text_equals:
+        setup.preset_combo: classic_skate_v8
+
+  - name: enter first player
+    action: type
+    target: setup.player_name_entry.1
+    value: Stan
+    expect:
+      view: setup
+
+  - name: enter second player
+    action: type
+    target: setup.player_name_entry.2
+    value: Denise
+    expect:
+      view: setup
+
+  - name: start game
+    action: click
+    target: setup.start_game_button
+    expect:
+      view: match
+      status_text_equals: Game started.
+
+  - name: search soul
+    action: type
+    target: match.trick_entry
+    value: soul
+    expect:
+      view: match
+      dropdown_contains:
+        - Soul
+
+  - name: select soul
+    action: select_suggestion
+    target: match.trick_suggestions_listbox
+    value: Soul
+    expect:
+      view: match
+      status_text_equals: Valid trick selected.
+      button_states:
+        match.confirm_trick_button: normal
+
+  - name: confirm soul
+    action: click
+    target: match.confirm_trick_button
+    expect:
+      view: match
+      text_equals:
+        match.phase_title_label: Stan attacks
+        match.trick_label: "Trick: Soul"
+      button_states:
+        match.failure_button: normal
+        match.add_player_button: disabled
+
+  - name: save engaged turn
+    action: click
+    target: match.save_button
+    expect:
+      view: match
+      status_text_contains: Game saved to
+
+  - name: return to setup
+    action: click
+    target: match.new_game_button
+    expect:
+      view: setup
+      status_text_equals: Configure the game to begin.
+
+  - name: select latest save
+    action: set_load_selection
+    value: latest
+
+  - name: load saved engaged turn
+    action: click
+    target: setup.load_from_setup_button
+    expect:
+      view: match
+      status_text_contains: Game loaded from
+      text_equals:
+        match.phase_title_label: Stan attacks
+        match.trick_label: "Trick: Soul"
+      button_states:
+        match.confirm_trick_button: disabled
+        match.failure_button: normal
+        match.add_player_button: disabled
+
+  - name: shutdown app
+    action: shutdown_app

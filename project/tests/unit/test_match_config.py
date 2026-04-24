@@ -114,3 +114,38 @@ def test_match_config_structure_name_comes_from_structure_config() -> None:
     )
 
     assert match_config.structure_name == "battle"
+
+
+def test_preset_registry_exposes_v9_3_reference_presets() -> None:
+    registry = PresetRegistry()
+
+    preset_names = registry.list_preset_names()
+
+    assert "duel_short_strict_v9_3" in preset_names
+    assert "duel_long_open_v9_3" in preset_names
+    assert "battle_balanced_v9_3" in preset_names
+    assert "battle_long_open_v9_3" in preset_names
+
+
+def test_preset_registry_v9_3_reference_presets_cover_new_parameter_edges() -> None:
+    registry = PresetRegistry()
+
+    duel_short_strict = registry.get("duel_short_strict_v9_3")
+    battle_balanced = registry.get("battle_balanced_v9_3")
+    battle_long_open = registry.get("battle_long_open_v9_3")
+
+    assert duel_short_strict.rule_set.letters_word == "S"
+    assert duel_short_strict.rule_set.attack_attempts == 3
+    assert duel_short_strict.rule_set.defense_attempts == 1
+    assert duel_short_strict.fine_rules.uniqueness_enabled is True
+    assert duel_short_strict.fine_rules.repetition_mode == "choice"
+    assert duel_short_strict.fine_rules.repetition_limit == 1
+
+    assert battle_balanced.rule_set.attack_attempts == 3
+    assert battle_balanced.rule_set.defense_attempts == 2
+    assert battle_balanced.fine_rules.repetition_mode == "common"
+    assert battle_balanced.fine_rules.repetition_limit == 2
+
+    assert battle_long_open.rule_set.letters_word == "SKATEBOARD"
+    assert battle_long_open.fine_rules.uniqueness_enabled is False
+    assert battle_long_open.fine_rules.repetition_mode == "disabled"

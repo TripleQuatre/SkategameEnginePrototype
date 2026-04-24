@@ -177,4 +177,80 @@ class PresetRegistry:
                 ),
                 description="V8 hardcore battle preset with strict shared repetition.",
             ),
+            MatchPreset(
+                name="duel_short_strict_v9_3",
+                structure_name="one_vs_one",
+                rule_set=RuleSetConfig(
+                    letters_word="S",
+                    elimination_enabled=True,
+                    attack_attempts=3,
+                    defense_attempts=1,
+                ),
+                policies=MatchPolicies(
+                    initial_turn_order=InitialTurnOrderPolicy.FIXED_PLAYER_ORDER,
+                ),
+                fine_rules=FineRulesConfig(
+                    uniqueness_enabled=True,
+                    repetition_mode="choice",
+                    repetition_limit=1,
+                ),
+                description="V9.3 reference duel preset with the shortest word and the strictest per-attacker repetition.",
+            ),
+            MatchPreset(
+                name="duel_long_open_v9_3",
+                structure_name="one_vs_one",
+                rule_set=RuleSetConfig(
+                    letters_word="SKATEBOARD",
+                    elimination_enabled=True,
+                    attack_attempts=3,
+                    defense_attempts=3,
+                ),
+                policies=MatchPolicies(
+                    initial_turn_order=InitialTurnOrderPolicy.FIXED_PLAYER_ORDER,
+                ),
+                fine_rules=FineRulesConfig(
+                    uniqueness_enabled=False,
+                    repetition_mode="disabled",
+                    repetition_limit=3,
+                ),
+                description="V9.3 reference duel preset with a long word and fully open trick reuse.",
+            ),
+            MatchPreset(
+                name="battle_balanced_v9_3",
+                structure_name="battle",
+                rule_set=RuleSetConfig(
+                    letters_word="OUT",
+                    elimination_enabled=True,
+                    attack_attempts=3,
+                    defense_attempts=2,
+                ),
+                policies=MatchPolicies(
+                    initial_turn_order=InitialTurnOrderPolicy.RANDOMIZED,
+                ),
+                fine_rules=FineRulesConfig(
+                    uniqueness_enabled=True,
+                    repetition_mode="common",
+                    repetition_limit=2,
+                ),
+                description="V9.3 reference battle preset with mid defense pressure and shared repetition.",
+            ),
+            MatchPreset(
+                name="battle_long_open_v9_3",
+                structure_name="battle",
+                rule_set=RuleSetConfig(
+                    letters_word="SKATEBOARD",
+                    elimination_enabled=True,
+                    attack_attempts=2,
+                    defense_attempts=2,
+                ),
+                policies=MatchPolicies(
+                    initial_turn_order=InitialTurnOrderPolicy.RANDOMIZED,
+                ),
+                fine_rules=FineRulesConfig(
+                    uniqueness_enabled=False,
+                    repetition_mode="disabled",
+                    repetition_limit=3,
+                ),
+                description="V9.3 reference battle preset with a long word and open fine-rule constraints.",
+            ),
         ]

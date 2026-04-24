@@ -42,6 +42,8 @@ class GUIApp:
         self._selected_trick_completion: str | None = None
         self._current_trick_suggestions = []
         self._harness_targets: dict[str, tk.Widget] = {}
+        self._harness_prompt_responses: list[str | None] = []
+        self._harness_load_selection: str | None = None
 
         self.title_font = tkfont.Font(size=18, weight="bold")
         self.subtitle_font = tkfont.Font(size=10)
@@ -168,6 +170,53 @@ class GUIApp:
             return str(widget.cget("state"))
         except tk.TclError:
             return None
+
+    def queue_harness_prompt_response(self, value: str | None) -> None:
+        self._harness_prompt_responses.append(value)
+
+    def set_harness_load_selection(self, value: str) -> None:
+        self._harness_load_selection = value
+
+    def _ask_string_dialog(self, title: str, prompt: str) -> str | None:
+        if self._harness_prompt_responses:
+            return self._harness_prompt_responses.pop(0)
+
+        return simpledialog.askstring(
+            title,
+            prompt,
+            parent=self.root,
+        )
+
+    def _resolve_harness_load_selection(
+        self, save_files: list[Path]
+    ) -> tuple[bool, Path | None]:
+        selection = self._harness_load_selection
+        if selection is None:
+            return False, None
+
+        self._harness_load_selection = None
+        normalized = selection.strip().lower()
+        if normalized in {"latest", "__latest__"}:
+            return True, save_files[-1]
+
+        selected_path = next(
+            (path for path in save_files if path.name == selection),
+            None,
+        )
+        return True, selected_path
+
+    def _apply_loaded_controller(self, selected_path: Path) -> None:
+        self._load_game_into_controller(selected_path)
+        loaded_state = self.controller.get_state()
+        if loaded_state.phase == Phase.END:
+            self.status_var.set(
+                f"Finished game loaded from {selected_path.name}. Consultation mode."
+            )
+        else:
+            self.status_var.set(f"Game loaded from {selected_path.name}.")
+
+        self._show_view("game")
+        self._refresh_game_view()
 
     def _ensure_saves_dir(self) -> Path:
         self.SAVES_DIR.mkdir(parents=True, exist_ok=True)
@@ -911,13 +960,25 @@ class GUIApp:
         self.controller = self.setup_service.load_controller(str(selected_path))
         self._clear_trick_selection()
 
-    def _load_game_from_setup(self) -> None:
-        save_files = self._list_save_files()
+    def _resolve_selected_save_path(
+        self,
+        save_files: list[Path],
+        selected_name: str,
+    ) -> Path | None:
+        return next(
+            (path for path in save_files if path.name == selected_name),
+            None,
+        )
 
-        if not save_files:
-            messagebox.showinfo("Load game", "No saved games found.")
-            return
+    def _try_apply_loaded_controller(self, selected_path: Path) -> bool:
+        try:
+            self._apply_loaded_controller(selected_path)
+        except (OSError, ValueError, InvalidStateError) as error:
+            messagebox.showerror("Load game", str(error))
+            return False
+        return True
 
+    def _open_load_game_chooser(self, save_files: list[Path]) -> None:
         chooser = tk.Toplevel(self.root)
         chooser.title("Load saved game")
         chooser.resizable(False, False)
@@ -946,32 +1007,16 @@ class GUIApp:
         buttons.pack()
 
         def confirm_load() -> None:
-            selected_name = selected_var.get()
-            selected_path = next(
-                (path for path in save_files if path.name == selected_name),
-                None,
+            selected_path = self._resolve_selected_save_path(
+                save_files,
+                selected_var.get(),
             )
             if selected_path is None:
                 messagebox.showerror("Load game", "Invalid save selection.")
                 return
 
-            try:
-                self._load_game_into_controller(selected_path)
-            except (OSError, ValueError, InvalidStateError) as error:
-                messagebox.showerror("Load game", str(error))
-                return
-
-            loaded_state = self.controller.get_state()
-            if loaded_state.phase == Phase.END:
-                self.status_var.set(
-                    f"Finished game loaded from {selected_path.name}. Consultation mode."
-                )
-            else:
-                self.status_var.set(f"Game loaded from {selected_path.name}.")
-
-            chooser.destroy()
-            self._show_view("game")
-            self._refresh_game_view()
+            if self._try_apply_loaded_controller(selected_path):
+                chooser.destroy()
 
         ttk.Button(
             buttons,
@@ -986,6 +1031,27 @@ class GUIApp:
             command=chooser.destroy,
             width=12,
         ).pack(side="left", padx=6)
+
+    def _load_game_via_dialog(self) -> None:
+        save_files = self._list_save_files()
+
+        if not save_files:
+            messagebox.showinfo("Load game", "No saved games found.")
+            return
+
+        has_override, selected_path = self._resolve_harness_load_selection(save_files)
+        if has_override:
+            if selected_path is None:
+                messagebox.showerror("Load game", "Invalid save selection.")
+                return
+
+            self._try_apply_loaded_controller(selected_path)
+            return
+
+        self._open_load_game_chooser(save_files)
+
+    def _load_game_from_setup(self) -> None:
+        self._load_game_via_dialog()
 
     def _undo_action(self) -> None:
         if self.controller is None:
@@ -1020,79 +1086,7 @@ class GUIApp:
         self.status_var.set(f"Game saved to {filepath.name}.")
 
     def _load_game_during_session(self) -> None:
-        save_files = self._list_save_files()
-
-        if not save_files:
-            messagebox.showinfo("Load game", "No saved games found.")
-            return
-
-        chooser = tk.Toplevel(self.root)
-        chooser.title("Load saved game")
-        chooser.resizable(False, False)
-        chooser.transient(self.root)
-        chooser.grab_set()
-
-        ttk.Label(
-            chooser,
-            text="Choose a saved game:",
-            padding=(16, 16, 16, 8),
-        ).pack()
-
-        selected_var = tk.StringVar(value=save_files[-1].name)
-
-        combo = ttk.Combobox(
-            chooser,
-            textvariable=selected_var,
-            values=[path.name for path in save_files],
-            state="readonly",
-            width=30,
-        )
-        combo.pack(padx=16, pady=(0, 16))
-        combo.focus_set()
-
-        buttons = ttk.Frame(chooser, padding=(16, 0, 16, 16))
-        buttons.pack()
-
-        def confirm_load() -> None:
-            selected_name = selected_var.get()
-            selected_path = next(
-                (path for path in save_files if path.name == selected_name),
-                None,
-            )
-            if selected_path is None:
-                messagebox.showerror("Load game", "Invalid save selection.")
-                return
-
-            try:
-                self._load_game_into_controller(selected_path)
-            except (OSError, ValueError, InvalidStateError) as error:
-                messagebox.showerror("Load game", str(error))
-                return
-
-            loaded_state = self.controller.get_state()
-            if loaded_state.phase == Phase.END:
-                self.status_var.set(
-                    f"Finished game loaded from {selected_path.name}. Consultation mode."
-                )
-            else:
-                self.status_var.set(f"Game loaded from {selected_path.name}.")
-            chooser.destroy()
-            self._show_view("game")
-            self._refresh_game_view()
-
-        ttk.Button(
-            buttons,
-            text="Load",
-            command=confirm_load,
-            width=12,
-        ).pack(side="left", padx=6)
-
-        ttk.Button(
-            buttons,
-            text="Cancel",
-            command=chooser.destroy,
-            width=12,
-        ).pack(side="left", padx=6)
+        self._load_game_via_dialog()
 
     def _start_game(self) -> None:
         player_ids = [player_var.get().strip() for player_var in self.player_name_vars]
@@ -1215,11 +1209,7 @@ class GUIApp:
         if self.controller is None:
             return
 
-        player_name = simpledialog.askstring(
-            "Add player",
-            "Player name:",
-            parent=self.root,
-        )
+        player_name = self._ask_string_dialog("Add player", "Player name:")
 
         if player_name is None:
             return
@@ -1246,11 +1236,7 @@ class GUIApp:
         if self.controller is None:
             return
 
-        player_name = simpledialog.askstring(
-            "Remove player",
-            "Player name:",
-            parent=self.root,
-        )
+        player_name = self._ask_string_dialog("Remove player", "Player name:")
 
         if player_name is None:
             return

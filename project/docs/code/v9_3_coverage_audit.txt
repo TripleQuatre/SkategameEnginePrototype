@@ -1,0 +1,302 @@
+V9.3 Coverage Audit
+
+Objective
+This document captures the real coverage state of the V9.2 harness before the
+V9.3 expansion work starts.
+
+It answers three questions:
+- which GUI flows are already covered in a deterministic way
+- which configurations are really exercised today
+- which mechanical risk zones remain under-covered
+
+1. Current Harness Inputs
+
+1.1 Fixed configurations available in preset_registry
+
+The registry currently exposes these fixed presets:
+- classic_skate
+- classic_blade
+- battle_standard
+- battle_hardcore
+- classic_skate_v8
+- blade_open_v8
+- battle_common_v8
+- battle_hardcore_v8
+
+They cover:
+- one_vs_one and battle
+- short and long words
+- attack attempts 1 and 2
+- defense attempts 1 and 3
+- uniqueness enabled and disabled
+- repetition modes choice, common, disabled
+- repetition limits 1 and 3
+
+They do not yet provide a deliberately curated "stress reference" family.
+
+1.2 Deterministic reference scenarios currently present
+
+The harness reference directory currently contains:
+- preset_one_vs_one_smoke.yaml
+- custom_battle_smoke.yaml
+- history_and_setup_details_navigation.yaml
+- undo_to_setup_regression.yaml
+- save_smoke.yaml
+
+1.3 Semi-random exploration currently present
+
+The bounded random explorer can generate:
+- preset_one_vs_one
+- custom_one_vs_one
+- preset_battle
+- custom_battle
+
+Possible preset values currently sampled by the random explorer:
+- classic_skate_v8
+- blade_open_v8
+- battle_common_v8
+- battle_hardcore_v8
+
+Important limitation:
+- this semi-random path is useful, but still shallow
+- it is not yet a substitute for deterministic stress scenarios
+- it currently explores safe fragments only
+
+2. What Is Deterministically Covered Today
+
+2.1 Setup coverage
+
+Covered:
+- app launch to setup
+- preset mode start in one_vs_one
+- custom mode start in battle
+- player count change to 3 players
+- player name entry
+- custom word editing
+- start game transition
+
+Not deterministically covered:
+- classic_blade preset
+- battle_standard preset
+- battle_hardcore preset
+- classic_skate_v8 preset
+- blade_open_v8 preset
+- battle_common_v8 preset
+- battle_hardcore_v8 preset
+- custom one_vs_one setup
+- aggressive parameter combinations in custom setup
+
+2.2 Match view coverage
+
+Covered:
+- open turn state
+- trick search dropdown
+- terminal suggestion selection
+- trick confirmation
+- attack state after confirmation
+- basic battle score rendering
+- one_vs_one score rendering
+
+Partially covered:
+- attack miss flow
+- one-step undo after start game
+
+Not deterministically covered:
+- attack success followed by defense phase
+- defense success
+- defense failure with letter assignment
+- score progression after letters are awarded
+- end-of-game consultation state
+- repeated turn chains across several attackers
+- attacker marker movement over multiple turns
+
+2.3 Secondary views coverage
+
+Covered:
+- history navigation
+- setup details navigation
+
+Not deterministically covered:
+- history after multiple completed turns
+- history after roster transitions
+- setup details under strongly different fine-rule configurations
+- consultation mode secondary navigation after game end
+
+2.4 Session actions coverage
+
+Covered:
+- save action from match
+- undo from match back to setup
+
+Not deterministically covered:
+- load action
+- save then load same session inside a deterministic harness scenario
+- new game action
+- multiple undo chains
+- undo after save/load
+- undo after roster transitions
+
+2.5 Roster transitions coverage
+
+Covered:
+- none in deterministic harness reference scenarios
+
+Not deterministically covered:
+- add player between turns
+- remove player between turns
+- add then remove
+- structure transition one_vs_one -> battle
+- structure transition battle -> one_vs_one
+- undo after roster transitions
+- save/load after roster transitions
+
+3. What Is Only Lightly Covered Through Semi-Random Runs
+
+The bounded random explorer can touch:
+- save
+- history
+- setup details
+- trick search
+- single undo
+
+It may also sample V8 presets not used in deterministic reference scenarios.
+
+But today it still has strong limits:
+- no roster transitions
+- no load flow
+- no long undo chains
+- no multi-turn deterministic outcome checks
+- no direct validation of uniqueness/repetition enforcement
+- no targeted regression pressure on known fragile sequences
+
+4. Mechanical Risk Zones Still Under-Covered
+
+The following risk zones remain the most important blind spots for the harness.
+
+4.1 Save / load mechanics
+
+Current gap:
+- save is covered, load is not
+
+Risk:
+- controller/view desynchronization after load
+- stale trick input state after load
+- invalid button states after load
+- history/setup_details mismatches after load
+
+4.2 Undo chains
+
+Current gap:
+- only one simple undo path is covered
+
+Risk:
+- latent state leaks after multiple undos
+- view restored incorrectly
+- controls left active in wrong phase
+- roster/score/history inconsistencies after deep undo chains
+
+4.3 Roster transitions
+
+Current gap:
+- not covered at all by the deterministic harness
+
+Risk:
+- structure switches breaking score rendering
+- attacker/defender bookkeeping mismatches
+- invalid button states around between-turn transitions
+- save/load/undo interacting badly with join/remove
+
+4.4 Fine-rule coverage
+
+Current gap:
+- uniqueness and repetition are not deeply asserted through harness flows
+
+Risk:
+- GUI accepts actions that runtime later rejects incorrectly
+- status messages drift from actual validation behavior
+- presets with different fine rules are not equally protected
+
+4.5 End-of-game and consultation mode
+
+Current gap:
+- no deterministic reference scenario pushes the GUI fully into end mode
+
+Risk:
+- consultation controls not matching real end state
+- history/setup_details/new game interaction issues after finish
+- undo out of end state not fully protected
+
+5. Coverage Summary by Configuration Family
+
+Deterministically covered today:
+- classic_skate preset
+- custom battle with 3 players and custom word
+- custom 2-player setup only through the undo regression setup path
+
+Only semi-randomly touched:
+- classic_skate_v8
+- blade_open_v8
+- battle_common_v8
+- battle_hardcore_v8
+
+Not covered at all by the harness today:
+- classic_blade
+- battle_standard
+- battle_hardcore
+
+6. Coverage Summary by Scenario Family
+
+Covered now:
+- basic startup smoke
+- basic trick search smoke
+- basic history navigation
+- basic setup details navigation
+- save smoke
+- one-step undo regression
+
+Missing now:
+- load smoke
+- new game smoke
+- roster transition smoke
+- multi-undo stress
+- save/load stress
+- roster transition stress
+- mixed stress
+- end-of-game consultation stress
+- fine-rule enforcement scenarios
+
+7. Audit Conclusion
+
+The V9.2 harness is a valid V1:
+- it drives the real GUI
+- it validates visible state
+- it already protects a few important regressions
+
+But its deterministic coverage is still narrow.
+
+The main gap is not the harness architecture anymore.
+The main gap is scenario depth and configuration breadth.
+
+That is why the correct V9.3 direction is:
+- enrich fixed reference configurations
+- add deterministic stress scenarios
+- strengthen mechanical invariants
+- cross useful fixed configurations with useful stress scenario families
+
+8. Direct Consequences for V9.3
+
+Step 2 should add new fixed configurations that improve breadth.
+
+Step 3 should add deterministic stress scenarios for:
+- load
+- undo chains
+- roster transitions
+- mixed save/load/undo flows
+- consultation mode after end
+
+Step 4 should add stronger invariants around:
+- phase/view coherence
+- score/player-count coherence
+- trick input availability
+- roster button legality
+- history/setup_details consistency after transitions

@@ -1,0 +1,65 @@
+V9.3 Closure - 2026-04-24
+
+Objective
+V9.3 expands the harness from a valid V1 into a much stronger mechanical guard
+layer for the GUI and runtime flows.
+
+This version still does not add gameplay rules.
+It focuses entirely on:
+- broader fixed configuration coverage
+- longer deterministic stress sequences
+- stronger mechanical invariants
+- better diagnosis when a long scenario fails
+
+Delivered
+- V9.3 coverage audit
+- new fixed reference presets in `preset_registry`
+- deterministic stress scenario library
+- stronger always-on mechanical invariants in the oracle
+- explicit stress matrix with curated `preset x scenario` combinations
+- dedicated regression scenario library
+- richer stress reporting with scenario context and step deltas
+
+New fixed presets
+- `duel_short_strict_v9_3`
+- `duel_long_open_v9_3`
+- `battle_balanced_v9_3`
+- `battle_long_open_v9_3`
+
+Scenario families after V9.3
+- `reference`
+  baseline smoke and navigation flows
+- `stress`
+  longer deterministic stress runs
+- `regression`
+  narrow permanent protections for concrete bugs already found
+
+What the harness is better at now
+- deep undo chains
+- load from setup back into engaged turns
+- roster transitions and structure changes
+- consultation mode exit paths
+- mixed save/load/roster flows
+- reading failures in the context of the exact setup that produced them
+
+Reporting improvements
+- scenario context now keeps setup information
+- step history now keeps expectations
+- reports now keep compact state deltas between steps
+- long stress failures are easier to localize and understand
+
+Validation status
+- full pytest suite passes
+- stress matrix cases pass
+- regression library passes
+- the harness remains separate from gameplay ownership
+
+Residual environment warning
+- the remaining known warning is still the Windows `PytestCacheWarning` on
+  `.pytest_cache`
+- it does not indicate a gameplay or harness failure
+
+Recommended next direction
+- if the immediate priority stays on robustness, continue with harness
+  expansion before new rule families
+- otherwise, future rule work can now rely on a much safer GUI validation base

@@ -51,6 +51,21 @@ class TkGUIHarnessDriver:
             root.update_idletasks()
             root.destroy()
 
+    def _require_app(self) -> GUIApp:
+        if self.app is None:
+            raise RuntimeError("GUI harness driver is not launched.")
+        return self.app
+
+    def queue_prompt_response(self, value: str | None) -> None:
+        app = self._require_app()
+        app.queue_harness_prompt_response(value)
+        self._flush()
+
+    def set_load_selection(self, value: str) -> None:
+        app = self._require_app()
+        app.set_harness_load_selection(value)
+        self._flush()
+
     def click(self, target: str) -> None:
         widget = self._get_target(target)
         self._focus(widget)
@@ -146,19 +161,15 @@ class TkGUIHarnessDriver:
         return destination
 
     def _get_target(self, target: str):
-        if self.app is None:
-            raise RuntimeError("GUI harness driver is not launched.")
-
-        widget = self.app.get_harness_target(target)
+        app = self._require_app()
+        widget = app.get_harness_target(target)
         if widget is None:
             raise KeyError(f"Unknown harness target '{target}'.")
         return widget
 
     def _get_focus_target(self):
-        if self.app is None:
-            raise RuntimeError("GUI harness driver is not launched.")
-
-        widget = self.app.root.focus_get()
+        app = self._require_app()
+        widget = app.root.focus_get()
         if widget is None:
             raise RuntimeError("No widget currently has keyboard focus.")
         return widget

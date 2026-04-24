@@ -1,0 +1,57 @@
+metadata:
+  id: player_count_rebuilds_fields_regression
+  title: Changing player count rebuilds custom setup player fields
+  tags:
+    - regression
+    - setup
+    - player_count
+
+setup:
+  mode: custom
+  structure: battle
+  players:
+    - Stan
+    - Denise
+    - Frank
+
+steps:
+  - name: launch app
+    action: launch_app
+    expect:
+      view: setup
+
+  - name: switch to custom mode
+    action: click
+    target: setup.mode_custom_radiobutton
+    expect:
+      view: setup
+      text_equals:
+        setup.word_entry: SKATE
+
+  - name: set player count
+    action: type
+    target: setup.player_count_spinbox
+    value: "3"
+    expect:
+      view: setup
+
+  - name: rebuild player fields
+    action: press_key
+    target: setup.player_count_spinbox
+    key: enter
+    expect:
+      view: setup
+      text_equals:
+        setup.player_name_entry.3: ""
+
+  - name: enter third player
+    action: type
+    target: setup.player_name_entry.3
+    value: Frank
+    expect:
+      view: setup
+      text_equals:
+        setup.player_name_entry.3: Frank
+
+  - name: shutdown app
+    action: shutdown_app

@@ -41,10 +41,32 @@ Reference scenarios
 - `undo_to_setup_regression.yaml`
 - `save_smoke.yaml`
 
+Other scenario families
+- `harness/scenarios/stress/`
+  for longer deterministic stress sequences
+- `harness/scenarios/regression/`
+  for named bug regressions kept permanently in the harness library
+
+Stress matrix note
+- V9.3 also introduces an explicit `stress_matrix`
+- this is not a giant automatic matrix
+- it is a curated set of useful `preset x stress scenario` combinations chosen
+  for mechanical coverage and easier diagnosis
+
 Expected output
 - each scenario prints `[PASS]` or `[FAIL]`
 - failures print the failing step, error message, expected value, observed value,
   and artifact path when available
+- structured reports now also keep:
+  - scenario context (`tags`, `setup`, scenario path)
+  - step-by-step expectations
+  - visible-state transitions between steps
+  - compact deltas on buttons, key texts, score cells and dropdown state
+
+Stress reading note
+- this richer reporting is especially useful on long stress or regression runs
+- the important question is no longer only "which step failed"
+- it is also "under which config did it fail" and "what changed right before it"
 
 Boundary reminder
 - the harness remains a tooling layer

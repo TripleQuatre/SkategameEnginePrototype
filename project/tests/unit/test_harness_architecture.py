@@ -49,6 +49,11 @@ class _DummyObserver:
         return GUIVisibleState(active_view="setup")
 
 
+class _FailingObserver:
+    def read_visible_state(self, driver: _DummyDriver) -> GUIVisibleState:
+        raise ValueError("observer exploded")
+
+
 class _DummyOracleEngine:
     def evaluate_step(self, *, scenario, step, visible_state) -> None:
         return None
@@ -63,6 +68,7 @@ class _DummyReporter:
         visible_state,
         error,
         screenshot_path,
+        scenario_path=None,
     ) -> dict[str, object]:
         return {"error": str(error)}
 
@@ -111,3 +117,33 @@ def test_harness_runner_architecture_executes_empty_scenario() -> None:
     assert report.success is True
     assert report.debug_payload["status"] == "ok"
     assert report.debug_payload["limits"]["max_steps"] == 200
+
+
+def test_harness_runner_architecture_fails_when_observer_crashes() -> None:
+    class _StepScenarioSource:
+        def load(self, scenario_path: Path) -> dict[str, object]:
+            return {
+                "metadata": {"id": "observer_failure"},
+                "steps": [
+                    {
+                        "name": "launch app",
+                        "action": "launch_app",
+                    }
+                ],
+            }
+
+    case_dir = _make_case_dir("runner_observer_failure")
+    runner = GUIHarnessRunner(
+        scenario_source=_StepScenarioSource(),
+        driver=_DummyDriver(),
+        observer=_FailingObserver(),
+        oracle_engine=_DummyOracleEngine(),
+        reporter=_DummyReporter(),
+        run_config=GUIHarnessRunConfig(),
+    )
+
+    report = runner.run(case_dir / "dummy.yaml")
+
+    assert report.scenario_id == "observer_failure"
+    assert report.success is False
+    assert report.debug_payload["error"] == "observer exploded"

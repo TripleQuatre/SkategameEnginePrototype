@@ -35,21 +35,25 @@ def test_structured_harness_reporter_builds_failure_payload() -> None:
                 "step": {"name": "type trick", "action": "type"},
                 "observed_summary": "view=match",
                 "visible_state": visible_state,
+                "state_delta": {"view_changed": False},
             }
         ],
         visible_state=visible_state,
         error=error,
         screenshot_path=Path("artifacts/failure.txt"),
+        scenario_path=Path("harness/scenarios/stress/example.yaml"),
     )
 
     assert payload["scenario"]["id"] == "smoke_match"
     assert payload["scenario"]["tags"] == ["smoke", "gui"]
+    assert payload["scenario"]["scenario_path"] == "harness/scenarios/stress/example.yaml"
     assert payload["failure"]["expected"] == "Soul Switch"
     assert payload["failure"]["observed"] == ("Soul",)
     assert payload["failure"]["screenshot_path"] == "artifacts/failure.txt"
     assert payload["visible_state"]["active_view"] == "match"
     assert payload["visible_state"]["table_rows"]["history.tree"] == [["1", "Stan"]]
     assert payload["steps"][0]["observed_summary"] == "view=match"
+    assert payload["steps"][0]["state_delta"] == {"view_changed": False}
 
 
 def test_structured_harness_reporter_finalizes_success_report() -> None:
@@ -64,10 +68,11 @@ def test_structured_harness_reporter_finalizes_success_report() -> None:
                 "step": {"name": "launch app", "action": "launch_app"},
                 "observed_summary": "view=setup",
                 "visible_state": visible_state,
+                "state_delta": {"view_changed": False},
             }
         ],
         success=True,
-        debug_payload={"status": "ok"},
+        debug_payload={"status": "ok", "scenario": {"setup": {"mode": "preset"}}},
     )
 
     assert report.scenario_id == "setup_smoke"
@@ -76,6 +81,37 @@ def test_structured_harness_reporter_finalizes_success_report() -> None:
     assert len(report.steps) == 1
     assert report.steps[0].name == "launch app"
     assert report.steps[0].visible_state == visible_state
+
+
+def test_structured_harness_reporter_summarizes_setup_context() -> None:
+    reporter = StructuredGUIHarnessReporter()
+
+    summary = reporter.scenario_summary(
+        {
+            "metadata": {
+                "id": "stress_case",
+                "title": "Stress case",
+                "tags": ["stress", "roster"],
+            },
+            "setup": {
+                "mode": "preset",
+                "preset": "battle_balanced_v9_3",
+                "players": ["Stan", "Denise", "Alex"],
+                "repetition_mode": "common",
+                "repetition_limit": 2,
+            },
+        },
+        scenario_path=Path("harness/scenarios/stress/example.yaml"),
+    )
+
+    assert summary["setup"] == {
+        "mode": "preset",
+        "preset": "battle_balanced_v9_3",
+        "players": ["Stan", "Denise", "Alex"],
+        "repetition_mode": "common",
+        "repetition_limit": 2,
+    }
+    assert summary["scenario_path"] == "harness/scenarios/stress/example.yaml"
 
 
 def test_structured_harness_reporter_finalizes_failure_report() -> None:

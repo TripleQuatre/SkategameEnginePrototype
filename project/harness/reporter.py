@@ -20,9 +20,10 @@ class StructuredGUIHarnessReporter:
         visible_state: GUIVisibleState | None,
         error: Exception,
         screenshot_path: Path | None,
+        scenario_path: Path | None = None,
     ) -> dict[str, Any]:
         return {
-            "scenario": self._scenario_summary(scenario),
+            "scenario": self.scenario_summary(scenario, scenario_path=scenario_path),
             "steps": [self._step_payload(step) for step in executed_steps],
             "failure": {
                 "message": str(error),
@@ -78,12 +79,20 @@ class StructuredGUIHarnessReporter:
             "dropdown_items": list(visible_state.dropdown_items),
         }
 
-    def _scenario_summary(self, scenario: dict[str, Any]) -> dict[str, Any]:
+    def scenario_summary(
+        self,
+        scenario: dict[str, Any],
+        *,
+        scenario_path: Path | None = None,
+    ) -> dict[str, Any]:
         metadata = scenario.get("metadata") or {}
+        setup = scenario.get("setup") or {}
         summary = {
             "id": self._scenario_id(scenario),
             "title": metadata.get("title"),
             "tags": list(metadata.get("tags") or []),
+            "scenario_path": scenario_path.as_posix() if scenario_path else None,
+            "setup": self._setup_summary(setup),
         }
         for optional_key in ("seed", "kind", "max_steps"):
             if optional_key in metadata:
@@ -105,7 +114,9 @@ class StructuredGUIHarnessReporter:
             "target": step.get("target"),
             "value": step.get("value"),
             "key": step.get("key"),
+            "expect": step.get("expect"),
             "observed_summary": executed_step.get("observed_summary"),
+            "state_delta": executed_step.get("state_delta"),
             "visible_state": self.visible_state_to_payload(visible_state),
         }
 
@@ -146,3 +157,23 @@ class StructuredGUIHarnessReporter:
             observed=failure_payload.get("observed"),
             screenshot_path=Path(screenshot_path) if screenshot_path else None,
         )
+
+    def _setup_summary(self, setup: dict[str, Any]) -> dict[str, Any]:
+        summary: dict[str, Any] = {}
+        for key in (
+            "mode",
+            "preset",
+            "structure",
+            "word",
+            "attack_attempts",
+            "defense_attempts",
+            "uniqueness",
+            "repetition_mode",
+            "repetition_limit",
+        ):
+            if key in setup:
+                summary[key] = setup[key]
+        players = setup.get("players")
+        if isinstance(players, list):
+            summary["players"] = list(players)
+        return summary

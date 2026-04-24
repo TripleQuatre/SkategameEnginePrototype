@@ -1,0 +1,110 @@
+metadata:
+  id: deep_undo_restores_trick_input_regression
+  title: Deep undo restores setup and trick input safely
+  tags:
+    - regression
+    - undo
+    - trick_input
+
+setup:
+  mode: preset
+  preset: duel_long_open_v9_3
+  players:
+    - Stan
+    - Denise
+
+steps:
+  - name: launch app
+    action: launch_app
+    expect:
+      view: setup
+
+  - name: select long duel preset
+    action: select_option
+    target: setup.preset_combo
+    value: duel_long_open_v9_3
+    expect:
+      view: setup
+
+  - name: enter first player
+    action: type
+    target: setup.player_name_entry.1
+    value: Stan
+    expect:
+      view: setup
+
+  - name: enter second player
+    action: type
+    target: setup.player_name_entry.2
+    value: Denise
+    expect:
+      view: setup
+
+  - name: start game
+    action: click
+    target: setup.start_game_button
+    expect:
+      view: match
+      status_text_equals: Game started.
+
+  - name: search soul
+    action: type
+    target: match.trick_entry
+    value: soul
+    expect:
+      view: match
+      dropdown_contains:
+        - Soul
+
+  - name: select soul
+    action: select_suggestion
+    target: match.trick_suggestions_listbox
+    value: Soul
+    expect:
+      view: match
+      status_text_equals: Valid trick selected.
+
+  - name: confirm soul
+    action: click
+    target: match.confirm_trick_button
+    expect:
+      view: match
+      text_equals:
+        match.trick_label: "Trick: Soul"
+
+  - name: undo to open turn
+    action: click
+    target: match.undo_button
+    expect:
+      view: match
+      status_text_contains: Undo successful
+      text_equals:
+        match.phase_title_label: Stan sets the next trick
+
+  - name: undo back to setup
+    action: click
+    target: match.undo_button
+    expect:
+      view: setup
+      status_text_equals: Undo successful. Returned to setup.
+      button_states:
+        setup.start_game_button: normal
+
+  - name: restart game
+    action: click
+    target: setup.start_game_button
+    expect:
+      view: match
+      status_text_equals: Game started.
+
+  - name: search soul after deep undo
+    action: type
+    target: match.trick_entry
+    value: soul
+    expect:
+      view: match
+      dropdown_contains:
+        - Soul
+
+  - name: shutdown app
+    action: shutdown_app
