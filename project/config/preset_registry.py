@@ -253,4 +253,92 @@ class PresetRegistry:
                 ),
                 description="V9.3 reference battle preset with a long word and open fine-rule constraints.",
             ),
+            MatchPreset(
+                name="duel_synergy_strict_v10_1",
+                structure_name="one_vs_one",
+                rule_set=RuleSetConfig(
+                    letters_word="SKATE",
+                    elimination_enabled=True,
+                    attack_attempts=2,
+                    defense_attempts=3,
+                ),
+                policies=MatchPolicies(
+                    initial_turn_order=InitialTurnOrderPolicy.FIXED_PLAYER_ORDER,
+                ),
+                fine_rules=FineRulesConfig(
+                    uniqueness_enabled=True,
+                    repetition_mode="choice",
+                    repetition_limit=4,
+                    multiple_attack_enabled=False,
+                    no_repetition=False,
+                    switch_mode="disabled",
+                ),
+                description="V10.1 duel preset focused on strict Attack/Repetition synergy with uniqueness enabled and switch disabled.",
+            ),
+            MatchPreset(
+                name="duel_verified_switch_v10_1",
+                structure_name="one_vs_one",
+                rule_set=RuleSetConfig(
+                    letters_word="BLADE",
+                    elimination_enabled=True,
+                    attack_attempts=2,
+                    defense_attempts=2,
+                ),
+                policies=MatchPolicies(
+                    initial_turn_order=InitialTurnOrderPolicy.FIXED_PLAYER_ORDER,
+                ),
+                fine_rules=FineRulesConfig(
+                    uniqueness_enabled=False,
+                    repetition_mode="common",
+                    repetition_limit=4,
+                    multiple_attack_enabled=False,
+                    no_repetition=False,
+                    switch_mode="verified",
+                ),
+                description="V10.1 duel preset focused on verified switch flow under shared repetition pressure.",
+            ),
+            MatchPreset(
+                name="battle_switch_normal_v10_1",
+                structure_name="battle",
+                rule_set=RuleSetConfig(
+                    letters_word="OUT",
+                    elimination_enabled=True,
+                    attack_attempts=2,
+                    defense_attempts=2,
+                ),
+                policies=MatchPolicies(
+                    initial_turn_order=InitialTurnOrderPolicy.RANDOMIZED,
+                ),
+                fine_rules=FineRulesConfig(
+                    uniqueness_enabled=True,
+                    repetition_mode="common",
+                    repetition_limit=4,
+                    multiple_attack_enabled=False,
+                    no_repetition=False,
+                    switch_mode="normal",
+                ),
+                description="V10.1 battle preset focused on shared repetition, uniqueness and normal switch gating.",
+            ),
+            MatchPreset(
+                name="battle_multi_no_rep_v10_1",
+                structure_name="battle",
+                rule_set=RuleSetConfig(
+                    letters_word="SKATE",
+                    elimination_enabled=True,
+                    attack_attempts=3,
+                    defense_attempts=1,
+                ),
+                policies=MatchPolicies(
+                    initial_turn_order=InitialTurnOrderPolicy.RANDOMIZED,
+                ),
+                fine_rules=FineRulesConfig(
+                    uniqueness_enabled=False,
+                    repetition_mode="common",
+                    repetition_limit=2,
+                    multiple_attack_enabled=True,
+                    no_repetition=True,
+                    switch_mode="enabled",
+                ),
+                description="V10.1 battle preset focused on multiple attack, no repetition and freely enabled switch under fast pressure.",
+            ),
         ]

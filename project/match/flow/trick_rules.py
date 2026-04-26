@@ -285,6 +285,9 @@ class TrickRules:
             return False
 
         trick_key, _ = self._build_trick_key(trick)
+        if self.config.no_repetition and trick_key in state.failed_attack_turn_trick_keys:
+            return False
+
         failed_attempts = [
             record
             for record in state.failed_attack_trick_data

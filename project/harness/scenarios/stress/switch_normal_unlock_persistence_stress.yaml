@@ -1,0 +1,190 @@
+metadata:
+  id: switch_normal_unlock_persistence_stress
+  title: Switch normal unlock persists after validation and load
+  tags:
+    - stress
+    - switch
+    - normal
+    - persistence
+    - save_load
+
+setup:
+  mode: custom
+  players:
+    - Stan
+    - Denise
+
+steps:
+  - name: launch app
+    action: launch_app
+    expect:
+      view: setup
+
+  - name: switch to custom mode
+    action: click
+    target: setup.mode_custom_radiobutton
+    expect:
+      view: setup
+
+  - name: select first player profile
+    action: select_option
+    target: setup.player_profile_combo.1
+    value: Stan
+    expect:
+      view: setup
+      text_equals:
+        setup.player_name_entry.1: Stan
+
+  - name: select second player profile
+    action: select_option
+    target: setup.player_profile_combo.2
+    value: Denise
+    expect:
+      view: setup
+      text_equals:
+        setup.player_name_entry.2: Denise
+
+  - name: set attack attempts
+    action: type
+    target: setup.attack_attempts_spinbox
+    value: "2"
+    expect:
+      view: setup
+
+  - name: set defense attempts
+    action: type
+    target: setup.defense_attempts_spinbox
+    value: "1"
+    expect:
+      view: setup
+
+  - name: set repetition limit
+    action: type
+    target: setup.repetition_limit_spinbox
+    value: "4"
+    expect:
+      view: setup
+
+  - name: enable switch normal mode
+    action: select_option
+    target: setup.switch_mode_combo
+    value: normal
+    expect:
+      view: setup
+      text_contains:
+        setup.summary_label: "switch=normal"
+
+  - name: start game
+    action: click
+    target: setup.start_game_button
+    expect:
+      view: match
+      status_text_equals: Game started.
+
+  - name: search soul
+    action: type
+    target: match.trick_entry
+    value: soul
+    expect:
+      view: match
+      dropdown_contains:
+        - Soul
+
+  - name: select soul
+    action: select_suggestion
+    target: match.trick_suggestions_listbox
+    value: Soul
+    expect:
+      view: match
+      status_text_equals: Valid trick selected.
+
+  - name: confirm soul
+    action: click
+    target: match.confirm_trick_button
+    expect:
+      view: match
+      text_equals:
+        match.trick_label: "Trick: Soul"
+
+  - name: land attack
+    action: click
+    target: match.success_button
+    expect:
+      view: match
+      text_equals:
+        match.phase_title_label: Stan attacks
+      text_contains:
+        match.phase_description_label: "Current defender: Denise"
+
+  - name: miss defense and validate soul
+    action: click
+    target: match.failure_button
+    expect:
+      view: match
+      text_equals:
+        match.phase_title_label: Denise sets the next trick
+
+  - name: search switch soul after unlock
+    action: type
+    target: match.trick_entry
+    value: switch soul
+    expect:
+      view: match
+      dropdown_contains:
+        - Soul Switch
+
+  - name: save unlocked switch normal turn
+    action: click
+    target: match.save_button
+    expect:
+      view: match
+      status_text_contains: Game saved to
+
+  - name: return to setup
+    action: click
+    target: match.new_game_button
+    expect:
+      view: setup
+      status_text_equals: Configure the game to begin.
+
+  - name: select latest save
+    action: set_load_selection
+    value: latest
+
+  - name: load unlocked switch normal turn
+    action: click
+    target: setup.load_from_setup_button
+    expect:
+      view: match
+      status_text_contains: Game loaded from
+      text_equals:
+        match.phase_title_label: Denise sets the next trick
+
+  - name: search switch soul after load
+    action: type
+    target: match.trick_entry
+    value: switch soul
+    expect:
+      view: match
+      dropdown_contains:
+        - Soul Switch
+
+  - name: select switch soul after load
+    action: select_suggestion
+    target: match.trick_suggestions_listbox
+    value: Soul Switch
+    expect:
+      view: match
+      status_text_equals: Valid trick selected.
+
+  - name: confirm switch soul after load
+    action: click
+    target: match.confirm_trick_button
+    expect:
+      view: match
+      text_equals:
+        match.phase_title_label: Denise attacks
+        match.trick_label: "Trick: Soul Switch"
+
+  - name: shutdown app
+    action: shutdown_app

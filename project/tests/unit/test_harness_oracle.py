@@ -20,6 +20,8 @@ def test_gui_oracle_engine_accepts_matching_visible_state() -> None:
             "match.confirm_trick_button": "normal",
             "match.success_button": "disabled",
             "match.failure_button": "disabled",
+            "match.switch_normal_verified_button": "disabled",
+            "match.switch_normal_not_verified_button": "disabled",
         },
         texts={
             "match.phase_title_label": "Stan sets the next trick",
@@ -85,6 +87,8 @@ def test_gui_oracle_engine_reports_expected_and_observed_values() -> None:
                     "match.new_game_button": "normal",
                     "match.success_button": "disabled",
                     "match.failure_button": "disabled",
+                    "match.switch_normal_verified_button": "disabled",
+                    "match.switch_normal_not_verified_button": "disabled",
                 },
                 score_cells={"1,0": "STAN", "1,2": "DENISE", "2,0": "-", "2,2": "-"},
             ),
@@ -125,6 +129,8 @@ def test_gui_oracle_engine_fails_on_missing_dropdown_item() -> None:
                     "match.new_game_button": "normal",
                     "match.success_button": "disabled",
                     "match.failure_button": "disabled",
+                    "match.switch_normal_verified_button": "disabled",
+                    "match.switch_normal_not_verified_button": "disabled",
                 },
                 score_cells={"1,0": "STAN", "1,2": "DENISE", "2,0": "-", "2,2": "-"},
                 dropdown_items=("Soul", "Mistrial"),
@@ -161,12 +167,84 @@ def test_gui_oracle_engine_rejects_open_turn_with_disabled_roster_buttons() -> N
                     "match.new_game_button": "normal",
                     "match.success_button": "disabled",
                     "match.failure_button": "disabled",
+                    "match.switch_normal_verified_button": "disabled",
+                    "match.switch_normal_not_verified_button": "disabled",
                 },
                 score_cells={"1,0": "STAN", "1,2": "DENISE", "2,0": "-", "2,2": "-"},
             ),
         )
 
     assert "roster transitions" in str(error.value)
+
+
+def test_gui_oracle_engine_accepts_verified_switch_attack_substate() -> None:
+    engine = GUIOracleEngine()
+
+    engine.evaluate_step(
+        scenario={"metadata": {"id": "unit"}},
+        step={"name": "check verified switch substate", "action": "click"},
+        visible_state=GUIVisibleState(
+            active_view="match",
+            texts={
+                "match.phase_title_label": "Stan attacks",
+                "match.trick_label": "Trick: Soul Switch",
+                "match.phase_description_label": (
+                    "Pending defenders: Denise | Confirm whether the normal version was verified."
+                ),
+                "match.attempts_label": "Stan has 2 attack attempt(s) left",
+            },
+            button_states={
+                "match.undo_button": "normal",
+                "match.save_button": "normal",
+                "match.load_button": "normal",
+                "match.history_button": "normal",
+                "match.setup_details_button": "normal",
+                "match.add_player_button": "disabled",
+                "match.remove_player_button": "disabled",
+                "match.new_game_button": "normal",
+                "match.success_button": "disabled",
+                "match.failure_button": "normal",
+                "match.switch_normal_verified_button": "normal",
+                "match.switch_normal_not_verified_button": "normal",
+            },
+            score_cells={"1,0": "STAN", "1,2": "DENISE", "2,0": "-", "2,2": "-"},
+        ),
+    )
+
+
+def test_gui_oracle_engine_accepts_forced_attack_trick_change_substate() -> None:
+    engine = GUIOracleEngine()
+
+    engine.evaluate_step(
+        scenario={"metadata": {"id": "unit"}},
+        step={"name": "check forced trick change substate", "action": "click"},
+        visible_state=GUIVisibleState(
+            active_view="match",
+            texts={
+                "match.phase_title_label": "Stan attacks",
+                "match.trick_label": "Trick: Soul",
+                "match.phase_description_label": (
+                    "Pending defenders: Denise | Choose a new trick to continue."
+                ),
+                "match.attempts_label": "Stan has 1 attack attempt(s) left",
+            },
+            button_states={
+                "match.undo_button": "normal",
+                "match.save_button": "normal",
+                "match.load_button": "normal",
+                "match.history_button": "normal",
+                "match.setup_details_button": "normal",
+                "match.add_player_button": "disabled",
+                "match.remove_player_button": "disabled",
+                "match.new_game_button": "normal",
+                "match.success_button": "disabled",
+                "match.failure_button": "disabled",
+                "match.switch_normal_verified_button": "disabled",
+                "match.switch_normal_not_verified_button": "disabled",
+            },
+            score_cells={"1,0": "STAN", "1,2": "DENISE", "2,0": "-", "2,2": "-"},
+        ),
+    )
 
 
 def test_gui_oracle_engine_rejects_consultation_view_with_active_resolution_buttons() -> None:
@@ -195,6 +273,8 @@ def test_gui_oracle_engine_rejects_consultation_view_with_active_resolution_butt
                     "match.new_game_button": "normal",
                     "match.success_button": "normal",
                     "match.failure_button": "disabled",
+                    "match.switch_normal_verified_button": "disabled",
+                    "match.switch_normal_not_verified_button": "disabled",
                 },
                 score_cells={"1,0": "STAN", "1,2": "DENISE", "2,0": "S", "2,2": "[S]"},
             ),
@@ -229,6 +309,8 @@ def test_gui_oracle_engine_rejects_unknown_match_phase_title() -> None:
                     "match.new_game_button": "normal",
                     "match.success_button": "disabled",
                     "match.failure_button": "disabled",
+                    "match.switch_normal_verified_button": "disabled",
+                    "match.switch_normal_not_verified_button": "disabled",
                 },
                 score_cells={"1,0": "STAN", "1,2": "DENISE", "2,0": "-", "2,2": "-"},
             ),

@@ -168,3 +168,56 @@ def test_preset_registry_v9_3_reference_presets_cover_new_parameter_edges() -> N
     assert battle_long_open.rule_set.letters_word == "SKATEBOARD"
     assert battle_long_open.fine_rules.uniqueness_enabled is False
     assert battle_long_open.fine_rules.repetition_mode == "disabled"
+
+
+def test_preset_registry_exposes_v10_1_reference_presets() -> None:
+    registry = PresetRegistry()
+
+    preset_names = registry.list_preset_names()
+
+    assert "duel_synergy_strict_v10_1" in preset_names
+    assert "duel_verified_switch_v10_1" in preset_names
+    assert "battle_switch_normal_v10_1" in preset_names
+    assert "battle_multi_no_rep_v10_1" in preset_names
+
+
+def test_preset_registry_v10_1_reference_presets_cover_v10_rule_interactions() -> None:
+    registry = PresetRegistry()
+
+    duel_synergy_strict = registry.get("duel_synergy_strict_v10_1")
+    duel_verified_switch = registry.get("duel_verified_switch_v10_1")
+    battle_switch_normal = registry.get("battle_switch_normal_v10_1")
+    battle_multi_no_rep = registry.get("battle_multi_no_rep_v10_1")
+
+    assert duel_synergy_strict.rule_set.attack_attempts == 2
+    assert duel_synergy_strict.rule_set.defense_attempts == 3
+    assert duel_synergy_strict.fine_rules.repetition_mode == "choice"
+    assert duel_synergy_strict.fine_rules.repetition_limit == 4
+    assert duel_synergy_strict.fine_rules.multiple_attack_enabled is False
+    assert duel_synergy_strict.fine_rules.no_repetition is False
+    assert duel_synergy_strict.fine_rules.switch_mode == "disabled"
+
+    assert duel_verified_switch.rule_set.letters_word == "BLADE"
+    assert duel_verified_switch.rule_set.attack_attempts == 2
+    assert duel_verified_switch.fine_rules.uniqueness_enabled is False
+    assert duel_verified_switch.fine_rules.repetition_mode == "common"
+    assert duel_verified_switch.fine_rules.repetition_limit == 4
+    assert duel_verified_switch.fine_rules.switch_mode == "verified"
+
+    assert battle_switch_normal.structure_name == "battle"
+    assert battle_switch_normal.rule_set.attack_attempts == 2
+    assert battle_switch_normal.rule_set.defense_attempts == 2
+    assert battle_switch_normal.fine_rules.uniqueness_enabled is True
+    assert battle_switch_normal.fine_rules.repetition_mode == "common"
+    assert battle_switch_normal.fine_rules.repetition_limit == 4
+    assert battle_switch_normal.fine_rules.switch_mode == "normal"
+
+    assert battle_multi_no_rep.structure_name == "battle"
+    assert battle_multi_no_rep.rule_set.attack_attempts == 3
+    assert battle_multi_no_rep.rule_set.defense_attempts == 1
+    assert battle_multi_no_rep.fine_rules.uniqueness_enabled is False
+    assert battle_multi_no_rep.fine_rules.repetition_mode == "common"
+    assert battle_multi_no_rep.fine_rules.repetition_limit == 2
+    assert battle_multi_no_rep.fine_rules.multiple_attack_enabled is True
+    assert battle_multi_no_rep.fine_rules.no_repetition is True
+    assert battle_multi_no_rep.fine_rules.switch_mode == "enabled"

@@ -1,0 +1,166 @@
+metadata:
+  id: verified_switch_navigation_new_game_stress
+  title: Verified switch stays coherent across history setup details and new game
+  tags:
+    - stress
+    - switch
+    - verified
+    - history
+    - setup_details
+    - new_game
+
+setup:
+  mode: preset
+  preset: duel_verified_switch_v10_1
+  players:
+    - Stan
+    - Denise
+
+steps:
+  - name: launch app
+    action: launch_app
+    expect:
+      view: setup
+
+  - name: select verified switch duel preset
+    action: select_option
+    target: setup.preset_combo
+    value: duel_verified_switch_v10_1
+    expect:
+      view: setup
+      text_equals:
+        setup.preset_combo: duel_verified_switch_v10_1
+
+  - name: select first player profile
+    action: select_option
+    target: setup.player_profile_combo.1
+    value: Stan
+    expect:
+      view: setup
+      text_equals:
+        setup.player_name_entry.1: Stan
+
+  - name: select second player profile
+    action: select_option
+    target: setup.player_profile_combo.2
+    value: Denise
+    expect:
+      view: setup
+      text_equals:
+        setup.player_name_entry.2: Denise
+
+  - name: start game
+    action: click
+    target: setup.start_game_button
+    expect:
+      view: match
+      status_text_equals: Game started.
+
+  - name: search switch soul
+    action: type
+    target: match.trick_entry
+    value: switch soul
+    expect:
+      view: match
+      dropdown_contains:
+        - Soul Switch
+
+  - name: select soul switch
+    action: select_suggestion
+    target: match.trick_suggestions_listbox
+    value: Soul Switch
+    expect:
+      view: match
+      status_text_equals: Valid trick selected.
+
+  - name: confirm switch soul
+    action: click
+    target: match.confirm_trick_button
+    expect:
+      view: match
+      text_equals:
+        match.phase_title_label: Stan attacks
+        match.trick_label: "Trick: Soul Switch"
+      button_states:
+        match.switch_normal_verified_button: normal
+        match.switch_normal_not_verified_button: normal
+
+  - name: open history during verified switch confirmation
+    action: click
+    target: match.history_button
+    expect:
+      view: history
+
+  - name: back from history during verification
+    action: click
+    target: history.back_to_game_button
+    expect:
+      view: match
+
+  - name: open setup details during verified switch confirmation
+    action: click
+    target: match.setup_details_button
+    expect:
+      view: setup_details
+      text_contains:
+        setup_details.body_label: "Switch: verified"
+
+  - name: back from setup details during verification
+    action: click
+    target: setup_details.back_to_game_button
+    expect:
+      view: match
+
+  - name: confirm normal verified
+    action: click
+    target: match.switch_normal_verified_button
+    expect:
+      view: match
+      status_text_contains: verified the normal version
+
+  - name: open history after verified switch validation
+    action: click
+    target: match.history_button
+    expect:
+      view: history
+
+  - name: back from history after verified switch validation
+    action: click
+    target: history.back_to_game_button
+    expect:
+      view: match
+
+  - name: return to setup from verified switch session
+    action: click
+    target: match.new_game_button
+    expect:
+      view: setup
+      status_text_equals: Configure the game to begin.
+
+  - name: reselect first profile after new game
+    action: select_option
+    target: setup.player_profile_combo.1
+    value: Stan
+    expect:
+      view: setup
+      text_equals:
+        setup.player_name_entry.1: Stan
+
+  - name: reselect second profile after new game
+    action: select_option
+    target: setup.player_profile_combo.2
+    value: Denise
+    expect:
+      view: setup
+      text_equals:
+        setup.player_name_entry.2: Denise
+
+  - name: restart game after verified switch roundtrip
+    action: click
+    target: setup.start_game_button
+    expect:
+      view: match
+      status_text_equals: Game started.
+
+  - name: shutdown app
+    action: shutdown_app

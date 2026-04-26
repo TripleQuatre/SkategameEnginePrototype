@@ -1,0 +1,68 @@
+metadata:
+  id: attack_repetition_synergy_blocks_invalid_setup_regression
+  title: Attack repetition synergy blocks invalid setup pairs before the game starts
+  tags:
+    - regression
+    - attack
+    - repetition
+    - setup_validation
+
+setup:
+  mode: custom
+  players:
+    - Stan
+    - Denise
+
+steps:
+  - name: launch app
+    action: launch_app
+    expect:
+      view: setup
+
+  - name: switch to custom mode
+    action: click
+    target: setup.mode_custom_radiobutton
+    expect:
+      view: setup
+
+  - name: select first player profile
+    action: select_option
+    target: setup.player_profile_combo.1
+    value: Stan
+    expect:
+      view: setup
+
+  - name: select second player profile
+    action: select_option
+    target: setup.player_profile_combo.2
+    value: Denise
+    expect:
+      view: setup
+
+  - name: set attack attempts to three
+    action: type
+    target: setup.attack_attempts_spinbox
+    value: "3"
+    expect:
+      view: setup
+
+  - name: set repetition mode common
+    action: select_option
+    target: setup.repetition_mode_combo
+    value: common
+    expect:
+      view: setup
+
+  - name: set invalid repetition limit
+    action: type
+    target: setup.repetition_limit_spinbox
+    value: "8"
+    expect:
+      view: setup
+      text_contains:
+        setup.attack_repetition_feedback_label: "Attack/Repetition synergy active: repetition limit must be a multiple of Attack."
+      button_states:
+        setup.start_game_button: disabled
+
+  - name: shutdown app
+    action: shutdown_app

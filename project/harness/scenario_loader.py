@@ -47,6 +47,8 @@ class YAMLScenarioSource:
         "text_contains",
         "score_cells",
         "dropdown_contains",
+        "dropdown_equals",
+        "dropdown_empty",
     }
 
     def load(self, scenario_path: Path) -> dict[str, Any]:
@@ -249,11 +251,19 @@ class YAMLScenarioSource:
                         f"Expectation '{mapping_key}' at step {step_index} must be a mapping."
                     )
 
-        dropdown_contains = expect.get("dropdown_contains")
-        if dropdown_contains is not None:
-            if not isinstance(dropdown_contains, list) or not all(
-                isinstance(item, str) for item in dropdown_contains
+        for dropdown_key in ("dropdown_contains", "dropdown_equals"):
+            dropdown_value = expect.get(dropdown_key)
+            if dropdown_value is None:
+                continue
+            if not isinstance(dropdown_value, list) or not all(
+                isinstance(item, str) for item in dropdown_value
             ):
                 raise ScenarioValidationError(
-                    f"Expectation 'dropdown_contains' at step {step_index} must be a list of strings."
+                    f"Expectation '{dropdown_key}' at step {step_index} must be a list of strings."
                 )
+
+        dropdown_empty = expect.get("dropdown_empty")
+        if dropdown_empty is not None and not isinstance(dropdown_empty, bool):
+            raise ScenarioValidationError(
+                f"Expectation 'dropdown_empty' at step {step_index} must be a boolean."
+            )

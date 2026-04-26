@@ -1,0 +1,152 @@
+metadata:
+  id: switch_uniqueness_interaction_smoke
+  title: Switch remains available alongside uniqueness after the normal equivalent was validated
+  tags:
+    - reference
+    - interaction
+    - switch
+    - uniqueness
+
+setup:
+  mode: custom
+  players:
+    - Stan
+    - Denise
+
+steps:
+  - name: launch app
+    action: launch_app
+    expect:
+      view: setup
+
+  - name: switch to custom mode
+    action: click
+    target: setup.mode_custom_radiobutton
+    expect:
+      view: setup
+
+  - name: select first player profile
+    action: select_option
+    target: setup.player_profile_combo.1
+    value: Stan
+    expect:
+      view: setup
+      text_equals:
+        setup.player_name_entry.1: Stan
+
+  - name: select second player profile
+    action: select_option
+    target: setup.player_profile_combo.2
+    value: Denise
+    expect:
+      view: setup
+      text_equals:
+        setup.player_name_entry.2: Denise
+
+  - name: set defense attempts to one
+    action: type
+    target: setup.defense_attempts_spinbox
+    value: "1"
+    expect:
+      view: setup
+
+  - name: set attack attempts to two
+    action: type
+    target: setup.attack_attempts_spinbox
+    value: "2"
+    expect:
+      view: setup
+
+  - name: set repetition limit to four
+    action: type
+    target: setup.repetition_limit_spinbox
+    value: "4"
+    expect:
+      view: setup
+
+  - name: enable switch mode
+    action: select_option
+    target: setup.switch_mode_combo
+    value: enabled
+    expect:
+      view: setup
+      text_contains:
+        setup.summary_label: "switch=enabled"
+
+  - name: start game
+    action: click
+    target: setup.start_game_button
+    expect:
+      view: match
+      status_text_equals: Game started.
+
+  - name: search soul
+    action: type
+    target: match.trick_entry
+    value: soul
+    expect:
+      view: match
+      dropdown_contains:
+        - Soul
+
+  - name: select soul
+    action: select_suggestion
+    target: match.trick_suggestions_listbox
+    value: Soul
+    expect:
+      view: match
+      status_text_equals: Valid trick selected.
+
+  - name: confirm soul
+    action: click
+    target: match.confirm_trick_button
+    expect:
+      view: match
+      text_equals:
+        match.trick_label: "Trick: Soul"
+
+  - name: land attack
+    action: click
+    target: match.success_button
+    expect:
+      view: match
+      text_contains:
+        match.phase_description_label: "Current defender: Denise"
+
+  - name: miss defense to validate soul
+    action: click
+    target: match.failure_button
+    expect:
+      view: match
+      text_equals:
+        match.phase_title_label: Denise sets the next trick
+
+  - name: search switch soul
+    action: type
+    target: match.trick_entry
+    value: switch soul
+    expect:
+      view: match
+      dropdown_contains:
+        - Soul Switch
+
+  - name: select switch soul
+    action: select_suggestion
+    target: match.trick_suggestions_listbox
+    value: Soul Switch
+    expect:
+      view: match
+      status_text_equals: Valid trick selected.
+
+  - name: confirm blocked switch soul
+    action: click
+    target: match.confirm_trick_button
+    expect:
+      view: match
+      status_text_equals: Trick 'Soul Switch' confirmed.
+      text_equals:
+        match.phase_title_label: Denise attacks
+        match.trick_label: "Trick: Soul Switch"
+
+  - name: shutdown app
+    action: shutdown_app

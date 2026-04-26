@@ -1,0 +1,187 @@
+V10.1 Coverage Audit
+
+Purpose
+Freeze the real post-V10 coverage state before expanding presets, stress scenarios and
+cross-rule robustness work in V10.1.
+
+Current baseline
+- Full automated suite passes:
+  - `python -m pytest project/tests -q`
+  - current result at audit time: `421 passed, 1 warning`
+- Harness scenario families currently in place:
+  - `reference`: 9 scenarios
+  - `stress`: 5 scenarios
+  - `regression`: 5 scenarios
+- Stress matrix currently in place:
+  - 6 explicit `preset x stress scenario` cases
+
+Reference scenarios currently covered
+- `preset_one_vs_one_smoke`
+  - baseline duel flow
+- `custom_battle_smoke`
+  - baseline custom battle flow
+- `history_and_setup_details_navigation`
+  - navigation through secondary views
+- `save_smoke`
+  - save flow baseline
+- `undo_to_setup_regression`
+  - undo back to setup baseline
+- `attack_repetition_synergy_smoke`
+  - V10 attack/repetition compatibility
+- `relevance_order_setup_details_smoke`
+  - V10 order/relevance + setup details
+- `multiple_attack_enabled_smoke`
+  - V10 multiple attack enabled baseline
+- `switch_enabled_smoke`
+  - V10 switch enabled baseline
+
+Stress scenarios currently covered
+- `consultation_undo_stress`
+  - end-of-game consultation + undo
+- `load_engaged_turn_stress`
+  - load during an engaged turn
+- `mixed_save_load_roster_stress`
+  - save/load mixed with roster changes
+- `roster_transition_roundtrip_stress`
+  - add/remove/undo roster transitions
+- `undo_chain_recovery_stress`
+  - deep undo recovery and trick input reopening
+
+Regression scenarios currently covered
+- `consultation_undo_restores_engaged_turn_regression`
+- `deep_undo_restores_trick_input_regression`
+- `load_restores_engaged_turn_controls_regression`
+- `player_count_rebuilds_fields_regression`
+- `undo_restores_multiple_attack_choice_regression`
+
+Stress matrix currently covered
+- `load_engaged_turn__classic_skate_v8`
+- `load_engaged_turn__duel_long_open_v9_3`
+- `undo_chain_recovery__classic_skate_v8`
+- `consultation_undo__duel_short_strict_v9_3`
+- `roster_transition_roundtrip__battle_balanced_v9_3`
+- `mixed_save_load_roster__battle_long_open_v9_3`
+
+Preset coverage status
+
+Well exercised
+- `classic_skate_v8`
+  - reference indirectly
+  - stress matrix directly
+- `duel_short_strict_v9_3`
+  - stress matrix directly
+- `duel_long_open_v9_3`
+  - reference directly
+  - stress matrix directly
+- `battle_balanced_v9_3`
+  - stress matrix directly
+- `battle_long_open_v9_3`
+  - stress matrix directly
+
+Lightly exercised
+- `battle_common_v8`
+  - mostly touched through earlier GUI/tests, not strongly represented in harness stress
+- `battle_hardcore_v8`
+  - same issue
+- `blade_open_v8`
+  - same issue
+
+Mostly product-facing presets, but weak in V10 interaction coverage
+- `classic_skate`
+- `classic_blade`
+- `battle_standard`
+- `battle_hardcore`
+
+Rule coverage status
+
+Strong baseline coverage
+- `Attack`
+- `Defense`
+- `Uniqueness`
+- `Repetition`
+- `Attack/Repetition` synergy
+- `Multiple Attack` enabled flow
+- local profiles selection
+- visible `sport = inline`
+- `Order = choice`
+- `Order = relevance`
+- `Relevance` criteria preview
+- `Switch = enabled`
+- `Switch = disabled` filtering behavior
+- `Switch = normal` gating by prior validated normal trick
+- `Switch = verified` attacker-side normal confirmation
+
+Covered, but still narrow
+- `No Repetition`
+  - covered through logic and baseline tests, but not yet stressed deeply in long mixed scenarios
+- `Order = random`
+  - policy exists and unit coverage exists, but harness-level flow coverage is weaker than `choice` and `relevance`
+- `Switch = verified`
+  - corrected and covered functionally, but not yet stress-tested under persistence/undo/load
+
+Main uncovered or weakly covered interaction zones
+
+1. V10 rules under persistence stress
+- `Multiple Attack` + save/load
+- `No Repetition` + save/load
+- `Switch normal` + save/load
+- `Switch verified` + save/load
+- `Order/Relevance` after save/load in both duel and battle
+
+2. V10 rules under deep undo stress
+- `Switch normal` after several undo levels
+- `Switch verified` after several undo levels
+- `Attack/Repetition` synergy after undo from setup or engaged turns
+- `Order/Relevance` after undoing setup-side changes and restarting
+
+3. V10 rule interactions not yet isolated enough
+- `Multiple Attack` + `No Repetition`
+- `Multiple Attack` + `Switch`
+- `Switch` + `Uniqueness`
+- `Switch` + `Repetition`
+- `Switch verified` + attack-failure recovery
+- `Order/Relevance` + battle setups
+
+4. Battle-specific V10 coverage is still weaker than duel coverage
+- `Order = relevance` in battle
+- `Multiple Attack` in battle
+- `Switch` in battle
+- mixed V10 rules + roster transitions in battle
+
+5. Harness matrix coverage is still mostly V8/V9.3 centered
+- current matrix does not yet use explicit V10-oriented presets
+- current matrix does not yet explore V10-specific combinations systematically
+
+Functional coverage outside pure rules
+
+Well covered already
+- `undo`
+- `save`
+- `load`
+- `history`
+- `setup details`
+- roster add/remove
+- return to setup
+- consultation mode
+
+Still needing broader V10 crosses
+- `new game` under V10-heavy setups
+- `history` with V10-specific attack traces (`V N(V)`, `V N(X)`) in longer sequences
+- `setup details` after persistence and undo in V10 setups
+- roster transitions after V10 profile/order setup choices
+
+Audit conclusion
+The harness is already strong enough to protect V10 baseline behavior, but it is not yet
+wide enough to claim robust coverage of the full V10 interaction space.
+
+Current confidence level
+- high on primary flows
+- moderate on rule-by-rule correctness
+- moderate-to-low on rare multi-rule + persistence + undo combinations
+
+V10.1 should therefore focus on
+- more contrastive fixed presets
+- V10-oriented stress scenarios
+- broader `preset x scenario` crossings
+- dedicated regressions for V10 subtleties
+- stronger battle coverage for V10 rules

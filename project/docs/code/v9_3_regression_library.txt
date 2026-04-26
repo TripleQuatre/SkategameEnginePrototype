@@ -30,3 +30,26 @@ The regression library should stay small and concrete.
 Future bugs found manually should be added here when they correspond to one
 specific broken sequence, instead of being hidden only inside a larger stress
 scenario.
+
+V10/V10.1 additions
+
+5. undo_restores_multiple_attack_change_controls_regression
+- protects the case where undoing a multiple-attack trick change must restore
+  the previous trick and keep the attacker-side change controls usable
+
+6. switch_disabled_filters_suggestions_regression
+- protects the filtering rule that switch tricks should disappear from
+  suggestions when switch is disabled, instead of being suggested and rejected
+  later
+
+7. verified_switch_load_restores_confirmation_regression
+- protects the load path where a pending verified switch must restore the
+  dedicated normal verification controls
+
+8. attack_repetition_synergy_blocks_invalid_setup_regression
+- protects the setup validation that blocks incompatible Attack/Repetition pairs
+  before the game starts
+
+9. relevance_order_persistence_details_regression
+- protects the persistence of `Order = relevance`, including the visible
+  criterion and base order shown in setup details after load

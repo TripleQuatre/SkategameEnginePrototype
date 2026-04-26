@@ -1,0 +1,206 @@
+metadata:
+  id: relevance_battle_persistence_stress
+  title: Battle relevance order remains coherent across save load and navigation
+  tags:
+    - stress
+    - battle
+    - relevance
+    - save_load
+    - setup_details
+    - history
+
+setup:
+  mode: custom
+  structure: battle
+  players:
+    - Stan
+    - Denise
+    - Alex
+  word: BLADE
+
+steps:
+  - name: launch app
+    action: launch_app
+    expect:
+      view: setup
+
+  - name: switch to custom mode
+    action: click
+    target: setup.mode_custom_radiobutton
+    expect:
+      view: setup
+
+  - name: set player count
+    action: type
+    target: setup.player_count_spinbox
+    value: "3"
+    expect:
+      view: setup
+
+  - name: rebuild player fields
+    action: press_key
+    target: setup.player_count_spinbox
+    key: enter
+    expect:
+      view: setup
+
+  - name: select first player profile
+    action: select_option
+    target: setup.player_profile_combo.1
+    value: Stan
+    expect:
+      view: setup
+      text_equals:
+        setup.player_name_entry.1: Stan
+
+  - name: select second player profile
+    action: select_option
+    target: setup.player_profile_combo.2
+    value: Denise
+    expect:
+      view: setup
+      text_equals:
+        setup.player_name_entry.2: Denise
+
+  - name: select third player profile
+    action: select_option
+    target: setup.player_profile_combo.3
+    value: Alex
+    expect:
+      view: setup
+      text_equals:
+        setup.player_name_entry.3: Alex
+
+  - name: set custom word
+    action: type
+    target: setup.word_entry
+    value: BLADE
+    expect:
+      view: setup
+      text_equals:
+        setup.word_entry: BLADE
+
+  - name: switch order mode to relevance
+    action: select_option
+    target: setup.order_mode_combo
+    value: relevance
+    expect:
+      view: setup
+
+  - name: choose age relevance criterion
+    action: select_option
+    target: setup.relevance_criterion_combo
+    value: age
+    expect:
+      view: setup
+      text_equals:
+        setup.order_preview_label: "Order preview: Alex -> Stan -> Denise"
+
+  - name: start relevance battle
+    action: click
+    target: setup.start_game_button
+    expect:
+      view: match
+      status_text_equals: Game started.
+      text_equals:
+        match.phase_title_label: Alex sets the next trick
+
+  - name: open setup details before save
+    action: click
+    target: match.setup_details_button
+    expect:
+      view: setup_details
+      text_contains:
+        setup_details.body_label: "Order: relevance (age)"
+
+  - name: close setup details before save
+    action: click
+    target: setup_details.back_to_game_button
+    expect:
+      view: match
+
+  - name: search soul
+    action: type
+    target: match.trick_entry
+    value: soul
+    expect:
+      view: match
+      dropdown_contains:
+        - Soul
+
+  - name: select soul
+    action: select_suggestion
+    target: match.trick_suggestions_listbox
+    value: Soul
+    expect:
+      view: match
+      status_text_equals: Valid trick selected.
+
+  - name: confirm soul
+    action: click
+    target: match.confirm_trick_button
+    expect:
+      view: match
+      text_equals:
+        match.trick_label: "Trick: Soul"
+
+  - name: land attack
+    action: click
+    target: match.success_button
+    expect:
+      view: match
+      text_contains:
+        match.phase_description_label: "Current defender:"
+
+  - name: open history during defense
+    action: click
+    target: match.history_button
+    expect:
+      view: history
+
+  - name: back from history during defense
+    action: click
+    target: history.back_to_game_button
+    expect:
+      view: match
+
+  - name: save engaged relevance battle
+    action: click
+    target: match.save_button
+    expect:
+      view: match
+      status_text_contains: Game saved to
+
+  - name: return to setup
+    action: click
+    target: match.new_game_button
+    expect:
+      view: setup
+      status_text_equals: Configure the game to begin.
+
+  - name: select latest save
+    action: set_load_selection
+    value: latest
+
+  - name: load engaged relevance battle
+    action: click
+    target: setup.load_from_setup_button
+    expect:
+      view: match
+      status_text_contains: Game loaded from
+      text_equals:
+        match.trick_label: "Trick: Soul"
+      button_states:
+        match.success_button: normal
+        match.failure_button: normal
+
+  - name: open setup details after load
+    action: click
+    target: match.setup_details_button
+    expect:
+      view: setup_details
+      text_contains:
+        setup_details.body_label: "Base order: Alex, Stan, Denise"
+
+  - name: shutdown app
+    action: shutdown_app

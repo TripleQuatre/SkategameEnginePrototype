@@ -1,0 +1,72 @@
+metadata:
+  id: switch_disabled_filters_suggestions_regression
+  title: Switch disabled removes switch suggestions instead of allowing a late invalid selection
+  tags:
+    - regression
+    - switch
+    - filtering
+
+setup:
+  mode: custom
+  players:
+    - Stan
+    - Denise
+
+steps:
+  - name: launch app
+    action: launch_app
+    expect:
+      view: setup
+
+  - name: switch to custom mode
+    action: click
+    target: setup.mode_custom_radiobutton
+    expect:
+      view: setup
+
+  - name: select first player profile
+    action: select_option
+    target: setup.player_profile_combo.1
+    value: Stan
+    expect:
+      view: setup
+      text_equals:
+        setup.player_name_entry.1: Stan
+
+  - name: select second player profile
+    action: select_option
+    target: setup.player_profile_combo.2
+    value: Denise
+    expect:
+      view: setup
+      text_equals:
+        setup.player_name_entry.2: Denise
+
+  - name: keep switch disabled
+    action: select_option
+    target: setup.switch_mode_combo
+    value: disabled
+    expect:
+      view: setup
+      text_contains:
+        setup.summary_label: "switch=disabled"
+
+  - name: start game
+    action: click
+    target: setup.start_game_button
+    expect:
+      view: match
+      status_text_equals: Game started.
+
+  - name: search switch soul while switch is disabled
+    action: type
+    target: match.trick_entry
+    value: switch soul
+    expect:
+      view: match
+      dropdown_empty: true
+      button_states:
+        match.confirm_trick_button: disabled
+
+  - name: shutdown app
+    action: shutdown_app

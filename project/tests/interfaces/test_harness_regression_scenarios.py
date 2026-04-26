@@ -43,11 +43,15 @@ def test_regression_scenarios_exist() -> None:
     scenario_names = {path.name for path in _regression_scenarios()}
 
     assert scenario_names == {
+        "attack_repetition_synergy_blocks_invalid_setup_regression.yaml",
         "consultation_undo_restores_engaged_turn_regression.yaml",
         "deep_undo_restores_trick_input_regression.yaml",
         "load_restores_engaged_turn_controls_regression.yaml",
         "player_count_rebuilds_fields_regression.yaml",
+        "relevance_order_persistence_details_regression.yaml",
+        "switch_disabled_filters_suggestions_regression.yaml",
         "undo_restores_multiple_attack_change_controls_regression.yaml",
+        "verified_switch_load_restores_confirmation_regression.yaml",
     }
 
 

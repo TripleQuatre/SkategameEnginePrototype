@@ -1,0 +1,143 @@
+metadata:
+  id: relevance_order_persistence_details_regression
+  title: Relevance order keeps its visible criterion and base order after save load
+  tags:
+    - regression
+    - order
+    - relevance
+    - save_load
+    - setup_details
+
+setup:
+  mode: custom
+  structure: battle
+  players:
+    - Stan
+    - Denise
+    - Alex
+  word: BLADE
+
+steps:
+  - name: launch app
+    action: launch_app
+    expect:
+      view: setup
+
+  - name: switch to custom mode
+    action: click
+    target: setup.mode_custom_radiobutton
+    expect:
+      view: setup
+
+  - name: set player count
+    action: type
+    target: setup.player_count_spinbox
+    value: "3"
+    expect:
+      view: setup
+
+  - name: rebuild player fields
+    action: press_key
+    target: setup.player_count_spinbox
+    key: enter
+    expect:
+      view: setup
+
+  - name: select first player profile
+    action: select_option
+    target: setup.player_profile_combo.1
+    value: Stan
+    expect:
+      view: setup
+
+  - name: select second player profile
+    action: select_option
+    target: setup.player_profile_combo.2
+    value: Denise
+    expect:
+      view: setup
+
+  - name: select third player profile
+    action: select_option
+    target: setup.player_profile_combo.3
+    value: Alex
+    expect:
+      view: setup
+
+  - name: set custom word
+    action: type
+    target: setup.word_entry
+    value: BLADE
+    expect:
+      view: setup
+
+  - name: switch order mode to relevance
+    action: select_option
+    target: setup.order_mode_combo
+    value: relevance
+    expect:
+      view: setup
+
+  - name: choose age relevance criterion
+    action: select_option
+    target: setup.relevance_criterion_combo
+    value: age
+    expect:
+      view: setup
+      text_equals:
+        setup.order_preview_label: "Order preview: Alex -> Stan -> Denise"
+
+  - name: start relevance battle
+    action: click
+    target: setup.start_game_button
+    expect:
+      view: match
+
+  - name: save relevance battle
+    action: click
+    target: match.save_button
+    expect:
+      view: match
+      status_text_contains: Game saved to
+
+  - name: return to setup
+    action: click
+    target: match.new_game_button
+    expect:
+      view: setup
+
+  - name: select latest save
+    action: set_load_selection
+    value: latest
+
+  - name: load relevance battle
+    action: click
+    target: setup.load_from_setup_button
+    expect:
+      view: match
+      status_text_contains: Game loaded from
+
+  - name: open setup details after relevance load
+    action: click
+    target: match.setup_details_button
+    expect:
+      view: setup_details
+      text_contains:
+        setup_details.body_label: "Order: relevance (age)"
+
+  - name: verify base order after relevance load
+    action: click
+    target: setup_details.back_to_game_button
+    expect:
+      view: match
+
+  - name: open setup details again after relevance load
+    action: click
+    target: match.setup_details_button
+    expect:
+      view: setup_details
+      text_contains:
+        setup_details.body_label: "Base order: Alex, Stan, Denise"
+
+  - name: shutdown app
+    action: shutdown_app

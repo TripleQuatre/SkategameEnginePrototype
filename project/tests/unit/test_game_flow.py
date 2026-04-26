@@ -438,6 +438,45 @@ def test_no_repetition_counts_same_trick_once_per_attack_turn(
     assert len(state.failed_attack_trick_data) == 1
 
 
+def test_no_repetition_does_not_force_a_trick_change_mid_turn(
+    state: GameState,
+) -> None:
+    game_flow = build_game_flow(
+        attack_attempts=3,
+        no_repetition=True,
+        multiple_attack_enabled=True,
+        repetition_mode="choice",
+        repetition_limit=1,
+        uniqueness_enabled=False,
+    )
+    game_flow.start_game(state)
+    game_flow.start_turn(state, "Soul")
+    game_flow.resolve_attack(state, success=False)
+
+    assert (
+        game_flow.current_attack_trick_requires_change(state)
+        is False
+    )
+
+
+def test_repetition_without_no_repetition_can_force_a_trick_change_mid_turn(
+    state: GameState,
+) -> None:
+    game_flow = build_game_flow(
+        attack_attempts=2,
+        no_repetition=False,
+        multiple_attack_enabled=True,
+        repetition_mode="choice",
+        repetition_limit=1,
+        uniqueness_enabled=False,
+    )
+    game_flow.start_game(state)
+    game_flow.start_turn(state, "Soul")
+    game_flow.resolve_attack(state, success=False)
+
+    assert game_flow.current_attack_trick_requires_change(state) is True
+
+
 def test_switch_rule_blocks_switch_trick_when_disabled(
     state: GameState,
 ) -> None:

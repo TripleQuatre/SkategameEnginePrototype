@@ -1,0 +1,125 @@
+metadata:
+  id: battle_multi_no_repetition_roster_navigation_stress
+  title: Battle multiple attack roster flow stays coherent through navigation and undo
+  tags:
+    - stress
+    - battle
+    - multiple_attack
+    - no_repetition
+    - roster
+    - history
+    - setup_details
+    - undo
+    - new_game
+
+setup:
+  mode: preset
+  preset: battle_multi_no_rep_v10_1
+  players:
+    - Stan
+    - Denise
+
+steps:
+  - name: launch app
+    action: launch_app
+    expect:
+      view: setup
+
+  - name: select battle multi no repetition preset
+    action: select_option
+    target: setup.preset_combo
+    value: battle_multi_no_rep_v10_1
+    expect:
+      view: setup
+      text_equals:
+        setup.preset_combo: battle_multi_no_rep_v10_1
+
+  - name: select first player profile
+    action: select_option
+    target: setup.player_profile_combo.1
+    value: Stan
+    expect:
+      view: setup
+      text_equals:
+        setup.player_name_entry.1: Stan
+
+  - name: select second player profile
+    action: select_option
+    target: setup.player_profile_combo.2
+    value: Denise
+    expect:
+      view: setup
+      text_equals:
+        setup.player_name_entry.2: Denise
+
+  - name: start battle
+    action: click
+    target: setup.start_game_button
+    expect:
+      view: match
+      status_text_equals: Game started.
+
+  - name: queue jamie join response
+    action: queue_prompt_response
+    value: Jamie
+
+  - name: add jamie to the battle
+    action: click
+    target: match.add_player_button
+    expect:
+      view: match
+      status_text_contains: joined the game
+
+  - name: open setup details with expanded roster
+    action: click
+    target: match.setup_details_button
+    expect:
+      view: setup_details
+      text_contains:
+        setup_details.body_label: "Multiple Attack: enabled + no repetition"
+
+  - name: verify no repetition setup details
+    action: click
+    target: setup_details.back_to_game_button
+    expect:
+      view: match
+
+  - name: open history with expanded roster
+    action: click
+    target: match.history_button
+    expect:
+      view: history
+
+  - name: back from history with expanded roster
+    action: click
+    target: history.back_to_game_button
+    expect:
+      view: match
+
+  - name: queue jamie removal response
+    action: queue_prompt_response
+    value: Jamie
+
+  - name: remove jamie from the battle
+    action: click
+    target: match.remove_player_button
+    expect:
+      view: match
+      status_text_contains: left the game
+
+  - name: undo jamie removal
+    action: click
+    target: match.undo_button
+    expect:
+      view: match
+      status_text_contains: Undo successful
+
+  - name: return to setup from battle roster session
+    action: click
+    target: match.new_game_button
+    expect:
+      view: setup
+      status_text_equals: Configure the game to begin.
+
+  - name: shutdown app
+    action: shutdown_app

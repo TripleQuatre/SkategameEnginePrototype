@@ -33,12 +33,18 @@ def test_stress_matrix_cases_exist() -> None:
     case_ids = {case.case_id for case in discover_stress_matrix_cases()}
 
     assert case_ids == {
+        "battle_multi_no_repetition_roster_navigation__battle_multi_no_rep_v10_1",
         "consultation_undo__duel_short_strict_v9_3",
         "load_engaged_turn__classic_skate_v8",
+        "load_engaged_turn__duel_synergy_strict_v10_1",
+        "load_engaged_turn__duel_verified_switch_v10_1",
         "load_engaged_turn__duel_long_open_v9_3",
         "mixed_save_load_roster__battle_long_open_v9_3",
         "roster_transition_roundtrip__battle_balanced_v9_3",
         "undo_chain_recovery__classic_skate_v8",
+        "undo_chain_recovery__duel_synergy_strict_v10_1",
+        "undo_chain_recovery__duel_verified_switch_v10_1",
+        "verified_switch_navigation_new_game__duel_verified_switch_v10_1",
     }
 
 

@@ -43,11 +43,19 @@ def test_stress_scenarios_exist() -> None:
     scenario_names = {path.name for path in _stress_scenarios()}
 
     assert scenario_names == {
+        "battle_multi_no_repetition_roster_navigation_stress.yaml",
         "consultation_undo_stress.yaml",
         "load_engaged_turn_stress.yaml",
         "mixed_save_load_roster_stress.yaml",
+        "multiple_attack_navigation_return_setup_stress.yaml",
+        "multiple_attack_no_repetition_load_undo_stress.yaml",
+        "random_order_navigation_persistence_stress.yaml",
+        "relevance_battle_persistence_stress.yaml",
         "roster_transition_roundtrip_stress.yaml",
+        "switch_normal_unlock_persistence_stress.yaml",
         "undo_chain_recovery_stress.yaml",
+        "verified_switch_navigation_new_game_stress.yaml",
+        "verified_switch_save_load_undo_stress.yaml",
     }
 
 

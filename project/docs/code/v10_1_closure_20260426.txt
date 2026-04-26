@@ -1,0 +1,77 @@
+V10.1 Closure - 2026-04-26
+
+Objective
+V10.1 does not add new gameplay rules.
+It hardens the post-V10 product by expanding harness coverage across:
+- more contrastive presets
+- more V10-oriented stress scenarios
+- more curated `preset x scenario` crossings
+- more dedicated V10 regressions
+- richer failure reporting for longer scenario runs
+
+Delivered
+- 4 additional fixed V10.1 presets focused on rule interactions
+- 4 additional V10.1 stress scenarios focused on non-rule product functions
+- 4 interaction-oriented reference scenarios for V10 rule combinations
+- 7 additional explicit stress-matrix crossings using V10.1 presets
+- 4 dedicated V10 regression scenarios
+- richer harness reporting with:
+  - scenario family
+  - step count
+  - direct failed-step context
+  - view-specific visible-state highlights
+
+Harness coverage state after V10.1
+- reference scenarios: 13
+- stress scenarios: 13
+- regression scenarios: 9
+- explicit stress-matrix cases: 12
+
+Coverage emphasis gained in V10.1
+- stronger V10 coverage on:
+  - `Multiple Attack`
+  - `No Repetition`
+  - `Switch` disabled / normal / verified
+  - `Order` choice / random / relevance
+  - `Attack/Repetition` setup synergy
+- broader product-function stress on:
+  - `undo`
+  - `save`
+  - `load`
+  - `history`
+  - `setup details`
+  - `new game`
+  - roster transitions
+- stronger battle-side V10 coverage, not only duel-side coverage
+
+Important notes
+- V10.1 keeps the harness as a tooling layer only
+- it does not change the architectural boundary between engine and harness
+- the added DSL support (`dropdown_empty`) only serves clearer GUI assertions
+- local profiles remain temporary local product data
+- sport remains visible and persisted but locked to `inline`
+
+Validation summary
+Automated validation completed successfully:
+- `python -m pytest project/tests -q`
+- result: `450 passed, 1 warning`
+
+Reference harness validation completed successfully:
+- `python -m harness.cli --reference-suite --saves-dir local_tmp/v10_1_reference_suite`
+- result: 13 reference scenarios passed
+
+Residual environment warning
+- the remaining known warning is the Windows `PytestCacheWarning` on `.pytest_cache`
+- it does not indicate a product or harness failure
+
+Outcome
+V10.1 is closed as a robustness-focused follow-up to V10.
+The project now has materially stronger automated confidence on:
+- V10 rule interactions
+- persistence and undo behavior around those rules
+- GUI-product flows that surround those rules
+
+Recommended next direction
+- either open a new rule/product version from this safer base
+- or, if needed, do one short targeted coverage pass on any newly discovered
+  corner case before expanding the rule set again

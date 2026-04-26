@@ -1,0 +1,1 @@
+Screenshot capture is not implemented yet for the Tk harness driver.

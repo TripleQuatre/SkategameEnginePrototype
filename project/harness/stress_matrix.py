@@ -51,9 +51,33 @@ STRESS_MATRIX_CASES: tuple[StressMatrixCase, ...] = (
         player_names=("Stan", "Denise"),
     ),
     StressMatrixCase(
+        case_id="load_engaged_turn__duel_synergy_strict_v10_1",
+        scenario_name="load_engaged_turn_stress.yaml",
+        preset_name="duel_synergy_strict_v10_1",
+        player_names=("Stan", "Denise"),
+    ),
+    StressMatrixCase(
+        case_id="load_engaged_turn__duel_verified_switch_v10_1",
+        scenario_name="load_engaged_turn_stress.yaml",
+        preset_name="duel_verified_switch_v10_1",
+        player_names=("Stan", "Denise"),
+    ),
+    StressMatrixCase(
         case_id="undo_chain_recovery__classic_skate_v8",
         scenario_name="undo_chain_recovery_stress.yaml",
         preset_name="classic_skate_v8",
+        player_names=("Stan", "Denise"),
+    ),
+    StressMatrixCase(
+        case_id="undo_chain_recovery__duel_synergy_strict_v10_1",
+        scenario_name="undo_chain_recovery_stress.yaml",
+        preset_name="duel_synergy_strict_v10_1",
+        player_names=("Stan", "Denise"),
+    ),
+    StressMatrixCase(
+        case_id="undo_chain_recovery__duel_verified_switch_v10_1",
+        scenario_name="undo_chain_recovery_stress.yaml",
+        preset_name="duel_verified_switch_v10_1",
         player_names=("Stan", "Denise"),
     ),
     StressMatrixCase(
@@ -75,6 +99,18 @@ STRESS_MATRIX_CASES: tuple[StressMatrixCase, ...] = (
         preset_name="battle_long_open_v9_3",
         player_names=("Stan", "Denise", "Alex"),
         variant="battle_mixed",
+    ),
+    StressMatrixCase(
+        case_id="verified_switch_navigation_new_game__duel_verified_switch_v10_1",
+        scenario_name="verified_switch_navigation_new_game_stress.yaml",
+        preset_name="duel_verified_switch_v10_1",
+        player_names=("Stan", "Denise"),
+    ),
+    StressMatrixCase(
+        case_id="battle_multi_no_repetition_roster_navigation__battle_multi_no_rep_v10_1",
+        scenario_name="battle_multi_no_repetition_roster_navigation_stress.yaml",
+        preset_name="battle_multi_no_rep_v10_1",
+        player_names=("Stan", "Denise"),
     ),
 )
 

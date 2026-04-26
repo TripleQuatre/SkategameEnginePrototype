@@ -37,6 +37,8 @@ class GUIOracleEngine:
         self._expect_texts(expectations, visible_state)
         self._expect_score_cells(expectations, visible_state)
         self._expect_dropdown_contains(expectations, visible_state)
+        self._expect_dropdown_equals(expectations, visible_state)
+        self._expect_dropdown_empty(expectations, visible_state)
 
     def _expect_core_invariants(self, visible_state: GUIVisibleState) -> None:
         active_view = visible_state.active_view
@@ -102,6 +104,8 @@ class GUIOracleEngine:
             "match.new_game_button",
             "match.success_button",
             "match.failure_button",
+            "match.switch_normal_verified_button",
+            "match.switch_normal_not_verified_button",
         )
 
         for target_id in required_text_targets:
@@ -128,6 +132,12 @@ class GUIOracleEngine:
         remove_state = visible_state.button_states["match.remove_player_button"]
         success_state = visible_state.button_states["match.success_button"]
         failure_state = visible_state.button_states["match.failure_button"]
+        switch_verified_state = visible_state.button_states[
+            "match.switch_normal_verified_button"
+        ]
+        switch_not_verified_state = visible_state.button_states[
+            "match.switch_normal_not_verified_button"
+        ]
 
         if phase_title == "Game over":
             if trick_label != "":
@@ -199,6 +209,21 @@ class GUIOracleEngine:
                         "match.failure_button": failure_state,
                     },
                 )
+            if (
+                switch_verified_state != "disabled"
+                or switch_not_verified_state != "disabled"
+            ):
+                raise GUIOracleError(
+                    "Open turn must disable switch verification buttons.",
+                    expected={
+                        "match.switch_normal_verified_button": "disabled",
+                        "match.switch_normal_not_verified_button": "disabled",
+                    },
+                    observed={
+                        "match.switch_normal_verified_button": switch_verified_state,
+                        "match.switch_normal_not_verified_button": switch_not_verified_state,
+                    },
+                )
             if add_state != "normal" or remove_state != "normal":
                 raise GUIOracleError(
                     "Open turn must allow roster transitions.",
@@ -234,18 +259,90 @@ class GUIOracleEngine:
                     expected="non-empty attempts label",
                     observed=attempts_label,
                 )
-            if success_state != "normal" or failure_state != "normal":
-                raise GUIOracleError(
-                    "Attack/defense match view must enable defense resolution buttons.",
-                    expected={
-                        "match.success_button": "normal",
-                        "match.failure_button": "normal",
-                    },
-                    observed={
-                        "match.success_button": success_state,
-                        "match.failure_button": failure_state,
-                    },
-                )
+            if "Choose a new trick to continue." in phase_description:
+                if success_state != "disabled" or failure_state != "disabled":
+                    raise GUIOracleError(
+                        "Forced attack-trick-change view must disable resolution buttons until a new trick is chosen.",
+                        expected={
+                            "match.success_button": "disabled",
+                            "match.failure_button": "disabled",
+                        },
+                        observed={
+                            "match.success_button": success_state,
+                            "match.failure_button": failure_state,
+                        },
+                    )
+                if (
+                    switch_verified_state != "disabled"
+                    or switch_not_verified_state != "disabled"
+                ):
+                    raise GUIOracleError(
+                        "Forced attack-trick-change view must disable switch verification buttons.",
+                        expected={
+                            "match.switch_normal_verified_button": "disabled",
+                            "match.switch_normal_not_verified_button": "disabled",
+                        },
+                        observed={
+                            "match.switch_normal_verified_button": switch_verified_state,
+                            "match.switch_normal_not_verified_button": switch_not_verified_state,
+                        },
+                    )
+            elif "Confirm whether the normal version was verified." in phase_description:
+                if success_state != "disabled" or failure_state != "normal":
+                    raise GUIOracleError(
+                        "Verified switch attack view must disable regular success and keep failure available.",
+                        expected={
+                            "match.success_button": "disabled",
+                            "match.failure_button": "normal",
+                        },
+                        observed={
+                            "match.success_button": success_state,
+                            "match.failure_button": failure_state,
+                        },
+                    )
+                if (
+                    switch_verified_state != "normal"
+                    or switch_not_verified_state != "normal"
+                ):
+                    raise GUIOracleError(
+                        "Verified switch attack view must enable both normal verification buttons.",
+                        expected={
+                            "match.switch_normal_verified_button": "normal",
+                            "match.switch_normal_not_verified_button": "normal",
+                        },
+                        observed={
+                            "match.switch_normal_verified_button": switch_verified_state,
+                            "match.switch_normal_not_verified_button": switch_not_verified_state,
+                        },
+                    )
+            else:
+                if success_state != "normal" or failure_state != "normal":
+                    raise GUIOracleError(
+                        "Attack/defense match view must enable defense resolution buttons.",
+                        expected={
+                            "match.success_button": "normal",
+                            "match.failure_button": "normal",
+                        },
+                        observed={
+                            "match.success_button": success_state,
+                            "match.failure_button": failure_state,
+                        },
+                    )
+                if (
+                    switch_verified_state != "disabled"
+                    or switch_not_verified_state != "disabled"
+                ):
+                    raise GUIOracleError(
+                        "Regular attack/defense view must disable switch verification buttons.",
+                        expected={
+                            "match.switch_normal_verified_button": "disabled",
+                            "match.switch_normal_not_verified_button": "disabled",
+                        },
+                        observed={
+                            "match.switch_normal_verified_button": switch_verified_state,
+                            "match.switch_normal_not_verified_button": switch_not_verified_state,
+                        },
+                    )
             if add_state != "disabled" or remove_state != "disabled":
                 raise GUIOracleError(
                     "Engaged turns must disable roster transition buttons.",
@@ -455,3 +552,37 @@ class GUIOracleEngine:
                     expected=expected_item,
                     observed=visible_state.dropdown_items,
                 )
+
+    def _expect_dropdown_equals(
+        self,
+        expectations: dict[str, Any],
+        visible_state: GUIVisibleState,
+    ) -> None:
+        expected_items = expectations.get("dropdown_equals")
+        if expected_items is None:
+            return
+
+        observed_items = list(visible_state.dropdown_items)
+        if observed_items != expected_items:
+            raise GUIOracleError(
+                "Dropdown items do not match exactly.",
+                expected=expected_items,
+                observed=observed_items,
+            )
+
+    def _expect_dropdown_empty(
+        self,
+        expectations: dict[str, Any],
+        visible_state: GUIVisibleState,
+    ) -> None:
+        expected_empty = expectations.get("dropdown_empty")
+        if expected_empty is None:
+            return
+
+        observed_empty = len(visible_state.dropdown_items) == 0
+        if observed_empty != expected_empty:
+            raise GUIOracleError(
+                "Dropdown empty state does not match.",
+                expected=expected_empty,
+                observed=observed_empty,
+            )

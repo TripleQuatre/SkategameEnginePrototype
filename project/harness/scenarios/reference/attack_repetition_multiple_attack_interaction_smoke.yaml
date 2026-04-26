@@ -1,0 +1,145 @@
+metadata:
+  id: attack_repetition_multiple_attack_interaction_smoke
+  title: Multiple attack must force a trick change when repetition is exhausted
+  tags:
+    - reference
+    - interaction
+    - attack
+    - repetition
+    - multiple_attack
+
+setup:
+  mode: custom
+  players:
+    - Stan
+    - Denise
+
+steps:
+  - name: launch app
+    action: launch_app
+    expect:
+      view: setup
+
+  - name: switch to custom mode
+    action: click
+    target: setup.mode_custom_radiobutton
+    expect:
+      view: setup
+
+  - name: select first player profile
+    action: select_option
+    target: setup.player_profile_combo.1
+    value: Stan
+    expect:
+      view: setup
+      text_equals:
+        setup.player_name_entry.1: Stan
+
+  - name: select second player profile
+    action: select_option
+    target: setup.player_profile_combo.2
+    value: Denise
+    expect:
+      view: setup
+      text_equals:
+        setup.player_name_entry.2: Denise
+
+  - name: set attack attempts
+    action: type
+    target: setup.attack_attempts_spinbox
+    value: "2"
+    expect:
+      view: setup
+
+  - name: set repetition mode common
+    action: select_option
+    target: setup.repetition_mode_combo
+    value: common
+    expect:
+      view: setup
+
+  - name: set repetition limit
+    action: type
+    target: setup.repetition_limit_spinbox
+    value: "1"
+    expect:
+      view: setup
+
+  - name: enable multiple attack
+    action: click
+    target: setup.multiple_attack_enabled_button
+    expect:
+      view: setup
+      button_states:
+        setup.start_game_button: normal
+
+  - name: start game
+    action: click
+    target: setup.start_game_button
+    expect:
+      view: match
+      status_text_equals: Game started.
+
+  - name: search soul
+    action: type
+    target: match.trick_entry
+    value: soul
+    expect:
+      view: match
+      dropdown_contains:
+        - Soul
+
+  - name: select soul
+    action: select_suggestion
+    target: match.trick_suggestions_listbox
+    value: Soul
+    expect:
+      view: match
+      status_text_equals: Valid trick selected.
+
+  - name: confirm soul
+    action: click
+    target: match.confirm_trick_button
+    expect:
+      view: match
+      text_equals:
+        match.trick_label: "Trick: Soul"
+
+  - name: fail first attack attempt
+    action: click
+    target: match.failure_button
+    expect:
+      view: match
+      status_text_contains: Current trick reached the repetition limit. Choose a new trick.
+      text_contains:
+        match.phase_description_label: "Choose a new trick to continue."
+        match.confirm_trick_button: "Change trick"
+
+  - name: search makio
+    action: type
+    target: match.trick_entry
+    value: makio
+    expect:
+      view: match
+      dropdown_contains:
+        - Makio
+
+  - name: select makio
+    action: select_suggestion
+    target: match.trick_suggestions_listbox
+    value: Makio
+    expect:
+      view: match
+      status_text_equals: Valid trick selected.
+
+  - name: change trick to makio
+    action: click
+    target: match.confirm_trick_button
+    expect:
+      view: match
+      status_text_equals: Attack trick changed to 'Makio'.
+      text_equals:
+        match.trick_label: "Trick: Makio"
+
+  - name: shutdown app
+    action: shutdown_app

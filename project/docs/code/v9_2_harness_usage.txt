@@ -58,10 +58,16 @@ Expected output
 - failures print the failing step, error message, expected value, observed value,
   and artifact path when available
 - structured reports now also keep:
-  - scenario context (`tags`, `setup`, scenario path)
+  - scenario context (`tags`, `family`, `setup`, scenario path, step count)
+  - direct failed-step context (`name`, `action`, `target`, `expect`)
   - step-by-step expectations
   - visible-state transitions between steps
   - compact deltas on buttons, key texts, score cells and dropdown state
+  - compact visible-state highlights adapted to the current view
+    - setup: order preview, synergy feedback, summary
+    - match: phase/trick/attempts and key button states
+    - history: row count and first row
+    - setup details: first structured lines of the setup body
 
 Stress reading note
 - this richer reporting is especially useful on long stress or regression runs

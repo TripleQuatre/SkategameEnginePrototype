@@ -1,0 +1,111 @@
+metadata:
+  id: verified_switch_load_restores_confirmation_regression
+  title: Loading a pending verified switch restores the dedicated confirmation controls
+  tags:
+    - regression
+    - switch
+    - verified
+    - load
+
+setup:
+  mode: preset
+  preset: duel_verified_switch_v10_1
+  players:
+    - Stan
+    - Denise
+
+steps:
+  - name: launch app
+    action: launch_app
+    expect:
+      view: setup
+
+  - name: select verified switch duel preset
+    action: select_option
+    target: setup.preset_combo
+    value: duel_verified_switch_v10_1
+    expect:
+      view: setup
+
+  - name: select first player profile
+    action: select_option
+    target: setup.player_profile_combo.1
+    value: Stan
+    expect:
+      view: setup
+
+  - name: select second player profile
+    action: select_option
+    target: setup.player_profile_combo.2
+    value: Denise
+    expect:
+      view: setup
+
+  - name: start game
+    action: click
+    target: setup.start_game_button
+    expect:
+      view: match
+
+  - name: search switch soul
+    action: type
+    target: match.trick_entry
+    value: switch soul
+    expect:
+      view: match
+      dropdown_contains:
+        - Soul Switch
+
+  - name: select soul switch
+    action: select_suggestion
+    target: match.trick_suggestions_listbox
+    value: Soul Switch
+    expect:
+      view: match
+      status_text_equals: Valid trick selected.
+
+  - name: confirm switch soul
+    action: click
+    target: match.confirm_trick_button
+    expect:
+      view: match
+      text_equals:
+        match.trick_label: "Trick: Soul Switch"
+      button_states:
+        match.switch_normal_verified_button: normal
+        match.switch_normal_not_verified_button: normal
+
+  - name: save pending verified switch attack
+    action: click
+    target: match.save_button
+    expect:
+      view: match
+      status_text_contains: Game saved to
+
+  - name: return to setup
+    action: click
+    target: match.new_game_button
+    expect:
+      view: setup
+
+  - name: select latest save
+    action: set_load_selection
+    value: latest
+
+  - name: load pending verified switch attack
+    action: click
+    target: setup.load_from_setup_button
+    expect:
+      view: match
+      status_text_contains: Game loaded from
+      text_equals:
+        match.phase_title_label: Stan attacks
+        match.trick_label: "Trick: Soul Switch"
+      button_states:
+        match.success_button: disabled
+        match.failure_button: normal
+        match.switch_normal_verified_button: normal
+        match.switch_normal_not_verified_button: normal
+
+  - name: shutdown app
+    action: shutdown_app

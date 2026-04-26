@@ -22,9 +22,11 @@ class StructuredGUIHarnessReporter:
         screenshot_path: Path | None,
         scenario_path: Path | None = None,
     ) -> dict[str, Any]:
+        failed_step = executed_steps[-1] if executed_steps else None
         return {
             "scenario": self.scenario_summary(scenario, scenario_path=scenario_path),
             "steps": [self._step_payload(step) for step in executed_steps],
+            "failed_step": self._failed_step_payload(failed_step),
             "failure": {
                 "message": str(error),
                 "error_type": type(error).__name__,
@@ -33,6 +35,7 @@ class StructuredGUIHarnessReporter:
                 "screenshot_path": screenshot_path.as_posix() if screenshot_path else None,
             },
             "visible_state": self.visible_state_to_payload(visible_state),
+            "visible_highlights": self.visible_highlights(visible_state),
         }
 
     def finalize(
@@ -91,13 +94,76 @@ class StructuredGUIHarnessReporter:
             "id": self._scenario_id(scenario),
             "title": metadata.get("title"),
             "tags": list(metadata.get("tags") or []),
+            "family": scenario_path.parent.name if scenario_path else None,
             "scenario_path": scenario_path.as_posix() if scenario_path else None,
+            "step_count": len(scenario.get("steps") or []),
             "setup": self._setup_summary(setup),
         }
         for optional_key in ("seed", "kind", "max_steps"):
             if optional_key in metadata:
                 summary[optional_key] = metadata[optional_key]
         return summary
+
+    def visible_highlights(
+        self,
+        visible_state: GUIVisibleState | None,
+    ) -> dict[str, Any] | None:
+        if visible_state is None:
+            return None
+
+        highlights: dict[str, Any] = {
+            "active_view": visible_state.active_view,
+            "status_text": visible_state.status_text,
+        }
+
+        if visible_state.active_view == "setup":
+            for target_id in (
+                "setup.preset_combo",
+                "setup.sport_combo",
+                "setup.order_preview_label",
+                "setup.attack_repetition_feedback_label",
+                "setup.multiple_attack_feedback_label",
+                "setup.summary_label",
+            ):
+                value = visible_state.texts.get(target_id)
+                if value:
+                    highlights[target_id] = value
+        elif visible_state.active_view == "match":
+            for target_id in (
+                "match.phase_title_label",
+                "match.trick_label",
+                "match.phase_description_label",
+                "match.attempts_label",
+            ):
+                value = visible_state.texts.get(target_id)
+                if value is not None:
+                    highlights[target_id] = value
+            highlights["key_button_states"] = {
+                target_id: visible_state.button_states.get(target_id)
+                for target_id in (
+                    "match.confirm_trick_button",
+                    "match.success_button",
+                    "match.failure_button",
+                    "match.switch_normal_verified_button",
+                    "match.switch_normal_not_verified_button",
+                    "match.add_player_button",
+                    "match.remove_player_button",
+                )
+                if target_id in visible_state.button_states
+            }
+            if visible_state.dropdown_items:
+                highlights["dropdown_items"] = list(visible_state.dropdown_items)
+        elif visible_state.active_view == "history":
+            history_rows = visible_state.table_rows.get("history.tree", ())
+            highlights["history_row_count"] = len(history_rows)
+            if history_rows:
+                highlights["history_first_row"] = list(history_rows[0])
+        elif visible_state.active_view == "setup_details":
+            body = visible_state.texts.get("setup_details.body_label", "")
+            if body:
+                highlights["setup_details_excerpt"] = body.splitlines()[:8]
+
+        return highlights
 
     def _scenario_id(self, scenario: dict[str, Any]) -> str:
         metadata = scenario.get("metadata") or {}
@@ -118,6 +184,7 @@ class StructuredGUIHarnessReporter:
             "observed_summary": executed_step.get("observed_summary"),
             "state_delta": executed_step.get("state_delta"),
             "visible_state": self.visible_state_to_payload(visible_state),
+            "visible_highlights": self.visible_highlights(visible_state),
         }
 
     def _step_record(
@@ -157,6 +224,24 @@ class StructuredGUIHarnessReporter:
             observed=failure_payload.get("observed"),
             screenshot_path=Path(screenshot_path) if screenshot_path else None,
         )
+
+    def _failed_step_payload(
+        self,
+        executed_step: dict[str, Any] | None,
+    ) -> dict[str, Any] | None:
+        if not isinstance(executed_step, dict):
+            return None
+
+        step = executed_step.get("step") or executed_step
+        return {
+            "index": executed_step.get("index"),
+            "name": step.get("name"),
+            "action": step.get("action"),
+            "target": step.get("target"),
+            "value": step.get("value"),
+            "key": step.get("key"),
+            "expect": step.get("expect"),
+        }
 
     def _setup_summary(self, setup: dict[str, Any]) -> dict[str, Any]:
         summary: dict[str, Any] = {}

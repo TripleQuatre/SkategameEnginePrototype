@@ -1,0 +1,200 @@
+metadata:
+  id: multiple_attack_no_repetition_load_undo_stress
+  title: Multiple attack and no repetition survive save load and undo
+  tags:
+    - stress
+    - multiple_attack
+    - no_repetition
+    - save_load
+    - undo
+
+setup:
+  mode: custom
+  players:
+    - Stan
+    - Denise
+
+steps:
+  - name: launch app
+    action: launch_app
+    expect:
+      view: setup
+
+  - name: switch to custom mode
+    action: click
+    target: setup.mode_custom_radiobutton
+    expect:
+      view: setup
+
+  - name: select first player profile
+    action: select_option
+    target: setup.player_profile_combo.1
+    value: Stan
+    expect:
+      view: setup
+      text_equals:
+        setup.player_name_entry.1: Stan
+
+  - name: select second player profile
+    action: select_option
+    target: setup.player_profile_combo.2
+    value: Denise
+    expect:
+      view: setup
+      text_equals:
+        setup.player_name_entry.2: Denise
+
+  - name: set attack attempts
+    action: type
+    target: setup.attack_attempts_spinbox
+    value: "3"
+    expect:
+      view: setup
+
+  - name: enable no repetition
+    action: click
+    target: setup.no_repetition_checkbutton
+    expect:
+      view: setup
+
+  - name: set repetition mode common
+    action: select_option
+    target: setup.repetition_mode_combo
+    value: common
+    expect:
+      view: setup
+
+  - name: set repetition limit
+    action: type
+    target: setup.repetition_limit_spinbox
+    value: "2"
+    expect:
+      view: setup
+
+  - name: enable multiple attack
+    action: click
+    target: setup.multiple_attack_enabled_button
+    expect:
+      view: setup
+      text_contains:
+        setup.multiple_attack_feedback_label: "Enabled: the attacker may change trick from the second attack attempt."
+
+  - name: start game
+    action: click
+    target: setup.start_game_button
+    expect:
+      view: match
+      status_text_equals: Game started.
+
+  - name: search soul
+    action: type
+    target: match.trick_entry
+    value: soul
+    expect:
+      view: match
+      dropdown_contains:
+        - Soul
+
+  - name: select soul
+    action: select_suggestion
+    target: match.trick_suggestions_listbox
+    value: Soul
+    expect:
+      view: match
+      status_text_equals: Valid trick selected.
+
+  - name: confirm soul
+    action: click
+    target: match.confirm_trick_button
+    expect:
+      view: match
+      text_equals:
+        match.phase_title_label: Stan attacks
+        match.trick_label: "Trick: Soul"
+
+  - name: fail first attack attempt
+    action: click
+    target: match.failure_button
+    expect:
+      view: match
+      status_text_equals: Stan missed 'Soul' (2 attack attempt(s) left).
+      text_contains:
+        match.phase_description_label: "You may keep this trick or change it."
+
+  - name: fail second attack attempt
+    action: click
+    target: match.failure_button
+    expect:
+      view: match
+      status_text_equals: Stan missed 'Soul' (1 attack attempt(s) left).
+      text_contains:
+        match.phase_description_label: "You may keep this trick or change it."
+
+  - name: save late multiple attack turn
+    action: click
+    target: match.save_button
+    expect:
+      view: match
+      status_text_contains: Game saved to
+
+  - name: return to setup
+    action: click
+    target: match.new_game_button
+    expect:
+      view: setup
+      status_text_equals: Configure the game to begin.
+
+  - name: select latest save
+    action: set_load_selection
+    value: latest
+
+  - name: load late multiple attack turn
+    action: click
+    target: setup.load_from_setup_button
+    expect:
+      view: match
+      status_text_contains: Game loaded from
+      text_equals:
+        match.phase_title_label: Stan attacks
+        match.trick_label: "Trick: Soul"
+      text_contains:
+        match.phase_description_label: "You may keep this trick or change it."
+
+  - name: search makio
+    action: type
+    target: match.trick_entry
+    value: makio
+    expect:
+      view: match
+      dropdown_contains:
+        - Makio
+
+  - name: select makio
+    action: select_suggestion
+    target: match.trick_suggestions_listbox
+    value: Makio
+    expect:
+      view: match
+      status_text_equals: Valid trick selected.
+
+  - name: change trick to makio
+    action: click
+    target: match.confirm_trick_button
+    expect:
+      view: match
+      status_text_equals: Attack trick changed to 'Makio'.
+      text_equals:
+        match.trick_label: "Trick: Makio"
+
+  - name: undo trick change
+    action: click
+    target: match.undo_button
+    expect:
+      view: match
+      status_text_contains: Undo successful
+      text_equals:
+        match.phase_title_label: Stan attacks
+        match.trick_label: "Trick: Soul"
+
+  - name: shutdown app
+    action: shutdown_app
