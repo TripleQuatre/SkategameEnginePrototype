@@ -1,0 +1,95 @@
+metadata:
+  id: switch_enabled_smoke
+  title: Switch enabled smoke flow
+  tags:
+    - reference
+    - switch
+    - setup
+
+setup:
+  mode: custom
+  players:
+    - Stan
+    - Denise
+
+steps:
+  - name: launch app
+    action: launch_app
+    expect:
+      view: setup
+
+  - name: switch to custom mode
+    action: click
+    target: setup.mode_custom_radiobutton
+    expect:
+      view: setup
+
+  - name: select first player profile
+    action: select_option
+    target: setup.player_profile_combo.1
+    value: Stan
+    expect:
+      view: setup
+      text_equals:
+        setup.player_name_entry.1: Stan
+
+  - name: select second player profile
+    action: select_option
+    target: setup.player_profile_combo.2
+    value: Denise
+    expect:
+      view: setup
+      text_equals:
+        setup.player_name_entry.2: Denise
+
+  - name: enable switch mode
+    action: select_option
+    target: setup.switch_mode_combo
+    value: enabled
+    expect:
+      view: setup
+      text_contains:
+        setup.summary_label: "switch=enabled"
+
+  - name: start game
+    action: click
+    target: setup.start_game_button
+    expect:
+      view: match
+      status_text_equals: Game started.
+      text_equals:
+        match.phase_title_label: Stan sets the next trick
+
+  - name: search switch soul
+    action: type
+    target: match.trick_entry
+    value: switch soul
+    expect:
+      view: match
+      dropdown_contains:
+        - Soul Switch
+
+  - name: select soul switch
+    action: select_suggestion
+    target: match.trick_suggestions_listbox
+    value: Soul Switch
+    expect:
+      view: match
+      status_text_equals: Valid trick selected.
+      text_equals:
+        match.trick_entry: Soul Switch
+      button_states:
+        match.confirm_trick_button: normal
+
+  - name: confirm soul switch
+    action: click
+    target: match.confirm_trick_button
+    expect:
+      view: match
+      status_text_equals: Trick 'Soul Switch' confirmed.
+      text_equals:
+        match.phase_title_label: Stan attacks
+        match.trick_label: "Trick: Soul Switch"
+
+  - name: shutdown app
+    action: shutdown_app

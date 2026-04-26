@@ -59,10 +59,14 @@ def test_reference_scenarios_exist() -> None:
     scenario_names = {path.name for path in _reference_scenarios()}
 
     assert scenario_names == {
+        "attack_repetition_synergy_smoke.yaml",
         "custom_battle_smoke.yaml",
         "history_and_setup_details_navigation.yaml",
+        "multiple_attack_enabled_smoke.yaml",
         "preset_one_vs_one_smoke.yaml",
+        "relevance_order_setup_details_smoke.yaml",
         "save_smoke.yaml",
+        "switch_enabled_smoke.yaml",
         "undo_to_setup_regression.yaml",
     }
 

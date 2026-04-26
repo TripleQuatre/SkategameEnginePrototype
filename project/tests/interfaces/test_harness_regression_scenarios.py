@@ -47,6 +47,7 @@ def test_regression_scenarios_exist() -> None:
         "deep_undo_restores_trick_input_regression.yaml",
         "load_restores_engaged_turn_controls_regression.yaml",
         "player_count_rebuilds_fields_regression.yaml",
+        "undo_restores_multiple_attack_change_controls_regression.yaml",
     }
 
 

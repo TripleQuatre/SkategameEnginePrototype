@@ -1,0 +1,109 @@
+V10 Rules Integration
+
+Order
+
+Definition
+Order defines the base attack order applied at match start.
+
+Options
+- Relevance
+- Random
+- Choice
+
+Relevance
+Relevance is one Order option.
+It is based on fixed profile criteria in V10.
+Planned V10 criteria:
+- alphabetical
+- age
+- experience_time
+- local_rank
+
+Choice
+Choice allows manual ordering in setup.
+The expected V10 UX is explicit reorder controls, not a free text field.
+
+Random
+Random creates the initial order automatically at match start.
+
+Multiple Attack
+
+Visibility
+The Multiple Attack block only appears if Attack > 1.
+
+Product Shape
+The UI must keep one single linked block with:
+- Disabled / Enabled main mode
+- No Repetition toggle
+
+Behavior Matrix
+
+Disabled + No Repetition Off
+- attacker keeps the same trick during the whole attack turn
+- Repetition is counted launch by launch
+
+Disabled + No Repetition On
+- attacker keeps the same trick during the whole attack turn
+- repeated failed launches on the same trick during the same attack turn count as one repetition
+
+Enabled + No Repetition Off
+- from the second attack attempt onward, attacker may change trick
+- Repetition is counted launch by launch
+
+Enabled + No Repetition On
+- from the second attack attempt onward, attacker may change trick
+- repeated failed launches on the same trick during the same attack turn count as one repetition
+
+Attack / Repetition Compatibility
+
+This compatibility only applies when:
+- Attack > 1
+- Multiple Attack = Disabled
+- No Repetition = Off
+
+Constraint
+Repetition limit must be an exact multiple of Attack.
+
+Formal expression
+repetition_limit % attack_attempts == 0
+
+Consequences
+- if compatibility is inactive, Attack and Repetition remain free inputs
+- if compatibility is active, free input remains allowed, but invalid pairs must block match start
+- the UI must show suggestions for nearby valid multiples
+- no silent auto-correction
+
+Derived consequence
+When this compatibility is active, Repetition is always greater than or equal to Attack.
+
+Switch
+
+Visibility
+Switch must appear only when the active sport makes it relevant.
+In V10 that means inline setups.
+
+Options
+- Disabled
+- Enabled
+- Normal
+- Verified
+
+Behavior
+Disabled:
+- no switch trick may be imposed
+
+Enabled:
+- switch tricks are freely allowed
+
+Normal:
+- a switch trick may be imposed only if the attacker has already validated its normal form
+
+Verified:
+- a switch trick follows the stricter verified flow defined by the rule
+
+Dependencies
+Switch depends on:
+- sport
+- dictionary identity rules
+- validated trick history
+- action validation

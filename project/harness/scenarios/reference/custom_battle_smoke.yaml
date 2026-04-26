@@ -43,26 +43,32 @@ steps:
     expect:
       view: setup
 
-  - name: enter first player
-    action: type
-    target: setup.player_name_entry.1
+  - name: select first player profile
+    action: select_option
+    target: setup.player_profile_combo.1
     value: Stan
     expect:
       view: setup
+      text_equals:
+        setup.player_name_entry.1: Stan
 
-  - name: enter second player
-    action: type
-    target: setup.player_name_entry.2
+  - name: select second player profile
+    action: select_option
+    target: setup.player_profile_combo.2
     value: Denise
     expect:
       view: setup
+      text_equals:
+        setup.player_name_entry.2: Denise
 
-  - name: enter third player
-    action: type
-    target: setup.player_name_entry.3
+  - name: select third player profile
+    action: select_option
+    target: setup.player_profile_combo.3
     value: Frank
     expect:
       view: setup
+      text_equals:
+        setup.player_name_entry.3: Frank
 
   - name: set custom word
     action: type

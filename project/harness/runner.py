@@ -260,6 +260,10 @@ class GUIHarnessRunner:
             previous_state.texts if previous_state else {},
             current_state.texts,
             interesting_keys={
+                "setup.order_preview_label",
+                "setup.summary_label",
+                "setup.attack_repetition_feedback_label",
+                "setup.multiple_attack_feedback_label",
                 "match.phase_title_label",
                 "match.trick_label",
                 "match.phase_description_label",

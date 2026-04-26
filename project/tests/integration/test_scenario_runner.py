@@ -156,6 +156,7 @@ def test_scenario_runner_can_play_attack_phase_before_defense() -> None:
             ScenarioDefinition(
                 player_ids=["p1", "p2"],
                 attack_attempts=2,
+                repetition_limit=4,
                 steps=[
                     ScenarioStep(action="start_turn", trick="soul"),
                     ScenarioStep(

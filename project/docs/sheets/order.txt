@@ -11,22 +11,29 @@ Parent Rule
 None
 
 Definition
-regle fondamentale qui definit l'ordre d'attaque standard des joueurs, fixe au debut de la partie
+Fundamental rule that defines the base attack order of players for the whole match.
 
 Purpose
-determiner dans quel ordre les joueurs occupent le role d'attaquant tout au long de la partie selon une logique initiale stable
+Determine in which order players take the attacker role according to a stable initial logic chosen before the match starts.
 
 Options
-Relevance : Defini selon un nombre d'options fixes : age, temps de pratique, alphabetique...
-Random : Le choix de l'ordre du passage des joueurs est defini aleatoirement
-Choice : Defini selon un choix personnalise lors de la selection des joueurs
+Relevance: the attack order is built from a fixed relevance criterion applied to the selected player profiles.
+Examples of V10 criteria:
+- alphabetical
+- age
+- experience_time
+- local_rank
+
+Random: the attack order is chosen randomly at the start of the match.
+
+Choice: the attack order is chosen manually during setup.
 
 Activation Conditions
-aucune
+None
 
 Dependencies
-liste des joueurs
-criteres de classement disponibles si l'option Relevance est utilisee
+player list
+available player-profile criteria when Relevance is used
 
 Interactions
 Attack Order
@@ -36,20 +43,22 @@ Clash
 Round
 
 Default Behavior
-ordre fixe au debut de la partie et conserve pendant toute sa duree
+One attack order is defined at match start and kept as the base order for the rest of the match.
 
 Advanced Behavior
-peut servir de base a des regles avancees qui modifient ensuite l'ordre d'attaque ou structurent celui des defenseurs
+This base order may later be reused or modified by advanced order rules.
+Relevance is not a separate rule: it is one option of Order.
 
 Code Impact
-ordre de tour
-rotation des joueurs
-initialisation de partie
-logique de manche
+turn order
+player rotation
+match initialization
+round logic
 
 UX Notes
-doit etre configure tres tot dans la preparation de partie
-si Relevance est choisi, l'interface doit ensuite proposer clairement le critere applique
+Must be configured early in the setup flow.
+If Relevance is selected, the interface must clearly expose the chosen criterion.
+If Choice is selected, the interface must allow users to reorder players explicitly.
 
 Open Questions
-quels criteres exacts doivent etre inclus dans Relevance des la premiere version
+Need to confirm which fixed relevance criteria are included in the first implementation.

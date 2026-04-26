@@ -13,6 +13,7 @@ from config.setup_translator import SetupTranslator
 class MatchPreset:
     name: str
     structure_name: str
+    sport: str = "inline"
     policies: MatchPolicies = field(default_factory=MatchPolicies)
     rule_set: RuleSetConfig = field(default_factory=RuleSetConfig)
     fine_rules: FineRulesConfig = field(default_factory=FineRulesConfig)
@@ -22,12 +23,16 @@ class MatchPreset:
         return MatchSetup(
             player_ids=list(player_ids),
             structure_name=self.structure_name,
+            sport=self.sport,
             policies=self.policies,
             letters_word=self.rule_set.letters_word,
             attack_attempts=self.rule_set.attack_attempts,
             defense_attempts=self.rule_set.defense_attempts,
             elimination_enabled=self.rule_set.elimination_enabled,
             uniqueness_enabled=self.fine_rules.uniqueness_enabled,
+            multiple_attack_enabled=self.fine_rules.multiple_attack_enabled,
+            no_repetition=self.fine_rules.no_repetition,
+            switch_mode=self.fine_rules.switch_mode,
             repetition_mode=self.fine_rules.repetition_mode,
             repetition_limit=self.fine_rules.repetition_limit,
             preset_name=self.name,

@@ -10,6 +10,7 @@ from config.match_policies import (
     DefenderOrderPolicy,
     InitialTurnOrderPolicy,
     MatchPolicies,
+    RelevanceCriterion,
 )
 from config.rule_set_config import RuleSetConfig
 from config.scoring_config import ScoringConfig
@@ -100,6 +101,12 @@ class Serializer:
             "initial_turn_order": policies.initial_turn_order.value,
             "attacker_rotation": policies.attacker_rotation.value,
             "defender_order": policies.defender_order.value,
+            "relevance_criterion": (
+                policies.relevance_criterion.value
+                if policies.relevance_criterion is not None
+                else None
+            ),
+            "explicit_player_order": list(policies.explicit_player_order),
         }
 
     def deserialize_match_policies(self, data: dict | None) -> MatchPolicies | None:
@@ -110,15 +117,23 @@ class Serializer:
             initial_turn_order=InitialTurnOrderPolicy(data["initial_turn_order"]),
             attacker_rotation=AttackerRotationPolicy(data["attacker_rotation"]),
             defender_order=DefenderOrderPolicy(data["defender_order"]),
+            relevance_criterion=(
+                RelevanceCriterion(data["relevance_criterion"])
+                if data.get("relevance_criterion")
+                else None
+            ),
+            explicit_player_order=tuple(data.get("explicit_player_order", [])),
         )
 
     def serialize_match_config(self, match_config: MatchConfig) -> dict:
         return {
             "player_ids": list(match_config.player_ids),
+            "player_profile_ids": list(match_config.player_profile_ids),
             "structure": {
                 "structure_name": match_config.structure_name,
                 "policies": self.serialize_match_policies(match_config.policies),
             },
+            "sport": match_config.sport,
             "attack": asdict(match_config.attack),
             "defense": asdict(match_config.defense),
             "scoring": asdict(match_config.scoring),
@@ -132,6 +147,7 @@ class Serializer:
             structure_data = data["structure"]
             return MatchConfig(
                 player_ids=list(data.get("player_ids", [])),
+                player_profile_ids=list(data.get("player_profile_ids", [])),
                 structure=StructureConfig(
                     structure_name=structure_data["structure_name"],
                     policies=(
@@ -139,6 +155,7 @@ class Serializer:
                         or MatchPolicies()
                     ),
                 ),
+                sport=data.get("sport", "inline"),
                 attack=AttackConfig(**data.get("attack", {})),
                 defense=DefenseConfig(**data.get("defense", {})),
                 scoring=ScoringConfig(**data.get("scoring", {})),
@@ -154,7 +171,9 @@ class Serializer:
     def serialize_match_parameters(self, match_parameters: MatchParameters) -> dict:
         return {
             "player_ids": match_parameters.player_ids,
+            "player_profile_ids": list(match_parameters.player_profile_ids),
             "structure_name": match_parameters.structure_name,
+            "sport": match_parameters.sport,
             "rule_set": self.serialize_rule_set(match_parameters.rule_set),
             "policies": self.serialize_match_policies(match_parameters.policies),
             "fine_rules": asdict(match_parameters.fine_rules),
@@ -169,7 +188,9 @@ class Serializer:
 
         return MatchParameters(
             player_ids=data["player_ids"],
+            player_profile_ids=list(data.get("player_profile_ids", [])),
             structure_name=data["structure_name"],
+            sport=data.get("sport", "inline"),
             rule_set=self.deserialize_rule_set(data["rule_set"]),
             policies=self.deserialize_match_policies(data.get("policies")),
             fine_rules=FineRulesConfig(**data.get("fine_rules", {})),
@@ -193,6 +214,7 @@ class Serializer:
             "validated_tricks": state.validated_tricks,
             "validated_trick_data": state.validated_trick_data,
             "failed_attack_trick_data": state.failed_attack_trick_data,
+            "failed_attack_turn_trick_keys": state.failed_attack_turn_trick_keys,
         }
 
     def deserialize_game_state(self, data: dict) -> GameState:
@@ -222,6 +244,9 @@ class Serializer:
             validated_tricks=data.get("validated_tricks", []),
             validated_trick_data=data.get("validated_trick_data", []),
             failed_attack_trick_data=data.get("failed_attack_trick_data", []),
+            failed_attack_turn_trick_keys=data.get(
+                "failed_attack_turn_trick_keys", []
+            ),
         )
 
     def serialize_game_save(self, game_save: GameSave) -> dict:

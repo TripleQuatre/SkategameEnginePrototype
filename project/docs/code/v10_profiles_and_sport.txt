@@ -1,0 +1,55 @@
+V10 Profiles And Sport
+
+Local Profiles
+
+Intent
+V10 introduces local player profiles as temporary product data.
+They are not accounts.
+They are not created from the GUI in this version.
+
+Storage
+Profiles live in a dedicated local directory.
+The storage format must be simple, stable, and extensible.
+
+V10 Scope
+- read existing profiles
+- list profiles in setup
+- select profiles for one_vs_one and battle
+- use profile data for Order = Relevance
+
+Out of scope
+- create profile UI
+- edit profile UI
+- delete profile UI
+- authentication
+- remote sync
+
+Expected V10 Profile Shape
+The format must already be future-friendly.
+At minimum it should support:
+- profile id
+- display name
+- age
+- experience_time
+- local_rank
+- preferred or primary sport
+
+Sport
+
+Intent
+Sport becomes a visible setup/config value in V10.
+
+V10 Scope
+- sport is visible in setup
+- sport is stored in config/setup state
+- sport is visible in match details
+- sport is locked to inline
+
+Out of scope
+- real multi-sport dictionary switching
+- sport-specific setup branching beyond inline
+
+Integration Notes
+- sport visibility prepares future multi-sport support
+- profile data may already include sport-related fields
+- Switch visibility depends on the active sport

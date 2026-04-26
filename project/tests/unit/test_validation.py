@@ -39,7 +39,7 @@ def test_config_validator_rejects_unknown_structure_name() -> None:
         validator.validate_match_parameters(match_parameters)
 
 
-def test_config_validator_rejects_randomized_one_vs_one_order_policy() -> None:
+def test_config_validator_accepts_randomized_one_vs_one_order_policy() -> None:
     validator = ConfigValidator()
     match_parameters = MatchParameters(
         player_ids=["p1", "p2"],
@@ -49,8 +49,7 @@ def test_config_validator_rejects_randomized_one_vs_one_order_policy() -> None:
         ),
     )
 
-    with pytest.raises(InvalidStateError):
-        validator.validate_match_parameters(match_parameters)
+    validator.validate_match_parameters(match_parameters)
 
 
 def test_config_validator_rejects_reverse_defender_order_for_one_vs_one() -> None:
@@ -157,6 +156,47 @@ def test_config_validator_rejects_invalid_attack_attempts() -> None:
 
     with pytest.raises(ValueError):
         validator.validate_rule_set(rule_set)
+
+
+def test_config_validator_rejects_incompatible_attack_repetition_synergy() -> None:
+    validator = ConfigValidator()
+    match_parameters = MatchParameters(
+        player_ids=["p1", "p2"],
+        rule_set=RuleSetConfig(attack_attempts=2),
+        fine_rules=FineRulesConfig(
+            repetition_mode="choice",
+            repetition_limit=3,
+        ),
+    )
+
+    with pytest.raises(InvalidStateError):
+        validator.validate_match_parameters(match_parameters)
+
+
+def test_config_validator_allows_non_multiple_repetition_when_repetition_is_disabled() -> None:
+    validator = ConfigValidator()
+    match_parameters = MatchParameters(
+        player_ids=["p1", "p2"],
+        rule_set=RuleSetConfig(attack_attempts=2),
+        fine_rules=FineRulesConfig(
+            repetition_mode="disabled",
+            repetition_limit=3,
+        ),
+    )
+
+    validator.validate_match_parameters(match_parameters)
+
+
+def test_config_validator_rejects_switch_rule_outside_inline_sport() -> None:
+    validator = ConfigValidator()
+    match_parameters = MatchParameters(
+        player_ids=["p1", "p2"],
+        sport="skateboard",
+        fine_rules=FineRulesConfig(switch_mode="enabled"),
+    )
+
+    with pytest.raises(InvalidStateError):
+        validator.validate_match_parameters(match_parameters)
 
 
 def test_state_validator_rejects_invalid_attacker_index() -> None:
@@ -377,6 +417,65 @@ def test_action_validator_rejects_dictionary_trick_when_choice_repetition_limit_
 
     with pytest.raises(InvalidActionError):
         validator.validate_start_turn(state, "Switch Soul")
+
+
+def test_action_validator_rejects_switch_trick_when_switch_rule_is_disabled() -> None:
+    validator = ActionValidator(
+        TrickRules(FineRulesConfig(switch_mode="disabled"))
+    )
+    state = GameState(
+        players=[
+            Player(id="p1", name="Player 1"),
+            Player(id="p2", name="Player 2"),
+        ],
+        phase=Phase.TURN,
+    )
+
+    with pytest.raises(InvalidActionError) as error:
+        validator.validate_start_turn(state, "Switch Soul")
+
+    assert "Switch tricks are disabled" in str(error.value)
+
+
+def test_action_validator_allows_switch_trick_after_normal_form_is_validated_during_match() -> None:
+    validator = ActionValidator(
+        TrickRules(FineRulesConfig(switch_mode="normal"))
+    )
+    _, soul_data = resolve_runtime_trick_record("Soul")
+    assert soul_data is not None
+    state = GameState(
+        players=[
+            Player(id="p1", name="Player 1"),
+            Player(id="p2", name="Player 2"),
+        ],
+        phase=Phase.TURN,
+        attacker_index=1,
+        validated_trick_data=[
+            {
+                **soul_data,
+                "validated_by_attacker_id": "p1",
+                "validated_by_attacker_name": "Player 1",
+            }
+        ],
+    )
+
+    validator.validate_start_turn(state, "Switch Soul")
+
+
+def test_action_validator_allows_verified_switch_without_prior_normal_validation() -> None:
+    validator = ActionValidator(
+        TrickRules(FineRulesConfig(switch_mode="verified"))
+    )
+    state = GameState(
+        players=[
+            Player(id="p1", name="Player 1"),
+            Player(id="p2", name="Player 2"),
+        ],
+        phase=Phase.TURN,
+        attacker_index=1,
+    )
+
+    validator.validate_start_turn(state, "Switch Soul")
 
 
 def test_action_validator_rejects_dictionary_trick_when_common_repetition_limit_is_reached() -> None:

@@ -57,6 +57,7 @@ class RosterTransitions:
         next_match_config = replace(
             match_config,
             player_ids=[player.id for player in state.players],
+            player_profile_ids=[],
             structure=replace(
                 match_config.structure,
                 structure_name=next_structure_name,
@@ -150,6 +151,7 @@ class RosterTransitions:
         next_match_config = replace(
             match_config,
             player_ids=[player.id for player in state.players],
+            player_profile_ids=[],
             structure=next_structure,
             preset_name=None,
         )

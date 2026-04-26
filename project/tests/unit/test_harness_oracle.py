@@ -26,7 +26,7 @@ def test_gui_oracle_engine_accepts_matching_visible_state() -> None:
             "match.trick_label": "",
             "match.phase_description_label": "Defenders: Denise",
             "match.attempts_label": "",
-            "setup_details.body_label": "Preset: classic_skate\nDictionary profile: inline_primary_grind",
+            "setup_details.body_label": "Preset: classic_skate\nStructure: one_vs_one\nSport: inline\nPlayers: Stan, Denise\nProfiles: stan, denise\nOrder: random\nBase order: Stan, Denise\nWord: SKATE\nAttack attempts: 1\nDefense attempts: 3\nUniqueness: enabled\nMultiple Attack: disabled\nRepetition: choice (limit 3)\nDictionary sport: inline\nDictionary profile: inline_primary_grind\nDictionary max segments: 3",
         },
         score_cells={"1,0": "STAN", "1,2": "DENISE", "2,0": "SK", "2,2": "-"},
         dropdown_items=("Soul", "Soul Switch"),
@@ -243,6 +243,29 @@ def test_gui_oracle_engine_rejects_unknown_match_phase_title() -> None:
     assert error.value.observed == "Stan is vibing"
 
 
+def test_gui_oracle_engine_rejects_setup_view_missing_v10_targets() -> None:
+    engine = GUIOracleEngine()
+
+    with pytest.raises(GUIOracleError) as error:
+        engine.evaluate_step(
+            scenario={"metadata": {"id": "unit"}},
+            step={"name": "check setup invariants", "action": "click"},
+            visible_state=GUIVisibleState(
+                active_view="setup",
+                texts={
+                    "setup.preset_combo": "classic_skate",
+                    "setup.word_entry": "SKATE",
+                },
+                button_states={
+                    "setup.start_game_button": "normal",
+                    "setup.load_from_setup_button": "normal",
+                },
+            ),
+        )
+
+    assert "setup.sport_combo" in str(error.value)
+
+
 def test_gui_oracle_engine_rejects_setup_details_missing_required_fields() -> None:
     engine = GUIOracleEngine()
 
@@ -253,7 +276,7 @@ def test_gui_oracle_engine_rejects_setup_details_missing_required_fields() -> No
             visible_state=GUIVisibleState(
                 active_view="setup_details",
                 texts={
-                    "setup_details.body_label": "Preset: classic_skate\nStructure: one_vs_one"
+                    "setup_details.body_label": "Preset: classic_skate\nStructure: one_vs_one\nSport: inline\nPlayers: Stan, Denise\nWord: SKATE\nAttack attempts: 1\nDefense attempts: 3\nUniqueness: enabled\nRepetition: choice (limit 3)\nDictionary sport: inline\nDictionary profile: inline_primary_grind\nDictionary max segments: 3"
                 },
                 button_states={"setup_details.back_to_game_button": "normal"},
             ),

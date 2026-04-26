@@ -5,6 +5,7 @@ from tkinter import ttk, messagebox, simpledialog
 from tkinter import font as tkfont
 
 from application.game_setup_service import GameSetupService
+from config.match_policies import InitialTurnOrderPolicy, RelevanceCriterion
 from controllers.game_controller import GameController
 from core.events import Event
 from core.history import HistoryTurn
@@ -25,25 +26,46 @@ class GUIApp:
 
         self.controller: GameController | None = None
         self.setup_service = GameSetupService()
+        self.available_local_profiles = self.setup_service.list_local_profiles()
+        self.profile_id_by_display_name = {
+            profile.display_name: profile.profile_id
+            for profile in self.available_local_profiles
+        }
+        self.display_name_by_profile_id = {
+            profile.profile_id: profile.display_name
+            for profile in self.available_local_profiles
+        }
+        self.local_profile_display_names = [
+            profile.display_name for profile in self.available_local_profiles
+        ]
 
         self.setup_mode_var = tk.StringVar(value="preset")
         self.player_count_var = tk.IntVar(value=2)
+        self.player_profile_vars: list[tk.StringVar] = []
         self.player_name_vars: list[tk.StringVar] = []
+        self.sport_var = tk.StringVar(value="inline")
+        self.order_mode_var = tk.StringVar(value="choice")
+        self.relevance_criterion_var = tk.StringVar(value="alphabetical")
         self.preset_var = tk.StringVar(value="classic_skate")
         self.custom_word_var = tk.StringVar(value="SKATE")
         self.custom_attack_attempts_var = tk.IntVar(value=1)
         self.custom_defense_attempts_var = tk.IntVar(value=1)
         self.custom_uniqueness_var = tk.BooleanVar(value=True)
+        self.custom_multiple_attack_enabled_var = tk.BooleanVar(value=False)
+        self.custom_no_repetition_var = tk.BooleanVar(value=False)
+        self.custom_switch_mode_var = tk.StringVar(value="disabled")
         self.custom_repetition_mode_var = tk.StringVar(value="choice")
         self.custom_repetition_limit_var = tk.IntVar(value=3)
         self.trick_var = tk.StringVar()
         self.status_var = tk.StringVar(value="Configure the game to begin.")
+        self._auto_order_mode_value: str | None = None
         self._suppress_trick_updates = False
         self._selected_trick_completion: str | None = None
         self._current_trick_suggestions = []
         self._harness_targets: dict[str, tk.Widget] = {}
         self._harness_prompt_responses: list[str | None] = []
         self._harness_load_selection: str | None = None
+        self._refreshing_setup_controls = False
 
         self.title_font = tkfont.Font(size=18, weight="bold")
         self.subtitle_font = tkfont.Font(size=10)
@@ -96,6 +118,9 @@ class GUIApp:
         self._register_harness_target("view.history", self.history_frame)
         self._register_harness_target("view.setup_details", self.setup_details_frame)
         self.players_frame: ttk.Frame | None = None
+        self.player_profile_combos: list[ttk.Combobox] = []
+        self.player_move_up_buttons: list[ttk.Button] = []
+        self.player_move_down_buttons: list[ttk.Button] = []
 
         self.matchup_label: ttk.Label | None = None
         self.phase_title_label: ttk.Label | None = None
@@ -105,6 +130,14 @@ class GUIApp:
         self.status_label: ttk.Label | None = None
         self.preset_label: ttk.Label | None = None
         self.setup_details_body_label: ttk.Label | None = None
+        self.order_preview_label: ttk.Label | None = None
+        self.attack_repetition_feedback_label: ttk.Label | None = None
+        self.multiple_attack_feedback_label: ttk.Label | None = None
+        self.setup_summary_label: ttk.Label | None = None
+        self.multiple_attack_frame: ttk.Frame | None = None
+        self.multiple_attack_disabled_button: ttk.Radiobutton | None = None
+        self.multiple_attack_enabled_button: ttk.Radiobutton | None = None
+        self.no_repetition_checkbutton: ttk.Checkbutton | None = None
 
         self.score_frame: ttk.Frame | None = None
         self.trick_search_frame: ttk.Frame | None = None
@@ -118,6 +151,8 @@ class GUIApp:
         self.load_from_setup_button: ttk.Button | None = None
         self.success_button: ttk.Button | None = None
         self.failure_button: ttk.Button | None = None
+        self.switch_normal_verified_button: ttk.Button | None = None
+        self.switch_normal_not_verified_button: ttk.Button | None = None
         self.undo_button: ttk.Button | None = None
         self.save_button: ttk.Button | None = None
         self.load_button: ttk.Button | None = None
@@ -134,6 +169,10 @@ class GUIApp:
         self.preset_mode_radiobutton: ttk.Radiobutton | None = None
         self.custom_mode_radiobutton: ttk.Radiobutton | None = None
         self.player_count_spinbox: ttk.Spinbox | None = None
+        self.sport_combo: ttk.Combobox | None = None
+        self.order_mode_combo: ttk.Combobox | None = None
+        self.relevance_criterion_combo: ttk.Combobox | None = None
+        self.switch_mode_combo: ttk.Combobox | None = None
         self.word_entry: ttk.Entry | None = None
         self.attack_attempts_spinbox: ttk.Spinbox | None = None
         self.attempts_spinbox: ttk.Spinbox | None = None
@@ -176,6 +215,176 @@ class GUIApp:
 
     def set_harness_load_selection(self, value: str) -> None:
         self._harness_load_selection = value
+
+    def _get_default_profile_display_name(self, index: int) -> str:
+        if index < len(self.local_profile_display_names):
+            return self.local_profile_display_names[index]
+        return ""
+
+    def _sync_player_name_from_profile_var(
+        self,
+        profile_var: tk.StringVar,
+        player_name_var: tk.StringVar,
+    ) -> None:
+        selected_name = profile_var.get().strip()
+        player_name_var.set(selected_name)
+
+    def _collect_selected_player_profile_ids(self) -> list[str]:
+        profile_names: list[str] = []
+        for index, profile_var in enumerate(self.player_profile_vars):
+            profile_name = profile_var.get().strip()
+            manual_name = (
+                self.player_name_vars[index].get().strip()
+                if index < len(self.player_name_vars)
+                else ""
+            )
+            if manual_name in self.profile_id_by_display_name:
+                profile_name = manual_name
+                profile_var.set(manual_name)
+            profile_names.append(profile_name)
+
+        if any(not profile_name for profile_name in profile_names):
+            raise ValueError("All player profiles are required.")
+        if len(set(profile_names)) != len(profile_names):
+            raise ValueError("Each player must use a different local profile.")
+
+        try:
+            return [
+                self.profile_id_by_display_name[profile_name]
+                for profile_name in profile_names
+            ]
+        except KeyError as error:
+            raise ValueError("One or more selected player profiles are invalid.") from error
+
+    def _get_effective_order_mode(self) -> str:
+        if self.setup_mode_var.get() == "preset":
+            preset = self.setup_service.get_preset(self.preset_var.get())
+            if preset.policies.initial_turn_order == InitialTurnOrderPolicy.RANDOMIZED:
+                return "random"
+            if preset.policies.initial_turn_order == InitialTurnOrderPolicy.RELEVANCE:
+                return "relevance"
+            return "choice"
+        return self.order_mode_var.get()
+
+    def _move_player_slot(self, index: int, offset: int) -> None:
+        other_index = index + offset
+        if not (0 <= index < len(self.player_profile_vars)):
+            return
+        if not (0 <= other_index < len(self.player_profile_vars)):
+            return
+
+        current_value = self.player_profile_vars[index].get()
+        other_value = self.player_profile_vars[other_index].get()
+        self.player_profile_vars[index].set(other_value)
+        self.player_profile_vars[other_index].set(current_value)
+        self._refresh_choice_order_buttons()
+
+    def _refresh_choice_order_buttons(self) -> None:
+        is_choice_mode = (
+            self.setup_mode_var.get() == "custom"
+            and self.order_mode_var.get() == "choice"
+        )
+        for index, button in enumerate(self.player_move_up_buttons):
+            button.config(
+                state="normal" if is_choice_mode and index > 0 else "disabled"
+            )
+        for index, button in enumerate(self.player_move_down_buttons):
+            button.config(
+                state=(
+                    "normal"
+                    if is_choice_mode and index < len(self.player_move_down_buttons) - 1
+                    else "disabled"
+                )
+            )
+
+    def _refresh_order_preview(self) -> None:
+        if self.order_preview_label is None:
+            return
+
+        try:
+            player_profile_ids = self._collect_selected_player_profile_ids()
+        except ValueError:
+            self.order_preview_label.config(
+                text="Order preview: select valid local profiles."
+            )
+            self._refresh_setup_summary()
+            return
+
+        player_ids = self.setup_service.resolve_local_profile_names(player_profile_ids)
+        order_mode = self._get_effective_order_mode()
+
+        if self.setup_mode_var.get() == "preset":
+            preset = self.setup_service.get_preset(self.preset_var.get())
+            relevance_criterion = (
+                preset.policies.relevance_criterion.value
+                if preset.policies.relevance_criterion is not None
+                else self.relevance_criterion_var.get()
+            )
+            explicit_player_order = list(preset.policies.explicit_player_order or player_ids)
+        else:
+            relevance_criterion = self.relevance_criterion_var.get()
+            explicit_player_order = list(player_ids)
+
+        try:
+            preview = self.setup_service.preview_order(
+                order_mode=order_mode,
+                player_ids=player_ids,
+                player_profile_ids=player_profile_ids,
+                relevance_criterion=relevance_criterion,
+                explicit_player_order=explicit_player_order,
+            )
+        except ValueError:
+            self.order_preview_label.config(
+                text="Order preview: unavailable for the current setup."
+            )
+            self._refresh_setup_summary()
+            return
+
+        if order_mode == "random":
+            preview_text = "Order preview: randomized at game start."
+        else:
+            preview_text = f"Order preview: {' -> '.join(preview)}"
+
+        self.order_preview_label.config(text=preview_text)
+        self._refresh_setup_summary()
+
+    def _refresh_setup_summary(self) -> None:
+        if self.setup_summary_label is None:
+            return
+
+        mode_label = "preset" if self.setup_mode_var.get() == "preset" else "custom"
+        player_count = max(2, self.player_count_var.get())
+        order_mode = self._get_effective_order_mode()
+        attack_attempts = int(self.custom_attack_attempts_var.get())
+        defense_attempts = int(self.custom_defense_attempts_var.get())
+
+        if attack_attempts <= 1:
+            multiple_attack_label = "n/a"
+        elif self.custom_multiple_attack_enabled_var.get():
+            multiple_attack_label = "enabled"
+        elif self.custom_no_repetition_var.get():
+            multiple_attack_label = "no repetition"
+        else:
+            multiple_attack_label = "disabled"
+
+        repetition_mode = self.custom_repetition_mode_var.get()
+        if repetition_mode == "disabled":
+            repetition_label = "disabled"
+        else:
+            repetition_label = (
+                f"{repetition_mode} ({int(self.custom_repetition_limit_var.get())})"
+            )
+        switch_mode = self.custom_switch_mode_var.get()
+
+        self.setup_summary_label.config(
+            text=(
+                "Setup summary: "
+                f"{mode_label} | sport={self.sport_var.get()} | players={player_count} | "
+                f"order={order_mode} | attack={attack_attempts} | defense={defense_attempts} | "
+                f"multiple attack={multiple_attack_label} | switch={switch_mode} | "
+                f"repetition={repetition_label}"
+            )
+        )
 
     def _ask_string_dialog(self, title: str, prompt: str) -> str | None:
         if self._harness_prompt_responses:
@@ -334,8 +543,22 @@ class GUIApp:
         self.preset_combo.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(0, 18))
         self._register_harness_target("setup.preset_combo", self.preset_combo)
 
-        ttk.Label(form, text="Number of players:", font=self.body_font).grid(
+        ttk.Label(form, text="Sport:", font=self.body_font).grid(
             row=4, column=0, sticky="w", pady=(0, 6)
+        )
+
+        self.sport_combo = ttk.Combobox(
+            form,
+            textvariable=self.sport_var,
+            values=("inline",),
+            state="readonly",
+            width=36,
+        )
+        self.sport_combo.grid(row=5, column=0, columnspan=2, sticky="ew", pady=(0, 18))
+        self._register_harness_target("setup.sport_combo", self.sport_combo)
+
+        ttk.Label(form, text="Number of players:", font=self.body_font).grid(
+            row=6, column=0, sticky="w", pady=(0, 6)
         )
 
         self.player_count_spinbox = ttk.Spinbox(
@@ -346,31 +569,76 @@ class GUIApp:
             width=6,
             command=self._rebuild_player_inputs,
         )
-        self.player_count_spinbox.grid(row=5, column=0, sticky="w", pady=(0, 18))
+        self.player_count_spinbox.grid(row=7, column=0, sticky="w", pady=(0, 18))
         self.player_count_spinbox.bind("<FocusOut>", lambda _event: self._rebuild_player_inputs())
         self.player_count_spinbox.bind("<Return>", lambda _event: self._rebuild_player_inputs())
         self._register_harness_target("setup.player_count_spinbox", self.player_count_spinbox)
 
         ttk.Label(form, text="Players:", font=self.body_font).grid(
-            row=6, column=0, sticky="w", pady=(0, 6)
+            row=8, column=0, sticky="w", pady=(0, 6)
         )
 
         self.players_frame = ttk.Frame(form)
-        self.players_frame.grid(row=7, column=0, columnspan=2, sticky="ew", pady=(0, 18))
+        self.players_frame.grid(row=9, column=0, columnspan=2, sticky="ew", pady=(0, 18))
+
+        ttk.Label(form, text="Order:", font=self.body_font).grid(
+            row=10, column=0, sticky="w", pady=(0, 6)
+        )
+        self.order_mode_combo = ttk.Combobox(
+            form,
+            textvariable=self.order_mode_var,
+            values=("choice", "random", "relevance"),
+            state="readonly",
+            width=36,
+        )
+        self.order_mode_combo.grid(
+            row=11, column=0, columnspan=2, sticky="ew", pady=(0, 12)
+        )
+        self._register_harness_target("setup.order_mode_combo", self.order_mode_combo)
+
+        ttk.Label(form, text="Relevance criterion:", font=self.body_font).grid(
+            row=12, column=0, sticky="w", pady=(0, 6)
+        )
+        self.relevance_criterion_combo = ttk.Combobox(
+            form,
+            textvariable=self.relevance_criterion_var,
+            values=("alphabetical", "age", "experience_time", "local_rank"),
+            state="readonly",
+            width=36,
+        )
+        self.relevance_criterion_combo.grid(
+            row=13, column=0, columnspan=2, sticky="ew", pady=(0, 18)
+        )
+        self._register_harness_target(
+            "setup.relevance_criterion_combo",
+            self.relevance_criterion_combo,
+        )
+
+        self.order_preview_label = ttk.Label(
+            form,
+            text="",
+            font=self.small_font,
+            wraplength=420,
+            justify="left",
+        )
+        self.order_preview_label.grid(
+            row=14, column=0, columnspan=2, sticky="w", pady=(0, 18)
+        )
+        self._register_harness_target("setup.order_preview_label", self.order_preview_label)
 
         ttk.Label(form, text="Word:", font=self.body_font).grid(
-            row=8, column=0, sticky="w", pady=(0, 6)
+            row=15, column=0, sticky="w", pady=(0, 6)
         )
         self.word_entry = ttk.Entry(
             form,
             width=36,
             textvariable=self.custom_word_var,
         )
-        self.word_entry.grid(row=9, column=0, columnspan=2, sticky="ew", pady=(0, 18))
+        self.word_entry.grid(row=16, column=0, columnspan=2, sticky="ew", pady=(0, 18))
         self._register_harness_target("setup.word_entry", self.word_entry)
 
         ttk.Label(form, text="Attack attempts:", font=self.body_font).grid(
-            row=10, column=0, sticky="w", pady=(0, 6)
+            row=17, column=0, sticky="w", pady=(0, 6)
         )
 
         self.attack_attempts_spinbox = ttk.Spinbox(
@@ -380,14 +648,77 @@ class GUIApp:
             textvariable=self.custom_attack_attempts_var,
             width=6,
         )
-        self.attack_attempts_spinbox.grid(row=11, column=0, sticky="w", pady=(0, 18))
+        self.attack_attempts_spinbox.grid(row=18, column=0, sticky="w", pady=(0, 18))
         self._register_harness_target(
             "setup.attack_attempts_spinbox",
             self.attack_attempts_spinbox,
         )
 
+        ttk.Label(form, text="Multiple Attack:", font=self.body_font).grid(
+            row=19, column=0, sticky="w", pady=(0, 6)
+        )
+
+        self.multiple_attack_frame = ttk.Frame(form)
+        self.multiple_attack_frame.grid(
+            row=20, column=0, columnspan=2, sticky="w", pady=(0, 18)
+        )
+        self._register_harness_target(
+            "setup.multiple_attack_frame",
+            self.multiple_attack_frame,
+        )
+
+        self.multiple_attack_disabled_button = ttk.Radiobutton(
+            self.multiple_attack_frame,
+            text="Disabled",
+            variable=self.custom_multiple_attack_enabled_var,
+            value=False,
+        )
+        self.multiple_attack_disabled_button.pack(side="left", padx=(0, 12))
+        self._register_harness_target(
+            "setup.multiple_attack_disabled_button",
+            self.multiple_attack_disabled_button,
+        )
+
+        self.no_repetition_checkbutton = ttk.Checkbutton(
+            self.multiple_attack_frame,
+            text="No Repetition",
+            variable=self.custom_no_repetition_var,
+            onvalue=True,
+            offvalue=False,
+        )
+        self.no_repetition_checkbutton.pack(side="left", padx=(0, 12))
+        self._register_harness_target(
+            "setup.no_repetition_checkbutton",
+            self.no_repetition_checkbutton,
+        )
+
+        self.multiple_attack_enabled_button = ttk.Radiobutton(
+            self.multiple_attack_frame,
+            text="Enabled",
+            variable=self.custom_multiple_attack_enabled_var,
+            value=True,
+        )
+        self.multiple_attack_enabled_button.pack(side="left")
+        self._register_harness_target(
+            "setup.multiple_attack_enabled_button",
+            self.multiple_attack_enabled_button,
+        )
+
+        self.multiple_attack_feedback_label = ttk.Label(
+            self.multiple_attack_frame,
+            text="",
+            font=self.small_font,
+            justify="left",
+            wraplength=520,
+        )
+        self.multiple_attack_feedback_label.pack(side="left", padx=(12, 0))
+        self._register_harness_target(
+            "setup.multiple_attack_feedback_label",
+            self.multiple_attack_feedback_label,
+        )
+
         ttk.Label(form, text="Defense attempts:", font=self.body_font).grid(
-            row=12, column=0, sticky="w", pady=(0, 6)
+            row=21, column=0, sticky="w", pady=(0, 6)
         )
 
         self.attempts_spinbox = ttk.Spinbox(
@@ -397,14 +728,14 @@ class GUIApp:
             textvariable=self.custom_defense_attempts_var,
             width=6,
         )
-        self.attempts_spinbox.grid(row=13, column=0, sticky="w", pady=(0, 24))
+        self.attempts_spinbox.grid(row=22, column=0, sticky="w", pady=(0, 24))
         self._register_harness_target(
             "setup.defense_attempts_spinbox",
             self.attempts_spinbox,
         )
 
         ttk.Label(form, text="Uniqueness:", font=self.body_font).grid(
-            row=14, column=0, sticky="w", pady=(0, 6)
+            row=23, column=0, sticky="w", pady=(0, 6)
         )
 
         self.uniqueness_checkbutton = ttk.Checkbutton(
@@ -415,7 +746,7 @@ class GUIApp:
             offvalue=False,
         )
         self.uniqueness_checkbutton.grid(
-            row=15, column=0, columnspan=2, sticky="w", pady=(0, 18)
+            row=24, column=0, columnspan=2, sticky="w", pady=(0, 18)
         )
         self._register_harness_target(
             "setup.uniqueness_checkbutton",
@@ -423,7 +754,7 @@ class GUIApp:
         )
 
         ttk.Label(form, text="Repetition mode:", font=self.body_font).grid(
-            row=16, column=0, sticky="w", pady=(0, 6)
+            row=25, column=0, sticky="w", pady=(0, 6)
         )
 
         self.repetition_mode_combo = ttk.Combobox(
@@ -434,7 +765,7 @@ class GUIApp:
             width=18,
         )
         self.repetition_mode_combo.grid(
-            row=17, column=0, columnspan=2, sticky="w", pady=(0, 18)
+            row=26, column=0, columnspan=2, sticky="w", pady=(0, 18)
         )
         self._register_harness_target(
             "setup.repetition_mode_combo",
@@ -442,7 +773,7 @@ class GUIApp:
         )
 
         ttk.Label(form, text="Repetition limit:", font=self.body_font).grid(
-            row=18, column=0, sticky="w", pady=(0, 6)
+            row=27, column=0, sticky="w", pady=(0, 6)
         )
 
         self.repetition_limit_spinbox = ttk.Spinbox(
@@ -453,71 +784,67 @@ class GUIApp:
             width=6,
         )
         self.repetition_limit_spinbox.grid(
-            row=19, column=0, sticky="w", pady=(0, 24)
+            row=28, column=0, sticky="w", pady=(0, 24)
         )
         self._register_harness_target(
             "setup.repetition_limit_spinbox",
             self.repetition_limit_spinbox,
         )
 
-        def refresh_setup_controls() -> None:
-            assert self.preset_combo is not None
-            assert self.player_count_spinbox is not None
-            assert self.word_entry is not None
-            assert self.attack_attempts_spinbox is not None
-            assert self.attempts_spinbox is not None
-            assert self.uniqueness_checkbutton is not None
-            assert self.repetition_mode_combo is not None
+        self.attack_repetition_feedback_label = ttk.Label(
+            form,
+            text="",
+            font=self.small_font,
+            wraplength=520,
+            justify="left",
+        )
+        self.attack_repetition_feedback_label.grid(
+            row=29, column=0, columnspan=2, sticky="w", pady=(0, 12)
+        )
+        self._register_harness_target(
+            "setup.attack_repetition_feedback_label",
+            self.attack_repetition_feedback_label,
+        )
+
+        ttk.Label(form, text="Switch:", font=self.body_font).grid(
+            row=30, column=0, sticky="w", pady=(0, 6)
+        )
+
+        self.switch_mode_combo = ttk.Combobox(
+            form,
+            textvariable=self.custom_switch_mode_var,
+            values=("disabled", "enabled", "normal", "verified"),
+            state="readonly",
+            width=18,
+        )
+        self.switch_mode_combo.grid(
+            row=31, column=0, columnspan=2, sticky="w", pady=(0, 18)
+        )
+        self._register_harness_target(
+            "setup.switch_mode_combo",
+            self.switch_mode_combo,
+        )
+
+        self.setup_summary_label = ttk.Label(
+            form,
+            text="",
+            font=self.small_font,
+            wraplength=520,
+            justify="left",
+        )
+        self.setup_summary_label.grid(
+            row=32, column=0, columnspan=2, sticky="w", pady=(0, 12)
+        )
+        self._register_harness_target(
+            "setup.summary_label",
+            self.setup_summary_label,
+        )
+
+        def refresh_attack_repetition_feedback() -> bool:
             assert self.repetition_limit_spinbox is not None
+            assert self.attack_repetition_feedback_label is not None
 
             use_preset = self.setup_mode_var.get() == "preset"
-            preset_names = self._get_official_preset_names()
-
-            if self.preset_var.get() not in preset_names:
-                self.preset_var.set(preset_names[0])
-
-            self.preset_combo.config(values=preset_names)
-
-            if use_preset:
-                preset = self.setup_service.get_preset(self.preset_var.get())
-                self.custom_word_var.set(preset.rule_set.letters_word)
-                self.custom_attack_attempts_var.set(preset.rule_set.attack_attempts)
-                self.custom_defense_attempts_var.set(preset.rule_set.defense_attempts)
-                self.custom_uniqueness_var.set(preset.fine_rules.uniqueness_enabled)
-                if (
-                    self.custom_repetition_mode_var.get()
-                    != preset.fine_rules.repetition_mode
-                ):
-                    self.custom_repetition_mode_var.set(
-                        preset.fine_rules.repetition_mode
-                    )
-                self.custom_repetition_limit_var.set(preset.fine_rules.repetition_limit)
-
-                if preset.structure_name == "one_vs_one":
-                    self.player_count_var.set(2)
-                    self.player_count_spinbox.config(state="disabled")
-                else:
-                    if self.player_count_var.get() < 3:
-                        self.player_count_var.set(3)
-                    self.player_count_spinbox.config(state="normal")
-
-                self.preset_combo.config(state="readonly")
-                self.word_entry.config(state="readonly")
-                self.attack_attempts_spinbox.config(state="disabled")
-                self.attempts_spinbox.config(state="disabled")
-                self.uniqueness_checkbutton.config(state="disabled")
-                self.repetition_mode_combo.config(state="disabled")
-            else:
-                if self.player_count_var.get() < 2:
-                    self.player_count_var.set(2)
-                self.preset_combo.config(state="disabled")
-                self.player_count_spinbox.config(state="normal")
-                self.word_entry.config(state="normal")
-                self.attack_attempts_spinbox.config(state="normal")
-                self.attempts_spinbox.config(state="normal")
-                self.uniqueness_checkbutton.config(state="normal")
-                self.repetition_mode_combo.config(state="readonly")
-
             repetition_limit_state = (
                 "disabled"
                 if self.custom_repetition_mode_var.get() == "disabled"
@@ -525,20 +852,255 @@ class GUIApp:
             )
             self.repetition_limit_spinbox.config(state=repetition_limit_state)
 
-            self._rebuild_player_inputs()
+            compatible = self.setup_service.is_attack_repetition_synergy_compatible(
+                attack_attempts=int(self.custom_attack_attempts_var.get()),
+                repetition_mode=self.custom_repetition_mode_var.get(),
+                repetition_limit=int(self.custom_repetition_limit_var.get()),
+                multiple_attack_enabled=bool(
+                    self.custom_multiple_attack_enabled_var.get()
+                ),
+                no_repetition=bool(self.custom_no_repetition_var.get()),
+            )
+            feedback = self.setup_service.get_attack_repetition_synergy_feedback(
+                attack_attempts=int(self.custom_attack_attempts_var.get()),
+                repetition_mode=self.custom_repetition_mode_var.get(),
+                repetition_limit=int(self.custom_repetition_limit_var.get()),
+                multiple_attack_enabled=bool(
+                    self.custom_multiple_attack_enabled_var.get()
+                ),
+                no_repetition=bool(self.custom_no_repetition_var.get()),
+                max_limit=9,
+            )
+            self.attack_repetition_feedback_label.config(text=feedback or "")
+            if self.start_game_button is not None:
+                self.start_game_button.config(
+                    state="normal" if compatible else "disabled"
+                )
+            self._refresh_setup_summary()
+            return compatible
+
+        def refresh_multiple_attack_feedback() -> None:
+            assert self.multiple_attack_feedback_label is not None
+            attack_attempts = int(self.custom_attack_attempts_var.get())
+            if attack_attempts <= 1:
+                self.multiple_attack_feedback_label.config(
+                    text="Available only when Attack attempts are greater than 1."
+                )
+            elif self.custom_multiple_attack_enabled_var.get():
+                self.multiple_attack_feedback_label.config(
+                    text="Enabled: the attacker may change trick from the second attack attempt."
+                )
+            elif self.custom_no_repetition_var.get():
+                self.multiple_attack_feedback_label.config(
+                    text="No Repetition: repeated failures of the same trick count once per attack turn."
+                )
+            else:
+                self.multiple_attack_feedback_label.config(
+                    text="Disabled: the attacker keeps the same trick and repetition counts launch by launch."
+                )
+
+        def refresh_setup_controls() -> None:
+            if self._refreshing_setup_controls:
+                return
+            self._refreshing_setup_controls = True
+            try:
+                assert self.preset_combo is not None
+                assert self.sport_combo is not None
+                assert self.player_count_spinbox is not None
+                assert self.order_mode_combo is not None
+                assert self.relevance_criterion_combo is not None
+                assert self.word_entry is not None
+                assert self.attack_attempts_spinbox is not None
+                assert self.multiple_attack_frame is not None
+                assert self.multiple_attack_disabled_button is not None
+                assert self.multiple_attack_enabled_button is not None
+                assert self.no_repetition_checkbutton is not None
+                assert self.attempts_spinbox is not None
+                assert self.uniqueness_checkbutton is not None
+                assert self.repetition_mode_combo is not None
+                assert self.switch_mode_combo is not None
+
+                use_preset = self.setup_mode_var.get() == "preset"
+                preset_names = self._get_official_preset_names()
+
+                if self.preset_var.get() not in preset_names:
+                    self.preset_var.set(preset_names[0])
+
+                self.preset_combo.config(values=preset_names)
+                self.sport_var.set("inline")
+                self.sport_combo.config(values=("inline",), state="disabled")
+
+                if use_preset:
+                    preset = self.setup_service.get_preset(self.preset_var.get())
+                    self.custom_word_var.set(preset.rule_set.letters_word)
+                    self.custom_attack_attempts_var.set(preset.rule_set.attack_attempts)
+                    self.custom_defense_attempts_var.set(preset.rule_set.defense_attempts)
+                    self.custom_uniqueness_var.set(preset.fine_rules.uniqueness_enabled)
+                    self.custom_multiple_attack_enabled_var.set(
+                        preset.fine_rules.multiple_attack_enabled
+                    )
+                    self.custom_no_repetition_var.set(preset.fine_rules.no_repetition)
+                    self.custom_switch_mode_var.set(preset.fine_rules.switch_mode)
+                    if (
+                        self.custom_repetition_mode_var.get()
+                        != preset.fine_rules.repetition_mode
+                    ):
+                        self.custom_repetition_mode_var.set(
+                            preset.fine_rules.repetition_mode
+                        )
+                    self.custom_repetition_limit_var.set(preset.fine_rules.repetition_limit)
+
+                    if preset.structure_name == "one_vs_one":
+                        self.player_count_var.set(2)
+                        self.player_count_spinbox.config(state="disabled")
+                    else:
+                        if self.player_count_var.get() < 3:
+                            self.player_count_var.set(3)
+                        self.player_count_spinbox.config(state="normal")
+
+                    self.preset_combo.config(state="readonly")
+                    if preset.policies.initial_turn_order == InitialTurnOrderPolicy.RANDOMIZED:
+                        self.order_mode_var.set("random")
+                    elif preset.policies.initial_turn_order == InitialTurnOrderPolicy.RELEVANCE:
+                        self.order_mode_var.set("relevance")
+                        if preset.policies.relevance_criterion is not None:
+                            self.relevance_criterion_var.set(
+                                preset.policies.relevance_criterion.value
+                            )
+                    else:
+                        self.order_mode_var.set("choice")
+                    self.order_mode_combo.config(state="disabled")
+                    relevance_state = (
+                        "disabled"
+                        if preset.policies.initial_turn_order
+                        != InitialTurnOrderPolicy.RELEVANCE
+                        else "readonly"
+                    )
+                    self.relevance_criterion_combo.config(state=relevance_state)
+                    self._auto_order_mode_value = self.order_mode_var.get()
+                    self.word_entry.config(state="readonly")
+                    self.attack_attempts_spinbox.config(state="disabled")
+                    self.multiple_attack_disabled_button.config(state="disabled")
+                    self.multiple_attack_enabled_button.config(state="disabled")
+                    self.no_repetition_checkbutton.config(state="disabled")
+                    self.attempts_spinbox.config(state="disabled")
+                    self.uniqueness_checkbutton.config(state="disabled")
+                    self.repetition_mode_combo.config(state="disabled")
+                    self.switch_mode_combo.config(state="disabled")
+                else:
+                    if self.player_count_var.get() < 2:
+                        self.player_count_var.set(2)
+                    self.preset_combo.config(state="disabled")
+                    self.player_count_spinbox.config(state="normal")
+                    desired_order_mode = (
+                        "choice" if self.player_count_var.get() == 2 else "random"
+                    )
+                    if (
+                        self._auto_order_mode_value is None
+                        or self.order_mode_var.get() == self._auto_order_mode_value
+                    ):
+                        self.order_mode_var.set(desired_order_mode)
+                    self._auto_order_mode_value = desired_order_mode
+                    self.order_mode_combo.config(state="readonly")
+                    relevance_state = (
+                        "readonly"
+                        if self.order_mode_var.get() == "relevance"
+                        else "disabled"
+                    )
+                    self.relevance_criterion_combo.config(state=relevance_state)
+                    self.word_entry.config(state="normal")
+                    self.attack_attempts_spinbox.config(state="normal")
+                    multiple_attack_available = (
+                        int(self.custom_attack_attempts_var.get()) > 1
+                    )
+                    if multiple_attack_available:
+                        self.multiple_attack_frame.grid(
+                            row=20,
+                            column=0,
+                            columnspan=2,
+                            sticky="w",
+                            pady=(0, 18),
+                        )
+                    else:
+                        self.multiple_attack_frame.grid_remove()
+                    self.multiple_attack_disabled_button.config(
+                        state="normal" if multiple_attack_available else "disabled"
+                    )
+                    self.multiple_attack_enabled_button.config(
+                        state="normal" if multiple_attack_available else "disabled"
+                    )
+                    self.no_repetition_checkbutton.config(
+                        state="normal" if multiple_attack_available else "disabled"
+                    )
+                    if not multiple_attack_available:
+                        self.custom_multiple_attack_enabled_var.set(False)
+                        self.custom_no_repetition_var.set(False)
+                    self.attempts_spinbox.config(state="normal")
+                    self.uniqueness_checkbutton.config(state="normal")
+                    self.repetition_mode_combo.config(state="readonly")
+                    self.switch_mode_combo.config(
+                        state=(
+                            "readonly"
+                            if self.sport_var.get() == "inline"
+                            else "disabled"
+                        )
+                    )
+
+                if use_preset and self.multiple_attack_frame is not None:
+                    if int(self.custom_attack_attempts_var.get()) > 1:
+                        self.multiple_attack_frame.grid(
+                            row=20,
+                            column=0,
+                            columnspan=2,
+                            sticky="w",
+                            pady=(0, 18),
+                        )
+                    else:
+                        self.multiple_attack_frame.grid_remove()
+                        self.custom_multiple_attack_enabled_var.set(False)
+                        self.custom_no_repetition_var.set(False)
+
+                refresh_multiple_attack_feedback()
+                refresh_attack_repetition_feedback()
+                target_player_count = max(2, self.player_count_var.get())
+                if len(self.player_profile_vars) != target_player_count:
+                    self._rebuild_player_inputs()
+                self._refresh_choice_order_buttons()
+                self._refresh_order_preview()
+            finally:
+                self._refreshing_setup_controls = False
 
         self.setup_mode_var.trace_add("write", lambda *_args: refresh_setup_controls())
         self.preset_var.trace_add("write", lambda *_args: refresh_setup_controls())
+        self.order_mode_var.trace_add("write", lambda *_args: refresh_setup_controls())
         self.player_count_var.trace_add(
             "write", lambda *_args: self._rebuild_player_inputs()
+        )
+        self.relevance_criterion_var.trace_add(
+            "write", lambda *_args: self._refresh_order_preview()
         )
         self.custom_repetition_mode_var.trace_add(
             "write", lambda *_args: refresh_setup_controls()
         )
+        self.custom_attack_attempts_var.trace_add(
+            "write", lambda *_args: refresh_setup_controls()
+        )
+        self.custom_multiple_attack_enabled_var.trace_add(
+            "write", lambda *_args: refresh_setup_controls()
+        )
+        self.custom_no_repetition_var.trace_add(
+            "write", lambda *_args: refresh_setup_controls()
+        )
+        self.custom_switch_mode_var.trace_add(
+            "write", lambda *_args: refresh_setup_controls()
+        )
+        self.custom_repetition_limit_var.trace_add(
+            "write", lambda *_args: refresh_attack_repetition_feedback()
+        )
         self.trick_var.trace_add("write", lambda *_args: self._refresh_trick_suggestions())
 
         buttons = ttk.Frame(form)
-        buttons.grid(row=20, column=0, columnspan=2, pady=(6, 0))
+        buttons.grid(row=33, column=0, columnspan=2, pady=(6, 0))
 
         self.start_game_button = ttk.Button(
             buttons,
@@ -569,38 +1131,134 @@ class GUIApp:
     def _rebuild_player_inputs(self) -> None:
         assert self.players_frame is not None
 
-        existing_values = [var.get() for var in self.player_name_vars]
+        existing_profile_values = [var.get() for var in self.player_profile_vars]
+        existing_name_values = [var.get() for var in self.player_name_vars]
         for target_id in tuple(self._harness_targets):
-            if target_id.startswith("setup.player_name_entry."):
+            if target_id.startswith("setup.player_name_entry.") or target_id.startswith(
+                "setup.player_profile_combo."
+            ) or target_id.startswith(
+                "setup.player_move_up_button."
+            ) or target_id.startswith(
+                "setup.player_move_down_button."
+            ):
                 self._harness_targets.pop(target_id, None)
 
         for child in self.players_frame.winfo_children():
             child.destroy()
 
         player_count = max(2, self.player_count_var.get())
+        self.player_profile_vars = []
         self.player_name_vars = [
-            tk.StringVar(
-                value=existing_values[index] if index < len(existing_values) else ""
-            )
+            tk.StringVar()
             for index in range(player_count)
         ]
+        self.player_profile_combos = []
+        self.player_move_up_buttons = []
+        self.player_move_down_buttons = []
 
         for index, player_var in enumerate(self.player_name_vars, start=1):
+            profile_value = (
+                existing_name_values[index - 1]
+                if index - 1 < len(existing_name_values)
+                and existing_name_values[index - 1] in self.profile_id_by_display_name
+                else (
+                    existing_profile_values[index - 1]
+                    if index - 1 < len(existing_profile_values)
+                    and existing_profile_values[index - 1] in self.profile_id_by_display_name
+                    else self._get_default_profile_display_name(index - 1)
+                )
+            )
+            profile_var = tk.StringVar(value=profile_value)
+            profile_var.trace_add(
+                "write",
+                lambda *_args, profile_var=profile_var, player_var=player_var: (
+                    self._sync_player_name_from_profile_var(profile_var, player_var),
+                    self._refresh_order_preview(),
+                ),
+            )
+            self.player_profile_vars.append(profile_var)
+            self._sync_player_name_from_profile_var(profile_var, player_var)
+
+            ttk.Label(
+                self.players_frame,
+                text=f"Player {index} profile:",
+                font=self.body_font,
+            ).grid(row=(index - 1) * 4, column=0, sticky="w", pady=(0, 6))
+            profile_combo = ttk.Combobox(
+                self.players_frame,
+                textvariable=profile_var,
+                values=tuple(self.local_profile_display_names),
+                state="readonly",
+                width=36,
+            )
+            profile_combo.grid(
+                row=(index - 1) * 4 + 1,
+                column=0,
+                sticky="ew",
+                pady=(0, 6),
+            )
+            self.player_profile_combos.append(profile_combo)
+            self._register_harness_target(
+                f"setup.player_profile_combo.{index}",
+                profile_combo,
+            )
+
+            move_frame = ttk.Frame(self.players_frame)
+            move_frame.grid(
+                row=(index - 1) * 4 + 1,
+                column=1,
+                sticky="nw",
+                padx=(8, 0),
+            )
+            move_up_button = ttk.Button(
+                move_frame,
+                text="Up",
+                width=6,
+                command=lambda index=index - 1: self._move_player_slot(index, -1),
+            )
+            move_up_button.pack(fill="x", pady=(0, 4))
+            move_down_button = ttk.Button(
+                move_frame,
+                text="Down",
+                width=6,
+                command=lambda index=index - 1: self._move_player_slot(index, 1),
+            )
+            move_down_button.pack(fill="x")
+            self.player_move_up_buttons.append(move_up_button)
+            self.player_move_down_buttons.append(move_down_button)
+            self._register_harness_target(
+                f"setup.player_move_up_button.{index}",
+                move_up_button,
+            )
+            self._register_harness_target(
+                f"setup.player_move_down_button.{index}",
+                move_down_button,
+            )
+
             ttk.Label(
                 self.players_frame,
                 text=f"Player {index} name:",
-                font=self.body_font,
-            ).grid(row=(index - 1) * 2, column=0, sticky="w", pady=(0, 6))
+                font=self.small_font,
+            ).grid(row=(index - 1) * 4 + 2, column=0, sticky="w", pady=(0, 4))
             entry = ttk.Entry(
                 self.players_frame,
                 textvariable=player_var,
                 width=36,
+                state="readonly",
             )
-            entry.grid(row=(index - 1) * 2 + 1, column=0, sticky="ew", pady=(0, 12))
+            entry.grid(
+                row=(index - 1) * 4 + 3,
+                column=0,
+                sticky="ew",
+                pady=(0, 12),
+            )
             self._register_harness_target(
                 f"setup.player_name_entry.{index}",
                 entry,
             )
+
+        self._refresh_choice_order_buttons()
+        self._refresh_setup_summary()
 
     # =========================
     # Game view
@@ -659,6 +1317,30 @@ class GUIApp:
         )
         self.failure_button.pack(side="left", padx=8)
         self._register_harness_target("match.failure_button", self.failure_button)
+
+        self.switch_normal_verified_button = ttk.Button(
+            action_buttons,
+            text="Normal verified",
+            command=lambda: self._resolve_verified_switch_attack(True),
+            width=16,
+        )
+        self.switch_normal_verified_button.pack(side="left", padx=8)
+        self._register_harness_target(
+            "match.switch_normal_verified_button",
+            self.switch_normal_verified_button,
+        )
+
+        self.switch_normal_not_verified_button = ttk.Button(
+            action_buttons,
+            text="Normal not verified",
+            command=lambda: self._resolve_verified_switch_attack(False),
+            width=18,
+        )
+        self.switch_normal_not_verified_button.pack(side="left", padx=8)
+        self._register_harness_target(
+            "match.switch_normal_not_verified_button",
+            self.switch_normal_not_verified_button,
+        )
 
         session_buttons = ttk.Frame(frame)
         session_buttons.grid(row=8, column=0, pady=(0, 20))
@@ -1089,26 +1771,42 @@ class GUIApp:
         self._load_game_via_dialog()
 
     def _start_game(self) -> None:
-        player_ids = [player_var.get().strip() for player_var in self.player_name_vars]
-
-        if any(not player_id for player_id in player_ids):
-            messagebox.showerror("Invalid input", "All player names are required.")
-            return
-
         try:
+            player_profile_ids = self._collect_selected_player_profile_ids()
             if self.setup_mode_var.get() == "preset":
-                self.controller = self.setup_service.create_started_controller_from_preset(
+                self.controller = self.setup_service.create_started_controller_from_preset_profiles(
                     self.preset_var.get(),
-                    player_ids,
+                    player_profile_ids,
                 )
             else:
-                self.controller = self.setup_service.create_started_controller_from_custom_setup(
+                player_ids = self.setup_service.resolve_local_profile_names(
+                    player_profile_ids
+                )
+                order_mode = self.order_mode_var.get()
+                explicit_player_order = (
+                    list(player_ids) if order_mode == "choice" else None
+                )
+                policies = self.setup_service.build_order_policies(
+                    order_mode=order_mode,
                     player_ids=player_ids,
+                    player_profile_ids=player_profile_ids,
+                    relevance_criterion=self.relevance_criterion_var.get(),
+                    explicit_player_order=explicit_player_order,
+                )
+                self.controller = self.setup_service.create_started_controller_from_custom_setup_profiles(
+                    player_profile_ids=player_profile_ids,
+                    sport=self.sport_var.get(),
                     letters_word=self.custom_word_var.get(),
                     attack_attempts=int(self.custom_attack_attempts_var.get()),
                     defense_attempts=int(self.custom_defense_attempts_var.get()),
+                    policies=policies,
                     elimination_enabled=True,
                     uniqueness_enabled=bool(self.custom_uniqueness_var.get()),
+                    multiple_attack_enabled=bool(
+                        self.custom_multiple_attack_enabled_var.get()
+                    ),
+                    no_repetition=bool(self.custom_no_repetition_var.get()),
+                    switch_mode=self.custom_switch_mode_var.get(),
                     repetition_mode=self.custom_repetition_mode_var.get(),
                     repetition_limit=int(self.custom_repetition_limit_var.get()),
                 )
@@ -1137,8 +1835,13 @@ class GUIApp:
             return
 
         try:
-            self.controller.start_turn(trick)
-            self.status_var.set(f"Trick '{trick}' confirmed.")
+            state = self.controller.get_state()
+            if state.turn_phase == TurnPhase.ATTACK and state.current_trick is not None:
+                self.controller.change_attack_trick(trick)
+                self.status_var.set(f"Attack trick changed to '{trick}'.")
+            else:
+                self.controller.start_turn(trick)
+                self.status_var.set(f"Trick '{trick}' confirmed.")
             self._clear_trick_selection()
         except InvalidActionError as error:
             self.status_var.set(f"Invalid action: {error}")
@@ -1196,6 +1899,37 @@ class GUIApp:
                 elif resolution_status == DefenseResolutionStatus.GAME_FINISHED:
                     self._clear_trick_selection()
                     self.status_var.set(message or "Game finished.")
+        except InvalidActionError as error:
+            self.status_var.set(f"Invalid action: {error}")
+
+        self._refresh_game_view()
+
+        state = self.controller.get_state()
+        if state.phase == Phase.END:
+            self._show_game_over_message(state)
+
+    def _resolve_verified_switch_attack(self, normal_verified: bool) -> None:
+        if self.controller is None:
+            return
+
+        try:
+            state_before = self.controller.get_state()
+            events_before = len(state_before.history.events)
+            resolution_status = self.controller.resolve_attack(
+                True,
+                switch_normal_verified=normal_verified,
+            )
+
+            state_after = self.controller.get_state()
+            message = self._format_new_events(state_after, events_before)
+
+            if resolution_status == AttackResolutionStatus.ATTACK_CONTINUES:
+                self.status_var.set(message or "Attack continues.")
+            elif resolution_status == AttackResolutionStatus.DEFENSE_READY:
+                self.status_var.set(message or "Attack succeeded. Defense begins.")
+            elif resolution_status == AttackResolutionStatus.TURN_FAILED:
+                self._clear_trick_selection()
+                self.status_var.set(message or "Turn failed.")
         except InvalidActionError as error:
             self.status_var.set(f"Invalid action: {error}")
 
@@ -1318,18 +2052,49 @@ class GUIApp:
             self._focus_widget(self.trick_entry)
         elif state.turn_phase == TurnPhase.ATTACK:
             pending_defenders = self._format_active_defender_names(state)
+            can_change_attack_trick = self._can_change_attack_trick()
+            requires_change = (
+                self.controller.current_attack_trick_requires_change()
+                if self.controller is not None
+                else False
+            )
+            requires_switch_normal_verification = (
+                self._current_attack_requires_switch_normal_verification()
+            )
             self.phase_title_label.config(text=f"{attacker.name} attacks")
             self.trick_label.config(text=f"Trick: {state.current_trick}")
-            self.phase_description_label.config(
-                text=f"Pending defenders: {pending_defenders}"
-            )
+            if requires_change:
+                phase_description = (
+                    f"Pending defenders: {pending_defenders} | Choose a new trick to continue."
+                )
+            elif requires_switch_normal_verification:
+                phase_description = (
+                    f"Pending defenders: {pending_defenders} | Confirm whether the normal version was verified."
+                )
+            elif can_change_attack_trick:
+                phase_description = (
+                    f"Pending defenders: {pending_defenders} | You may keep this trick or change it."
+                )
+            else:
+                phase_description = f"Pending defenders: {pending_defenders}"
+            self.phase_description_label.config(text=phase_description)
             self.attempts_label.config(
                 text=f"{attacker.name} has {state.attack_attempts_left} attack attempt(s) left"
             )
-            self._set_trick_controls_enabled(False)
-            self._set_defense_controls_enabled(True)
+            self._set_trick_controls_enabled(can_change_attack_trick)
+            self._set_defense_controls_enabled(
+                not requires_change,
+                verified_switch_required=(
+                    not requires_change and requires_switch_normal_verification
+                ),
+            )
             self._refresh_trick_suggestions()
-            self._focus_widget(self.success_button)
+            if can_change_attack_trick:
+                self._focus_widget(self.trick_entry)
+            elif requires_switch_normal_verification:
+                self._focus_widget(self.switch_normal_verified_button)
+            else:
+                self._focus_widget(self.success_button)
         else:
             defender = self._get_current_defender(state)
             defender_name = defender.name if defender is not None else "-"
@@ -1427,6 +2192,9 @@ class GUIApp:
         assert self.confirm_trick_button is not None
         assert self.cancel_trick_button is not None
 
+        button_text = "Change trick" if self._can_change_attack_trick() else "Set trick"
+        self.confirm_trick_button.config(text=button_text)
+
         state = "normal" if enabled else "disabled"
         self.trick_entry.config(state=state)
         self.trick_suggestions_listbox.config(state=state)
@@ -1437,7 +2205,14 @@ class GUIApp:
             else "disabled"
         )
         self.confirm_trick_button.config(state=button_state)
-        self.cancel_trick_button.config(state=button_state)
+        current_state = self.controller.get_state() if self.controller is not None else None
+        cancel_enabled = (
+            enabled
+            and current_state is not None
+            and current_state.turn_phase == TurnPhase.TURN_OPEN
+            and self._selected_trick_completion is not None
+        )
+        self.cancel_trick_button.config(state="normal" if cancel_enabled else "disabled")
 
     def _set_trick_dropdown_visible(self, visible: bool) -> None:
         if self.trick_dropdown_frame is None:
@@ -1447,6 +2222,16 @@ class GUIApp:
             self.trick_dropdown_frame.grid()
         else:
             self.trick_dropdown_frame.grid_remove()
+
+    def _can_change_attack_trick(self) -> bool:
+        if self.controller is None:
+            return False
+        return self.controller.can_change_attack_trick()
+
+    def _current_attack_requires_switch_normal_verification(self) -> bool:
+        if self.controller is None:
+            return False
+        return self.controller.current_attack_requires_switch_normal_verification()
 
     def _bind_button_keyboard_activation(self, button: ttk.Button | None) -> None:
         if button is None:
@@ -1490,13 +2275,27 @@ class GUIApp:
         self._handle_trick_suggestion_selection()
         return "break"
 
-    def _set_defense_controls_enabled(self, enabled: bool) -> None:
+    def _set_defense_controls_enabled(
+        self,
+        enabled: bool,
+        *,
+        verified_switch_required: bool = False,
+    ) -> None:
         assert self.success_button is not None
         assert self.failure_button is not None
+        assert self.switch_normal_verified_button is not None
+        assert self.switch_normal_not_verified_button is not None
 
         state = "normal" if enabled else "disabled"
-        self.success_button.config(state=state)
         self.failure_button.config(state=state)
+        if enabled and verified_switch_required:
+            self.success_button.config(state="disabled")
+            self.switch_normal_verified_button.config(state="normal")
+            self.switch_normal_not_verified_button.config(state="normal")
+        else:
+            self.success_button.config(state=state)
+            self.switch_normal_verified_button.config(state="disabled")
+            self.switch_normal_not_verified_button.config(state="disabled")
 
     def _set_session_controls_for_state(self, state: GameState) -> None:
         assert self.undo_button is not None
@@ -1613,24 +2412,50 @@ class GUIApp:
         match_parameters = self.controller.match_parameters
         fine_rules = match_parameters.fine_rules
         rule_set = match_parameters.rule_set
+        policies = match_parameters.policies
         dictionary_definition = self.controller.dictionary_definition
 
         preset_label = match_parameters.preset_name or "custom"
         players_label = ", ".join(match_parameters.player_ids)
+        profiles_label = ", ".join(match_parameters.player_profile_ids)
+        if policies.initial_turn_order == InitialTurnOrderPolicy.RANDOMIZED:
+            order_label = "random"
+        elif policies.initial_turn_order == InitialTurnOrderPolicy.RELEVANCE:
+            criterion = (
+                policies.relevance_criterion.value
+                if policies.relevance_criterion is not None
+                else RelevanceCriterion.ALPHABETICAL.value
+            )
+            order_label = f"relevance ({criterion})"
+        else:
+            order_label = "choice"
+        base_order_label = ", ".join(policies.explicit_player_order or tuple(match_parameters.player_ids))
         uniqueness_label = "enabled" if fine_rules.uniqueness_enabled else "disabled"
         repetition_label = fine_rules.repetition_mode
         if repetition_label != "disabled":
             repetition_label = f"{repetition_label} (limit {fine_rules.repetition_limit})"
+        multiple_attack_label = (
+            "enabled" if fine_rules.multiple_attack_enabled else "disabled"
+        )
+        if fine_rules.no_repetition:
+            multiple_attack_label = f"{multiple_attack_label} + no repetition"
+        switch_label = fine_rules.switch_mode
 
         body = "\n".join(
             [
                 f"Preset: {preset_label}",
                 f"Structure: {match_parameters.structure_name}",
+                f"Sport: {match_parameters.sport}",
                 f"Players: {players_label}",
+                f"Profiles: {profiles_label or 'none'}",
+                f"Order: {order_label}",
+                f"Base order: {base_order_label}",
                 f"Word: {rule_set.letters_word}",
                 f"Attack attempts: {rule_set.attack_attempts}",
                 f"Defense attempts: {rule_set.defense_attempts}",
                 f"Uniqueness: {uniqueness_label}",
+                f"Multiple Attack: {multiple_attack_label}",
+                f"Switch: {switch_label}",
                 f"Repetition: {repetition_label}",
                 f"Dictionary sport: {dictionary_definition.sport.value}",
                 f"Dictionary profile: {dictionary_definition.profile}",
@@ -1709,6 +2534,11 @@ class GUIApp:
 
         if name == EventName.ATTACK_FAILED_ATTEMPT:
             attacker_name = self._get_player_name(state, payload["attacker_id"])
+            if payload.get("switch_normal_verification") == "failed":
+                return (
+                    f"{attacker_name} landed '{trick_label}' but failed the normal "
+                    f"verification ({payload['attempts_left']} attack attempt(s) left)."
+                )
             return (
                 f"{attacker_name} missed '{trick_label}' "
                 f"({payload['attempts_left']} attack attempt(s) left)."
@@ -1716,6 +2546,11 @@ class GUIApp:
 
         if name == EventName.ATTACK_SUCCEEDED:
             attacker_name = self._get_player_name(state, payload["attacker_id"])
+            if payload.get("switch_normal_verification") == "verified":
+                return (
+                    f"{attacker_name} landed '{trick_label}' and verified the normal version "
+                    "to set the trick."
+                )
             return f"{attacker_name} landed '{trick_label}' to set the trick."
 
         if name == EventName.DEFENSE_FAILED_ATTEMPT:
@@ -1809,7 +2644,10 @@ class GUIApp:
             return
 
         state = self.controller.get_state()
-        if state.phase != Phase.TURN or state.current_trick is not None:
+        can_change_attack_trick = self._can_change_attack_trick()
+        if state.phase != Phase.TURN or (
+            state.current_trick is not None and not can_change_attack_trick
+        ):
             self._selected_trick_completion = None
             self._set_trick_controls_enabled(False)
             return
@@ -1817,7 +2655,13 @@ class GUIApp:
         raw_value = self.trick_var.get().strip()
         if not raw_value:
             self._selected_trick_completion = None
-            self._set_trick_controls_enabled(True)
+            self._set_trick_controls_enabled(
+                state.current_trick is None or can_change_attack_trick
+            )
+            if can_change_attack_trick and self.controller.current_attack_trick_requires_change():
+                self.status_var.set(
+                    "Current trick reached the repetition limit. Choose a new trick."
+                )
             return
 
         suggestions = self.controller.suggest_tricks(raw_value)

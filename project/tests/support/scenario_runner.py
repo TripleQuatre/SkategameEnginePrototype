@@ -34,6 +34,8 @@ class ScenarioDefinition:
     letters_word: str | None = None
     attack_attempts: int | None = None
     defense_attempts: int | None = None
+    repetition_mode: str | None = None
+    repetition_limit: int | None = None
     fixed_turn_order: list[int] | None = None
     steps: list[ScenarioStep] = field(default_factory=list)
 
@@ -84,6 +86,10 @@ class ScenarioRunner:
                 setup.attack_attempts = definition.attack_attempts
             if definition.defense_attempts is not None:
                 setup.defense_attempts = definition.defense_attempts
+            if definition.repetition_mode is not None:
+                setup.repetition_mode = definition.repetition_mode
+            if definition.repetition_limit is not None:
+                setup.repetition_limit = definition.repetition_limit
             return GameController(self.setup_translator.to_match_parameters(setup))
 
         structure_name = definition.structure_name
@@ -98,6 +104,8 @@ class ScenarioRunner:
             letters_word=definition.letters_word or "SKATE",
             attack_attempts=definition.attack_attempts or 1,
             defense_attempts=definition.defense_attempts or 1,
+            repetition_mode=definition.repetition_mode or "choice",
+            repetition_limit=definition.repetition_limit or 3,
         )
         return GameController(self.setup_translator.to_match_parameters(setup))
 

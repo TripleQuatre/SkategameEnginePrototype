@@ -38,6 +38,8 @@ def test_turn_cycle_can_store_validated_trick_dictionary_data() -> None:
     assert state.validated_tricks == ["switch soul"]
     assert len(state.validated_trick_data) == 1
     assert state.validated_trick_data[0]["label"] == "Soul Switch"
+    assert state.validated_trick_data[0]["validated_by_attacker_id"] == "p1"
+    assert state.validated_trick_data[0]["validated_by_attacker_name"] == "Stan"
 
 
 def test_turn_cycle_can_advance_to_next_attacker_and_open_turn() -> None:

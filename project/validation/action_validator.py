@@ -27,6 +27,56 @@ class ActionValidator:
             raise InvalidActionError("This trick has already been validated in this game.")
 
         attacker_id = state.players[state.attacker_index].id
+        if self.special_rules.switch_blocks_trick(
+            state,
+            trick,
+            attacker_id=attacker_id,
+        ):
+            raise InvalidActionError(
+                self.special_rules.switch_block_message(trick)
+            )
+        if self.special_rules.repetition_blocks_trick(state, trick, attacker_id):
+            raise InvalidActionError(self.special_rules.repetition_block_message())
+
+    def validate_change_attack_trick(
+        self,
+        state: GameState,
+        trick: str,
+        *,
+        attack_attempts: int,
+    ) -> None:
+        if state.phase != Phase.TURN:
+            raise InvalidActionError("Cannot change trick outside TURN phase.")
+
+        if state.turn_phase != TurnPhase.ATTACK:
+            raise InvalidActionError("Cannot change trick outside ATTACK phase.")
+
+        if not trick:
+            raise InvalidActionError("A trick is required to change the attack.")
+
+        if state.current_trick is None:
+            raise InvalidActionError("No current trick to change.")
+
+        if not self.special_rules.can_change_attack_trick(
+            state,
+            attack_attempts=attack_attempts,
+        ):
+            raise InvalidActionError(
+                "Attack trick can only be changed from the second attack attempt."
+            )
+
+        if self.special_rules.uniqueness_blocks_trick(state, trick):
+            raise InvalidActionError("This trick has already been validated in this game.")
+
+        attacker_id = state.players[state.attacker_index].id
+        if self.special_rules.switch_blocks_trick(
+            state,
+            trick,
+            attacker_id=attacker_id,
+        ):
+            raise InvalidActionError(
+                self.special_rules.switch_block_message(trick)
+            )
         if self.special_rules.repetition_blocks_trick(state, trick, attacker_id):
             raise InvalidActionError(self.special_rules.repetition_block_message())
 

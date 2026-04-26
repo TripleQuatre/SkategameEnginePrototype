@@ -72,7 +72,10 @@ class GUIOracleEngine:
             allowed_states={"normal", "disabled"},
         )
         self._require_text_target(visible_state, "setup.preset_combo")
+        self._require_text_target(visible_state, "setup.sport_combo")
         self._require_text_target(visible_state, "setup.word_entry")
+        self._require_text_target(visible_state, "setup.order_preview_label")
+        self._require_text_target(visible_state, "setup.summary_label")
 
         if visible_state.dropdown_items:
             raise GUIOracleError(
@@ -293,11 +296,16 @@ class GUIOracleEngine:
         required_fragments = (
             "Preset:",
             "Structure:",
+            "Sport:",
             "Players:",
+            "Profiles:",
+            "Order:",
+            "Base order:",
             "Word:",
             "Attack attempts:",
             "Defense attempts:",
             "Uniqueness:",
+            "Multiple Attack:",
             "Repetition:",
             "Dictionary sport:",
             "Dictionary profile:",

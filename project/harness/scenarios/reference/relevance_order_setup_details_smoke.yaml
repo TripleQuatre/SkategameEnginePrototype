@@ -1,0 +1,130 @@
+metadata:
+  id: relevance_order_setup_details_smoke
+  title: Relevance order preview and setup details smoke flow
+  tags:
+    - reference
+    - order
+    - relevance
+
+setup:
+  mode: custom
+  structure: battle
+  players:
+    - Stan
+    - Denise
+    - Alex
+  word: BLADE
+
+steps:
+  - name: launch app
+    action: launch_app
+    expect:
+      view: setup
+
+  - name: switch to custom mode
+    action: click
+    target: setup.mode_custom_radiobutton
+    expect:
+      view: setup
+
+  - name: set player count
+    action: type
+    target: setup.player_count_spinbox
+    value: "3"
+    expect:
+      view: setup
+
+  - name: rebuild player fields
+    action: press_key
+    target: setup.player_count_spinbox
+    key: enter
+    expect:
+      view: setup
+
+  - name: select first player profile
+    action: select_option
+    target: setup.player_profile_combo.1
+    value: Stan
+    expect:
+      view: setup
+      text_equals:
+        setup.player_name_entry.1: Stan
+
+  - name: select second player profile
+    action: select_option
+    target: setup.player_profile_combo.2
+    value: Denise
+    expect:
+      view: setup
+      text_equals:
+        setup.player_name_entry.2: Denise
+
+  - name: select third player profile
+    action: select_option
+    target: setup.player_profile_combo.3
+    value: Alex
+    expect:
+      view: setup
+      text_equals:
+        setup.player_name_entry.3: Alex
+
+  - name: set custom word
+    action: type
+    target: setup.word_entry
+    value: BLADE
+    expect:
+      view: setup
+      text_equals:
+        setup.word_entry: BLADE
+
+  - name: switch order mode to relevance
+    action: select_option
+    target: setup.order_mode_combo
+    value: relevance
+    expect:
+      view: setup
+
+  - name: choose age relevance criterion
+    action: select_option
+    target: setup.relevance_criterion_combo
+    value: age
+    expect:
+      view: setup
+      text_equals:
+        setup.order_preview_label: "Order preview: Alex -> Stan -> Denise"
+      text_contains:
+        setup.summary_label: "order=relevance"
+
+  - name: start relevance game
+    action: click
+    target: setup.start_game_button
+    expect:
+      view: match
+      status_text_equals: Game started.
+      text_equals:
+        match.phase_title_label: Alex sets the next trick
+
+  - name: open setup details
+    action: click
+    target: match.setup_details_button
+    expect:
+      view: setup_details
+      text_contains:
+        setup_details.body_label: "Order: relevance (age)"
+
+  - name: verify base order
+    action: click
+    target: setup_details.back_to_game_button
+    expect:
+      view: match
+
+  - name: open setup details again
+    action: click
+    target: match.setup_details_button
+    expect:
+      view: setup_details
+      text_contains:
+        setup_details.body_label: "Base order: Alex, Stan, Denise"
+
+  - name: shutdown app
+    action: shutdown_app

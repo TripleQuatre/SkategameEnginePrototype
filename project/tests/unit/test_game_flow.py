@@ -26,6 +26,9 @@ def build_game_flow(
     letters_word: str = "SKATE",
     elimination_enabled: bool = True,
     uniqueness_enabled: bool = True,
+    multiple_attack_enabled: bool = False,
+    no_repetition: bool = False,
+    switch_mode: str = "disabled",
     repetition_mode: str = "choice",
     repetition_limit: int = 3,
 ) -> GameFlow:
@@ -38,6 +41,9 @@ def build_game_flow(
             victory=VictoryConfig(elimination_enabled=elimination_enabled),
             fine_rules=FineRulesConfig(
                 uniqueness_enabled=uniqueness_enabled,
+                multiple_attack_enabled=multiple_attack_enabled,
+                no_repetition=no_repetition,
+                switch_mode=switch_mode,
                 repetition_mode=repetition_mode,
                 repetition_limit=repetition_limit,
             ),
@@ -273,7 +279,7 @@ def test_resolve_defense_consumes_trick_when_game_finishes(
 def test_start_turn_rejects_canonically_equivalent_validated_dictionary_trick(
     state: GameState,
 ) -> None:
-    game_flow = build_game_flow()
+    game_flow = build_game_flow(switch_mode="enabled")
     game_flow.start_game(state)
     game_flow.start_turn(state, "Soul Switch")
     game_flow.resolve_defense(state, success=True)
@@ -285,7 +291,7 @@ def test_start_turn_rejects_canonically_equivalent_validated_dictionary_trick(
 def test_start_turn_allows_reusing_dictionary_trick_when_uniqueness_disabled(
     state: GameState,
 ) -> None:
-    game_flow = build_game_flow(uniqueness_enabled=False)
+    game_flow = build_game_flow(uniqueness_enabled=False, switch_mode="enabled")
     game_flow.start_game(state)
     game_flow.start_turn(state, "Soul Switch")
     game_flow.resolve_defense(state, success=True)
@@ -301,6 +307,7 @@ def test_repetition_blocks_same_attacker_after_failed_launch(
     game_flow = build_game_flow(
         attack_attempts=2,
         uniqueness_enabled=False,
+        switch_mode="enabled",
         repetition_mode="choice",
         repetition_limit=1,
     )
@@ -354,7 +361,7 @@ def test_repetition_disabled_allows_retry_after_failed_launch(
     assert state.current_trick == "Soul"
 
 
-def test_repetition_does_not_count_launch_that_eventually_succeeds(
+def test_repetition_counts_failed_attack_attempt_even_if_turn_eventually_succeeds(
     state: GameState,
 ) -> None:
     game_flow = build_game_flow(
@@ -369,12 +376,11 @@ def test_repetition_does_not_count_launch_that_eventually_succeeds(
     game_flow.resolve_attack(state, success=True)
     game_flow.resolve_defense(state, success=True)
 
-    assert state.failed_attack_trick_data == []
+    assert len(state.failed_attack_trick_data) == 1
 
     game_flow.cancel_turn(state, "Makio")
-    game_flow.start_turn(state, "Soul")
-
-    assert state.current_trick == "Soul"
+    with pytest.raises(InvalidActionError):
+        game_flow.start_turn(state, "Soul")
 
 
 def test_cancelled_turn_does_not_count_for_repetition(
@@ -393,3 +399,130 @@ def test_cancelled_turn_does_not_count_for_repetition(
     game_flow.start_turn(state, "Soul")
 
     assert state.current_trick == "Soul"
+
+
+def test_multiple_attack_can_change_trick_from_second_attempt(
+    state: GameState,
+) -> None:
+    game_flow = build_game_flow(
+        attack_attempts=2,
+        multiple_attack_enabled=True,
+        uniqueness_enabled=False,
+    )
+    game_flow.start_game(state)
+    game_flow.start_turn(state, "Soul")
+    game_flow.resolve_attack(state, success=False)
+
+    game_flow.change_attack_trick(state, "Makio")
+
+    assert state.current_trick == "Makio"
+    assert state.history.events[-1].name == EventName.ATTACK_TRICK_CHANGED
+
+
+def test_no_repetition_counts_same_trick_once_per_attack_turn(
+    state: GameState,
+) -> None:
+    game_flow = build_game_flow(
+        attack_attempts=3,
+        no_repetition=True,
+        repetition_mode="choice",
+        repetition_limit=1,
+        uniqueness_enabled=False,
+    )
+    game_flow.start_game(state)
+    game_flow.start_turn(state, "Soul")
+    game_flow.resolve_attack(state, success=False)
+    game_flow.resolve_attack(state, success=False)
+    game_flow.resolve_attack(state, success=False)
+
+    assert len(state.failed_attack_trick_data) == 1
+
+
+def test_switch_rule_blocks_switch_trick_when_disabled(
+    state: GameState,
+) -> None:
+    game_flow = build_game_flow()
+    game_flow.start_game(state)
+
+    with pytest.raises(InvalidActionError):
+        game_flow.start_turn(state, "Switch Soul")
+
+
+def test_switch_rule_allows_switch_after_normal_form_is_validated_during_match(
+    state: GameState,
+) -> None:
+    game_flow = build_game_flow(
+        uniqueness_enabled=False,
+        repetition_mode="disabled",
+        switch_mode="normal",
+    )
+    game_flow.start_game(state)
+    game_flow.start_turn(state, "Soul")
+    game_flow.resolve_defense(state, success=True)
+    game_flow.cancel_turn(state, "Makio")
+
+    game_flow.start_turn(state, "Switch Soul")
+
+    assert state.current_trick == "Switch Soul"
+
+
+def test_verified_switch_rule_allows_switch_without_prior_normal_validation(
+    state: GameState,
+) -> None:
+    game_flow = build_game_flow(
+        uniqueness_enabled=False,
+        repetition_mode="disabled",
+        switch_mode="verified",
+    )
+    game_flow.start_game(state)
+    game_flow.start_turn(state, "Switch Soul")
+
+    assert state.current_trick == "Switch Soul"
+
+
+def test_verified_switch_rule_requires_normal_confirmation_on_attack_success(
+    state: GameState,
+) -> None:
+    game_flow = build_game_flow(
+        attack_attempts=2,
+        uniqueness_enabled=False,
+        repetition_mode="disabled",
+        switch_mode="verified",
+    )
+    game_flow.start_game(state)
+    game_flow.start_turn(state, "Switch Soul")
+
+    assert game_flow.current_attack_requires_switch_normal_verification(state) is True
+
+    result = game_flow.resolve_attack(
+        state,
+        success=True,
+        switch_normal_verified=False,
+    )
+
+    assert result == AttackResolutionStatus.ATTACK_CONTINUES
+    assert state.attack_attempts_left == 1
+    assert state.history.events[-1].payload["switch_normal_verification"] == "failed"
+
+
+def test_verified_switch_rule_can_promote_to_defense_after_normal_confirmation(
+    state: GameState,
+) -> None:
+    game_flow = build_game_flow(
+        attack_attempts=2,
+        uniqueness_enabled=False,
+        repetition_mode="disabled",
+        switch_mode="verified",
+    )
+    game_flow.start_game(state)
+    game_flow.start_turn(state, "Switch Soul")
+
+    result = game_flow.resolve_attack(
+        state,
+        success=True,
+        switch_normal_verified=True,
+    )
+
+    assert result == AttackResolutionStatus.DEFENSE_READY
+    assert state.turn_phase == TurnPhase.DEFENSE
+    assert state.history.events[-1].payload["switch_normal_verification"] == "verified"

@@ -143,9 +143,12 @@ def _rewrite_setup_player_steps(
         step
         for step in steps[:start_index]
         if not (
-            step.get("action") == "type"
+            step.get("action") in {"type", "select_option"}
             and isinstance(step.get("target"), str)
-            and step["target"].startswith("setup.player_name_entry.")
+            and (
+                step["target"].startswith("setup.player_name_entry.")
+                or step["target"].startswith("setup.player_profile_combo.")
+            )
         )
     ]
 
@@ -159,11 +162,16 @@ def _rewrite_setup_player_steps(
         }.get(index, f"player {index}")
         player_steps.append(
             {
-                "name": f"enter {ordinal} player",
-                "action": "type",
-                "target": f"setup.player_name_entry.{index}",
+                "name": f"select {ordinal} player profile",
+                "action": "select_option",
+                "target": f"setup.player_profile_combo.{index}",
                 "value": player_name,
-                "expect": {"view": "setup"},
+                "expect": {
+                    "view": "setup",
+                    "text_equals": {
+                        f"setup.player_name_entry.{index}": player_name,
+                    },
+                },
             }
         )
 

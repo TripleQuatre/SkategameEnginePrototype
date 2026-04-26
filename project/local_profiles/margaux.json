@@ -1,0 +1,11 @@
+{
+  "profile_id": "margaux",
+  "display_name": "Margaux",
+  "age": 31,
+  "experience_time": 11,
+  "local_rank": 1,
+  "primary_sport": "inline",
+  "metadata": {
+    "stance": "goofy"
+  }
+}

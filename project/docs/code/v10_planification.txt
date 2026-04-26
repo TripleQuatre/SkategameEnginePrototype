@@ -1,0 +1,38 @@
+V10 Planification
+
+Version Goal
+Deliver a new product version that extends setup data, adds new rule behavior, and remains fully covered by the harness.
+
+Strict Build Order
+1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12
+
+Planned Steps
+
+1. V10 specification
+2. Local profiles
+3. Sport in setup
+4. Profile selection in setup
+5. Order
+6. Relevance
+7. Attack / Repetition compatibility
+8. Multiple Attack
+9. Switch
+10. V10 UX integration
+11. Harness and regressions
+12. Stabilization
+
+Validation Rule
+No step is considered complete until:
+- expected behavior is implemented
+- impacted automated tests pass
+- harness coverage is updated where needed
+- no blocking ambiguity remains for the next step
+
+Harness Continuity
+V10 does not replace the current harness strategy.
+It extends it with:
+- profile-driven setup scenarios
+- Order scenarios
+- Attack / Repetition compatibility scenarios
+- Multiple Attack scenarios
+- Switch scenarios

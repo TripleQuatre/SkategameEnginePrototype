@@ -78,6 +78,8 @@ def test_gui_exposes_harness_targets_for_critical_widgets(gui_app: GUIApp) -> No
     assert "view.history" in target_ids
     assert "view.setup_details" in target_ids
     assert "setup.start_game_button" in target_ids
+    assert "setup.sport_combo" in target_ids
+    assert "setup.player_profile_combo.1" in target_ids
     assert "setup.player_name_entry.1" in target_ids
     assert "match.trick_entry" in target_ids
     assert "match.setup_details_button" in target_ids
@@ -91,6 +93,9 @@ def test_gui_exposes_harness_targets_for_critical_widgets(gui_app: GUIApp) -> No
 
 def test_harness_helpers_track_active_view_and_button_state(gui_app: GUIApp) -> None:
     assert gui_app.get_harness_active_view() == "setup"
+    assert gui_app.sport_combo is not None
+    assert gui_app.sport_var.get() == "inline"
+    assert str(gui_app.sport_combo.cget("state")) == "disabled"
 
     gui_app.setup_mode_var.set("custom")
     gui_app.player_name_vars[0].set("Stan")
@@ -108,6 +113,24 @@ def test_harness_helpers_track_active_view_and_button_state(gui_app: GUIApp) -> 
 
     gui_app._show_setup_details_view()
     assert gui_app.get_harness_active_view() == "setup_details"
+
+
+def test_gui_order_preview_updates_for_relevance(gui_app: GUIApp) -> None:
+    assert gui_app.order_preview_label is not None
+
+    gui_app.setup_mode_var.set("custom")
+    gui_app.player_count_var.set(3)
+    gui_app._rebuild_player_inputs()
+    gui_app.player_profile_vars[0].set("Stan")
+    gui_app.player_profile_vars[1].set("Denise")
+    gui_app.player_profile_vars[2].set("Alex")
+    gui_app.order_mode_var.set("relevance")
+    gui_app.relevance_criterion_var.set("age")
+
+    assert (
+        gui_app.order_preview_label.cget("text")
+        == "Order preview: Alex -> Stan -> Denise"
+    )
 
 
 def test_gui_history_view_renders_battle_turns(
@@ -171,6 +194,7 @@ def test_gui_start_game_with_three_players_uses_battle_mode(
     state = gui_app.controller.get_state()
 
     assert gui_app.controller.match_parameters.preset_name == "battle_standard"
+    assert gui_app.controller.match_parameters.sport == "inline"
     assert gui_app.controller.structure_name == "battle"
     assert state.turn_order == [1, 2, 0]
     assert state.attacker_index == 1
@@ -229,6 +253,7 @@ def test_gui_can_start_custom_game_without_preset(gui_app: GUIApp) -> None:
     assert match_parameters.rule_set.letters_word == "OUT"
     assert match_parameters.rule_set.attack_attempts == 2
     assert match_parameters.rule_set.defense_attempts == 3
+    assert match_parameters.sport == "inline"
     assert match_parameters.fine_rules.uniqueness_enabled is False
     assert match_parameters.fine_rules.repetition_mode == "common"
     assert match_parameters.fine_rules.repetition_limit == 2
@@ -243,10 +268,42 @@ def test_gui_preset_mode_reflects_v8_fine_rules(gui_app: GUIApp) -> None:
 
     assert gui_app.custom_uniqueness_var.get() is True
     assert gui_app.custom_repetition_mode_var.get() == "common"
-    assert gui_app.custom_repetition_limit_var.get() == 3
+    assert gui_app.custom_repetition_limit_var.get() == 4
     assert str(gui_app.repetition_mode_combo.cget("state")) == "disabled"
     assert str(gui_app.repetition_limit_spinbox.cget("state")) == "disabled"
     assert str(gui_app.uniqueness_checkbutton.cget("state")) == "disabled"
+
+
+def test_gui_blocks_invalid_attack_repetition_synergy_with_feedback(gui_app: GUIApp) -> None:
+    assert gui_app.start_game_button is not None
+    assert gui_app.attack_repetition_feedback_label is not None
+    assert gui_app.setup_summary_label is not None
+
+    gui_app.setup_mode_var.set("custom")
+    gui_app.custom_attack_attempts_var.set(2)
+    gui_app.custom_repetition_mode_var.set("choice")
+    gui_app.custom_repetition_limit_var.set(3)
+
+    assert str(gui_app.start_game_button.cget("state")) == "disabled"
+    assert (
+        gui_app.attack_repetition_feedback_label.cget("text")
+        == "Attack/Repetition synergy active: repetition limit must be a "
+        "multiple of Attack. Suggested values: 2, 4, 6."
+    )
+    assert "multiple attack=disabled" in gui_app.setup_summary_label.cget("text")
+
+
+def test_gui_multiple_attack_feedback_explains_current_mode(gui_app: GUIApp) -> None:
+    assert gui_app.multiple_attack_feedback_label is not None
+
+    gui_app.setup_mode_var.set("custom")
+    gui_app.custom_attack_attempts_var.set(2)
+    gui_app.custom_multiple_attack_enabled_var.set(True)
+
+    assert (
+        gui_app.multiple_attack_feedback_label.cget("text")
+        == "Enabled: the attacker may change trick from the second attack attempt."
+    )
 
 
 def test_gui_refresh_game_view_shows_attack_phase_details(gui_app: GUIApp) -> None:
@@ -254,6 +311,7 @@ def test_gui_refresh_game_view_shows_attack_phase_details(gui_app: GUIApp) -> No
     gui_app.player_name_vars[0].set("Stan")
     gui_app.player_name_vars[1].set("Denise")
     gui_app.custom_attack_attempts_var.set(2)
+    gui_app.custom_repetition_limit_var.set(4)
     gui_app._start_game()
 
     assert gui_app.controller is not None
@@ -267,7 +325,10 @@ def test_gui_refresh_game_view_shows_attack_phase_details(gui_app: GUIApp) -> No
     assert gui_app.success_button is not None
 
     assert gui_app.phase_title_label.cget("text") == "Stan attacks"
-    assert gui_app.phase_description_label.cget("text") == "Pending defenders: Denise"
+    assert (
+        gui_app.phase_description_label.cget("text")
+        == "Pending defenders: Denise"
+    )
     assert (
         gui_app.attempts_label.cget("text")
         == "Stan has 2 attack attempt(s) left"
@@ -320,11 +381,13 @@ def test_gui_setup_details_view_renders_custom_match_configuration(
     assert gui_app.current_view == "setup_details"
     assert "Preset: custom" in body
     assert "Structure: battle" in body
+    assert "Sport: inline" in body
     assert "Players: Stan, Denise, Frank" in body
     assert "Word: BLADE" in body
     assert "Attack attempts: 2" in body
     assert "Defense attempts: 3" in body
     assert "Uniqueness: disabled" in body
+    assert "Multiple Attack: disabled" in body
     assert "Repetition: common (limit 4)" in body
     assert "Dictionary sport: inline" in body
     assert "Dictionary profile: inline_primary_grind" in body
@@ -346,8 +409,9 @@ def test_gui_setup_details_view_renders_preset_configuration(
 
     body = gui_app.setup_details_body_label.cget("text")
     assert "Preset: battle_common_v8" in body
+    assert "Sport: inline" in body
     assert "Uniqueness: enabled" in body
-    assert "Repetition: common (limit 3)" in body
+    assert "Repetition: common (limit 4)" in body
 
 
 def test_gui_setup_details_view_can_return_to_game(gui_app: GUIApp) -> None:
@@ -432,6 +496,7 @@ def test_gui_trick_input_requires_selecting_a_terminal_suggestion(
     gui_app: GUIApp,
 ) -> None:
     gui_app.setup_mode_var.set("custom")
+    gui_app.custom_switch_mode_var.set("enabled")
     gui_app.player_name_vars[0].set("Stan")
     gui_app.player_name_vars[1].set("Denise")
     gui_app._start_game()
@@ -462,6 +527,7 @@ def test_gui_keyboard_navigation_can_select_and_confirm_trick(
     gui_app: GUIApp,
 ) -> None:
     gui_app.setup_mode_var.set("custom")
+    gui_app.custom_switch_mode_var.set("enabled")
     gui_app.player_name_vars[0].set("Stan")
     gui_app.player_name_vars[1].set("Denise")
     gui_app._start_game()
@@ -497,6 +563,7 @@ def test_gui_trick_entry_submit_selects_first_suggestion_when_needed(
     gui_app: GUIApp,
 ) -> None:
     gui_app.setup_mode_var.set("custom")
+    gui_app.custom_switch_mode_var.set("enabled")
     gui_app.player_name_vars[0].set("Stan")
     gui_app.player_name_vars[1].set("Denise")
     gui_app._start_game()
@@ -516,6 +583,7 @@ def test_gui_trick_entry_submit_confirms_selected_terminal_trick(
     gui_app: GUIApp,
 ) -> None:
     gui_app.setup_mode_var.set("custom")
+    gui_app.custom_switch_mode_var.set("enabled")
     gui_app.player_name_vars[0].set("Stan")
     gui_app.player_name_vars[1].set("Denise")
     gui_app._start_game()
@@ -569,6 +637,7 @@ def test_gui_resolve_buttons_can_drive_attack_phase(gui_app: GUIApp) -> None:
     gui_app.custom_word_var.set("S")
     gui_app.custom_attack_attempts_var.set(2)
     gui_app.custom_defense_attempts_var.set(1)
+    gui_app.custom_repetition_limit_var.set(4)
     gui_app._start_game()
 
     assert gui_app.controller is not None

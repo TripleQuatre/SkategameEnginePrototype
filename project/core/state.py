@@ -22,3 +22,4 @@ class GameState:
     validated_tricks: list[str] = field(default_factory=list)
     validated_trick_data: list[dict[str, object]] = field(default_factory=list)
     failed_attack_trick_data: list[dict[str, object]] = field(default_factory=list)
+    failed_attack_turn_trick_keys: list[str] = field(default_factory=list)

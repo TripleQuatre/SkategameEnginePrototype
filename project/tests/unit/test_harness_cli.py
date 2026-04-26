@@ -27,13 +27,17 @@ def _make_case_dir(test_name: str) -> Path:
 def test_harness_cli_discovers_reference_scenarios() -> None:
     scenarios = discover_reference_scenarios()
 
-    assert len(scenarios) == 5
+    assert len(scenarios) == 9
     assert all(path.parent == REFERENCE_SCENARIOS_DIR for path in scenarios)
     assert {path.name for path in scenarios} == {
+        "attack_repetition_synergy_smoke.yaml",
         "custom_battle_smoke.yaml",
         "history_and_setup_details_navigation.yaml",
+        "multiple_attack_enabled_smoke.yaml",
         "preset_one_vs_one_smoke.yaml",
+        "relevance_order_setup_details_smoke.yaml",
         "save_smoke.yaml",
+        "switch_enabled_smoke.yaml",
         "undo_to_setup_regression.yaml",
     }
 

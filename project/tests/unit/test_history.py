@@ -496,3 +496,80 @@ def test_build_turns_does_not_duplicate_started_turn_when_attack_fails() -> None
     assert turns[0].attack_trace == "XX"
     assert len(rows) == 1
     assert rows[0].trick_validated == "XX"
+
+
+def test_build_turns_marks_verified_switch_success_in_attack_trace() -> None:
+    history = History()
+    history.add_event(
+        Event(
+            name=EventName.TURN_STARTED,
+            payload={
+                "attacker_id": "Stan",
+                "trick": "Soul Switch",
+                "defender_ids": ["Denise"],
+            },
+        )
+    )
+    history.add_event(
+        Event(
+            name=EventName.ATTACK_SUCCEEDED,
+            payload={
+                "attacker_id": "Stan",
+                "trick": "Soul Switch",
+                "switch_normal_verification": "verified",
+            },
+        )
+    )
+    history.add_event(
+        Event(
+            name=EventName.TURN_ENDED,
+            payload={"next_attacker_id": "Denise"},
+        )
+    )
+
+    turns = history.build_turns()
+    rows = history.build_rows()
+
+    assert turns[0].attack_trace == "V N(V)"
+    assert rows[0].trick_validated == "V N(V)"
+
+
+def test_build_turns_marks_verified_switch_failure_in_attack_trace() -> None:
+    history = History()
+    history.add_event(
+        Event(
+            name=EventName.TURN_STARTED,
+            payload={
+                "attacker_id": "Stan",
+                "trick": "Soul Switch",
+                "defender_ids": ["Denise"],
+            },
+        )
+    )
+    history.add_event(
+        Event(
+            name=EventName.ATTACK_FAILED_ATTEMPT,
+            payload={
+                "attacker_id": "Stan",
+                "trick": "Soul Switch",
+                "attempts_left": 0,
+                "switch_normal_verification": "failed",
+            },
+        )
+    )
+    history.add_event(
+        Event(
+            name=EventName.TURN_FAILED,
+            payload={
+                "attacker_id": "Stan",
+                "trick": "Soul Switch",
+                "next_attacker_id": "Denise",
+            },
+        )
+    )
+
+    turns = history.build_turns()
+    rows = history.build_rows()
+
+    assert turns[0].attack_trace == "V N(X)"
+    assert rows[0].trick_validated == "V N(X)"

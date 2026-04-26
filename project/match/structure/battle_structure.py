@@ -1,6 +1,5 @@
 import random
 
-from config.match_policies import InitialTurnOrderPolicy
 from core.exceptions import InvalidStateError
 from core.state import GameState
 from match.flow.turn_state import clear_turn_runtime, set_turn_open
@@ -12,16 +11,13 @@ class BattleStructure(BaseStructure):
 
     def initialize_game(self, state: GameState) -> None:
         set_turn_open(state)
-        state.turn_order = list(range(len(state.players)))
-
-        if self.policies.initial_turn_order == InitialTurnOrderPolicy.RANDOMIZED:
-            random.shuffle(state.turn_order)
-
+        state.turn_order = self._build_initial_turn_order(state)
         state.attacker_index = state.turn_order[0]
         clear_turn_runtime(state)
         state.validated_tricks = []
         state.validated_trick_data = []
         state.failed_attack_trick_data = []
+        state.failed_attack_turn_trick_keys = []
 
     def build_defender_indices(self, state: GameState) -> list[int]:
         return self._build_defender_indices_from_turn_order(state)

@@ -11,19 +11,19 @@ Parent Rule
 None
 
 Definition
-regle de victoire qui definit la victoire a partir du score en points des joueurs
+règle de victoire qui définit la victoire à partir du score en points des joueurs
 
 Purpose
-definir une logique de victoire fondee sur l'accumulation de points au cours de la partie
+définir une logique de victoire fondée sur l’accumulation de points au cours de la partie
 
 Options
-Limit (option) : permet de definir un nombre maximum de points a atteindre pour gagner la partie
-Time (link) : permet de lier la regle Points a une evaluation de victoire declenchee par le temps
-Round (link) : permet de lier la regle Points a une evaluation de victoire declenchee par un nombre de manches
-Difference (link) : permet de lier la regle Points a une victoire definie par un ecart de points entre les joueurs
+Limit (option) : permet de définir un nombre maximum de points à atteindre pour gagner la partie
+Time (link) : permet de lier la règle Points à une évaluation de victoire déclenchée par le temps
+Round (link) : permet de lier la règle Points à une évaluation de victoire déclenchée par un nombre de manches
+Difference (link) : permet de lier la règle Points à une victoire définie par un écart de points entre les joueurs
 
 Activation Conditions
-un systeme de points doit etre actif dans la partie
+desactive le système de lettres
 
 Dependencies
 scoring en points
@@ -38,20 +38,20 @@ Clash
 Advantage
 
 Default Behavior
-la victoire est determinee a partir du score en points selon l'option active ou les regles liees
+la victoire est déterminée à partir du score en points selon l’option active ou les règles liées
 
 Advanced Behavior
-peut etre combinee a Time, Round ou Difference pour modifier le moment ou la maniere dont la victoire est evaluee
+peut être combinée à Time, Round ou Difference pour modifier le moment ou la manière dont la victoire est évaluée
 
 Code Impact
 score en points
-evaluation de victoire
+évaluation de victoire
 classement des joueurs
-etat des joueurs
+état des joueurs
 
 UX Notes
-ne doit apparaitre que si une logique de score en points est activee
+ne doit apparaître que si une logique de score en points est activée
 les liens vers Time, Round et Difference doivent rester lisibles sans alourdir la configuration
 
 Open Questions
-faut-il permettre une coexistence complete entre Letters et Points dans toutes les configurations
+faut-il permettre une coexistence complète entre Letters et Points dans toutes les configurations

@@ -42,16 +42,16 @@ steps:
     expect:
       view: setup
       text_equals:
-        setup.player_name_entry.3: ""
+        setup.player_name_entry.3: Frank
 
-  - name: enter third player
-    action: type
-    target: setup.player_name_entry.3
-    value: Frank
+  - name: select third player profile
+    action: select_option
+    target: setup.player_profile_combo.3
+    value: Margaux
     expect:
       view: setup
       text_equals:
-        setup.player_name_entry.3: Frank
+        setup.player_name_entry.3: Margaux
 
   - name: shutdown app
     action: shutdown_app

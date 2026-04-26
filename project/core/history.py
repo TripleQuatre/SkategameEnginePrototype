@@ -132,10 +132,16 @@ class History:
                     current_turn.defenses.append(current_defense)
 
             elif name == EventName.ATTACK_FAILED_ATTEMPT and current_turn is not None:
-                current_turn.attack_trace += "X"
+                current_turn.attack_trace += self._build_attack_attempt_trace(
+                    payload,
+                    success=False,
+                )
 
             elif name == EventName.ATTACK_SUCCEEDED and current_turn is not None:
-                current_turn.attack_trace += "V"
+                current_turn.attack_trace += self._build_attack_attempt_trace(
+                    payload,
+                    success=True,
+                )
                 current_turn.trick_status = "validated"
 
             elif name == EventName.DEFENSE_FAILED_ATTEMPT and current_defense is not None:
@@ -258,3 +264,16 @@ class History:
         if turn.attack_trace:
             return turn.attack_trace
         return "V" if turn.trick_status == "validated" else "X"
+
+    def _build_attack_attempt_trace(
+        self,
+        payload: dict[str, object],
+        *,
+        success: bool,
+    ) -> str:
+        switch_verification = payload.get("switch_normal_verification")
+        if switch_verification == "verified":
+            return "V N(V)"
+        if switch_verification == "failed":
+            return "V N(X)"
+        return "V" if success else "X"

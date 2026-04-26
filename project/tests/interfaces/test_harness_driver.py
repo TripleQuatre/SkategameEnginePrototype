@@ -44,8 +44,8 @@ def test_tk_harness_driver_can_drive_start_game_flow(
 ) -> None:
     assert harness_driver.app is not None
 
-    harness_driver.type_text("setup.player_name_entry.1", "Stan")
-    harness_driver.type_text("setup.player_name_entry.2", "Denise")
+    harness_driver.select_option("setup.player_profile_combo.1", "Stan")
+    harness_driver.select_option("setup.player_profile_combo.2", "Denise")
     harness_driver.press_key("setup.start_game_button", "enter")
 
     assert harness_driver.app.controller is not None
@@ -58,15 +58,15 @@ def test_tk_harness_driver_can_search_and_select_trick_suggestion(
 ) -> None:
     assert harness_driver.app is not None
 
-    harness_driver.type_text("setup.player_name_entry.1", "Stan")
-    harness_driver.type_text("setup.player_name_entry.2", "Denise")
+    harness_driver.select_option("setup.player_profile_combo.1", "Stan")
+    harness_driver.select_option("setup.player_profile_combo.2", "Denise")
     harness_driver.click("setup.start_game_button")
 
-    harness_driver.type_text("match.trick_entry", "switch soul")
+    harness_driver.type_text("match.trick_entry", "soul")
     harness_driver.press_key("match.trick_entry", "down")
-    harness_driver.select_suggestion("match.trick_suggestions_listbox", "Soul Switch")
+    harness_driver.select_suggestion("match.trick_suggestions_listbox", "Soul")
     harness_driver.press_key("match.confirm_trick_button", "enter")
 
     assert harness_driver.app.controller is not None
     assert harness_driver.app.trick_var.get() == ""
-    assert harness_driver.app.controller.get_state().current_trick == "Soul Switch"
+    assert harness_driver.app.controller.get_state().current_trick == "Soul"

@@ -1,5 +1,3 @@
-DONE
-
 Name
 Repetition
 
@@ -13,21 +11,21 @@ Parent Rule
 None
 
 Definition
-règle qui définit combien de fois un trick déjà tenté par l’attaquant peut encore être essayé au cours de la partie
+Rule that defines how many times a trick already failed by the attacker may still be attempted during the match.
 
 Purpose
-encadrer la répétition des tricks ratés par l’attaquant au cours de la partie
+Control how failed tricks may be retried by the attacker across the match.
 
 Options
-Choice (option) : définit le nombre de fois qu’un même trick peut encore être essayé, avec 3 par défaut
-Common (option) : le nombre de répétitions défini dans Choice est commun à tous les joueurs
-Disabled (option) : désactive la limite de répétition des tricks ratés par l’attaquant
+Choice (option): defines how many times the same trick may still be retried, with 3 as the default reference value.
+Common (option): the same repetition limit is shared across players.
+Disabled (option): removes the repetition cap on failed tricks.
 
 Activation Conditions
-aucune
+None
 
 Dependencies
-historique des tricks tentés par l’attaquant
+history of failed tricks
 
 Interactions
 Uniqueness
@@ -35,19 +33,24 @@ Attack
 Multiple Attack
 
 Default Behavior
-un trick raté peut être réessayé un nombre limité de fois selon la valeur choisie
+A failed trick may still be retried a limited number of times according to the chosen value.
 
 Advanced Behavior
-l’option Common permet de mutualiser cette limite entre les joueurs
+Common makes the repetition limit shared across players.
+When Multiple Attack introduces No Repetition, several failed attempts on the same trick during the same attack turn may count as one single repetition.
+When Attack is greater than 1, Multiple Attack is Disabled, and No Repetition is Off, Repetition may also be constrained to remain compatible with full attack turns.
 
 Code Impact
-historique des tricks
-validation d’action
-contrôle de répétition
+trick history
+action validation
+repetition checks
 
 UX Notes
-doit être présentée comme une règle distincte de Uniqueness
-la différence entre trick raté réessayable et trick validé non réimposable doit être très claire
+Must remain clearly distinct from Uniqueness.
+The difference between:
+- a failed trick that may still be retried
+- and a validated trick that may not be imposed again
+must stay explicit.
 
 Open Questions
-il faudra préciser plus tard comment la répétition interagit avec les variantes complexes d’un même trick
+Need to define later how Repetition interacts with complex trick variants judged identical or different.

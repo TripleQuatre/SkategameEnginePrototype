@@ -15,7 +15,9 @@ from config.victory_config import VictoryConfig
 @dataclass(init=False)
 class MatchParameters:
     player_ids: list[str]
+    player_profile_ids: list[str] = field(default_factory=list)
     structure_name: str
+    sport: str = "inline"
     rule_set: RuleSetConfig = field(default_factory=RuleSetConfig)
     policies: MatchPolicies | None = None
     fine_rules: FineRulesConfig = field(default_factory=FineRulesConfig)
@@ -24,14 +26,18 @@ class MatchParameters:
     def __init__(
         self,
         player_ids: list[str],
+        player_profile_ids: list[str] | None = None,
         structure_name: str = "one_vs_one",
+        sport: str = "inline",
         rule_set: RuleSetConfig | None = None,
         policies: MatchPolicies | None = None,
         fine_rules: FineRulesConfig | None = None,
         preset_name: str | None = None,
     ) -> None:
-        self.player_ids = player_ids
+        self.player_ids = list(player_ids)
+        self.player_profile_ids = list(player_profile_ids or [])
         self.structure_name = structure_name
+        self.sport = sport
         self.rule_set = rule_set if rule_set is not None else RuleSetConfig()
         self.policies = policies
         self.fine_rules = fine_rules if fine_rules is not None else FineRulesConfig()
@@ -49,10 +55,12 @@ class MatchParameters:
     def to_match_config(self) -> MatchConfig:
         return MatchConfig(
             player_ids=list(self.player_ids),
+            player_profile_ids=list(self.player_profile_ids),
             structure=StructureConfig(
                 structure_name=self.structure_name,
                 policies=self.policies,
             ),
+            sport=self.sport,
             attack=AttackConfig(
                 attack_attempts=self.rule_set.attack_attempts,
             ),

@@ -82,6 +82,7 @@ def test_attack_flow_resolve_attack_success_uses_callback() -> None:
         success=True,
         attacker_id="p1",
         attacker_name="Stan",
+        on_attack_failed_attempt=lambda: None,
         on_attack_succeeded=lambda: promoted.__setitem__("called", True),
         on_attack_failed=lambda: None,
     )
@@ -107,6 +108,7 @@ def test_attack_flow_resolve_attack_failure_can_continue_or_fail() -> None:
         success=False,
         attacker_id="p1",
         attacker_name="Stan",
+        on_attack_failed_attempt=lambda: None,
         on_attack_succeeded=lambda: None,
         on_attack_failed=lambda: failed.__setitem__("called", True),
     )
@@ -121,6 +123,7 @@ def test_attack_flow_resolve_attack_failure_can_continue_or_fail() -> None:
         success=False,
         attacker_id="p1",
         attacker_name="Stan",
+        on_attack_failed_attempt=lambda: None,
         on_attack_succeeded=lambda: None,
         on_attack_failed=lambda: failed.__setitem__("called", True),
     )

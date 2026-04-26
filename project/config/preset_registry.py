@@ -116,7 +116,7 @@ class PresetRegistry:
                 fine_rules=FineRulesConfig(
                     uniqueness_enabled=True,
                     repetition_mode="choice",
-                    repetition_limit=3,
+                    repetition_limit=4,
                 ),
                 description="V8 duel preset with assisted tricks, uniqueness and per-attacker repetition.",
             ),
@@ -154,7 +154,7 @@ class PresetRegistry:
                 fine_rules=FineRulesConfig(
                     uniqueness_enabled=True,
                     repetition_mode="common",
-                    repetition_limit=3,
+                    repetition_limit=4,
                 ),
                 description="V8 battle preset with shared repetition limit across attackers.",
             ),
@@ -173,7 +173,7 @@ class PresetRegistry:
                 fine_rules=FineRulesConfig(
                     uniqueness_enabled=True,
                     repetition_mode="common",
-                    repetition_limit=1,
+                    repetition_limit=2,
                 ),
                 description="V8 hardcore battle preset with strict shared repetition.",
             ),
@@ -192,7 +192,7 @@ class PresetRegistry:
                 fine_rules=FineRulesConfig(
                     uniqueness_enabled=True,
                     repetition_mode="choice",
-                    repetition_limit=1,
+                    repetition_limit=3,
                 ),
                 description="V9.3 reference duel preset with the shortest word and the strictest per-attacker repetition.",
             ),
@@ -230,7 +230,7 @@ class PresetRegistry:
                 fine_rules=FineRulesConfig(
                     uniqueness_enabled=True,
                     repetition_mode="common",
-                    repetition_limit=2,
+                    repetition_limit=3,
                 ),
                 description="V9.3 reference battle preset with mid defense pressure and shared repetition.",
             ),

@@ -1,0 +1,62 @@
+V10 Specification
+
+Intent
+V10 is a product version focused on:
+- local player profiles
+- visible sport selection locked to inline
+- Order
+- Order = Relevance
+- Attack / Repetition compatibility
+- Multiple Attack
+- Switch
+
+V10 must stay fully aligned with:
+- V8 dictionary integration
+- V9.1 GUI structure
+- V9.2 harness
+- V9.3 stress and regression coverage
+
+Non-goals
+- no real user accounts
+- no profile creation UI
+- no multi-sport runtime support beyond inline
+- no large harness refactor
+- no unrelated rule families
+
+Core Additions
+
+1. Local player profiles
+Profiles are stored locally in a dedicated temporary directory.
+They are product data, not rule data.
+They are selected during setup and later meant to be replaced by real app-connected profiles.
+
+2. Sport
+Sport becomes an explicit setup/config value.
+In V10 it is visible in the setup and match details, but locked to inline.
+This does not yet introduce real multi-sport runtime branching.
+
+3. Order
+Order defines the base attacker order for the match.
+Its V10 options are:
+- Relevance
+- Random
+- Choice
+
+Relevance remains one option of Order, not a separate rule.
+
+4. Attack / Repetition compatibility
+This is not a separate rule.
+It is a compatibility constraint between existing parameters/rules.
+
+5. Multiple Attack
+Multiple Attack is exposed as one single advanced UI block only when Attack > 1.
+The block contains:
+- main mode: Disabled / Enabled
+- linked modifier: No Repetition on/off
+
+6. Switch
+Switch is exposed when the active sport makes switch relevant.
+In V10, because sport is locked to inline, Switch is available in inline setups.
+
+Compatibility Promise
+V10 must integrate into the current setup, config, validation, match, persistence, CLI, GUI, and harness layers without creating a parallel system.

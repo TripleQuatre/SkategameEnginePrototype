@@ -41,8 +41,18 @@ class GameController:
     def resolve_defense(self, success: bool) -> DefenseResolutionStatus:
         return self.session.resolve_defense(success)
 
-    def resolve_attack(self, success: bool) -> AttackResolutionStatus:
-        return self.session.resolve_attack(success)
+    def resolve_attack(
+        self,
+        success: bool,
+        switch_normal_verified: bool | None = None,
+    ) -> AttackResolutionStatus:
+        return self.session.resolve_attack(
+            success,
+            switch_normal_verified=switch_normal_verified,
+        )
+
+    def change_attack_trick(self, trick: str) -> None:
+        self.session.change_attack_trick(trick)
 
     def get_state(self) -> GameState:
         return self.session.get_state()
@@ -70,3 +80,12 @@ class GameController:
 
     def resolve_trick_input(self, raw_value: str) -> DictionaryResolution | None:
         return self.session.resolve_trick_input(raw_value)
+
+    def can_change_attack_trick(self) -> bool:
+        return self.session.can_change_attack_trick()
+
+    def current_attack_trick_requires_change(self) -> bool:
+        return self.session.current_attack_trick_requires_change()
+
+    def current_attack_requires_switch_normal_verification(self) -> bool:
+        return self.session.current_attack_requires_switch_normal_verification()

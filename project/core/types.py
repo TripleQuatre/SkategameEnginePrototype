@@ -45,6 +45,7 @@ class EventName(Enum):
     PLAYER_JOINED = "player_joined"
     PLAYER_REMOVED = "player_removed"
     TURN_STARTED = "turn_started"
+    ATTACK_TRICK_CHANGED = "attack_trick_changed"
     ATTACK_FAILED_ATTEMPT = "attack_failed_attempt"
     ATTACK_SUCCEEDED = "attack_succeeded"
     DEFENSE_SUCCEEDED = "defense_succeeded"

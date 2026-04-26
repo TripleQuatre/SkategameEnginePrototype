@@ -1,6 +1,7 @@
 from application.game_session import GameSession as GameEngine
 import match.structure.battle_structure as battle_structure_module
 
+from config.fine_rules_config import FineRulesConfig
 from config.match_parameters import MatchParameters
 from config.rule_set_config import RuleSetConfig
 from core.exceptions import InvalidActionError
@@ -210,6 +211,10 @@ def test_game_engine_can_resolve_multi_attempt_attack_before_defense() -> None:
             letters_word="SKATE",
             attack_attempts=2,
             defense_attempts=1,
+        ),
+        fine_rules=FineRulesConfig(
+            repetition_mode="choice",
+            repetition_limit=4,
         ),
     )
     engine = GameEngine(match_parameters)

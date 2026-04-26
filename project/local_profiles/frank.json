@@ -1,0 +1,11 @@
+{
+  "profile_id": "frank",
+  "display_name": "Frank",
+  "age": 22,
+  "experience_time": 3,
+  "local_rank": 5,
+  "primary_sport": "inline",
+  "metadata": {
+    "stance": "goofy"
+  }
+}

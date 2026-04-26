@@ -1,10 +1,12 @@
 from config.match_policies import (
     DefenderOrderPolicy,
     InitialTurnOrderPolicy,
+    RelevanceCriterion,
 )
 from config.match_config import MatchConfig
 from config.match_parameters import MatchParameters
 from config.preset_registry import PresetRegistry
+from config.rule_interactions import is_attack_repetition_synergy_compatible
 from config.rule_set_config import RuleSetConfig
 from config.setup_translator import SetupTranslator
 from core.exceptions import InvalidStateError
@@ -70,6 +72,26 @@ class ConfigValidator:
         if not (1 <= match_config.defense.defense_attempts <= 3):
             raise ValueError("defense_attempts must be between 1 and 3")
 
+        if (
+            match_config.sport != "inline"
+            and match_config.fine_rules.switch_mode != "disabled"
+        ):
+            raise InvalidStateError(
+                "Switch is only supported for inline sport in the current version."
+            )
+
+        if not is_attack_repetition_synergy_compatible(
+            match_config.attack.attack_attempts,
+            match_config.fine_rules.repetition_mode,
+            match_config.fine_rules.repetition_limit,
+            multiple_attack_enabled=match_config.fine_rules.multiple_attack_enabled,
+            no_repetition=match_config.fine_rules.no_repetition,
+        ):
+            raise InvalidStateError(
+                "When Attack is greater than 1 and Repetition is active, "
+                "repetition_limit must be a multiple of attack_attempts."
+            )
+
     def _validate_runtime_families(self, match_config: MatchConfig) -> None:
         if match_config.scoring.scoring_type != "letters":
             raise InvalidStateError(
@@ -85,16 +107,42 @@ class ConfigValidator:
         policies = match_config.policies
         structure_name = match_config.structure_name
 
-        if structure_name == "one_vs_one":
-            if policies.initial_turn_order != InitialTurnOrderPolicy.FIXED_PLAYER_ORDER:
-                raise InvalidStateError(
-                    "One vs one structure requires a fixed initial turn order policy."
-                )
+        if structure_name == "one_vs_one" and (
+            policies.defender_order != DefenderOrderPolicy.FOLLOW_TURN_ORDER
+        ):
+            raise InvalidStateError(
+                "One vs one structure requires defenders to follow turn order."
+            )
 
-            if policies.defender_order != DefenderOrderPolicy.FOLLOW_TURN_ORDER:
+        if policies.initial_turn_order == InitialTurnOrderPolicy.RELEVANCE:
+            if policies.relevance_criterion is None:
                 raise InvalidStateError(
-                    "One vs one structure requires defenders to follow turn order."
+                    "Relevance order requires a relevance criterion."
                 )
+        elif policies.relevance_criterion is not None and not isinstance(
+            policies.relevance_criterion,
+            RelevanceCriterion,
+        ):
+            raise InvalidStateError("Unknown relevance criterion configured.")
+
+        if policies.initial_turn_order in {
+            InitialTurnOrderPolicy.EXPLICIT_CHOICE,
+            InitialTurnOrderPolicy.RELEVANCE,
+        }:
+            expected_player_ids = set(match_config.player_ids)
+            explicit_player_order = tuple(policies.explicit_player_order)
+            if len(explicit_player_order) != len(match_config.player_ids):
+                raise InvalidStateError(
+                    "Explicit order must include every configured player exactly once."
+                )
+            if set(explicit_player_order) != expected_player_ids:
+                raise InvalidStateError(
+                    "Explicit order must match the configured player ids."
+                )
+        elif policies.explicit_player_order:
+            raise InvalidStateError(
+                "Explicit order may only be configured for choice or relevance."
+            )
 
     def _validate_preset_coherence(self, match_config: MatchConfig) -> None:
         preset_name = match_config.preset_name

@@ -11,22 +11,22 @@ Parent Rule
 None
 
 Definition
-regle de victoire qui definit la victoire a partir du systeme de lettres pris par les joueurs
+règle de victoire qui définit la victoire à partir du système de lettres pris par les joueurs
 
 Purpose
-definir une logique de victoire fondee sur l'accumulation de lettres jusqu'a elimination ou evaluation de l'etat des joueurs
+définir une logique de victoire fondée sur l’accumulation de lettres jusqu’à élimination ou évaluation de l’état des joueurs
 
 Options
-Choice (option) : definit un mot clef correspondant aux lettres prises par l'opposition, de 10 caracteres maximum
-Time (link) : permet de lier la regle Letters a une evaluation de victoire declenchee par le temps
-Round (link) : permet de lier la regle Letters a une evaluation de victoire declenchee par un nombre de manches
-Difference (link) : permet de lier la regle Letters a une victoire definie par un ecart de lettres entre les joueurs
+Choice (option) : définit un mot clef correspondant aux lettres prises par l’opposition, de 10 caractères maximum
+Time (link) : permet de lier la règle Letters à une évaluation de victoire déclenchée par le temps
+Round (link) : permet de lier la règle Letters à une évaluation de victoire déclenchée par un nombre de manches
+Difference (link) : permet de lier la règle Letters à une victoire définie par un écart de lettres entre les joueurs
 
 Activation Conditions
-aucune
+desactive le système de points
 
 Dependencies
-mot de lettres defini
+mot de lettres défini
 joueurs actifs dans la partie
 
 Interactions
@@ -38,20 +38,20 @@ Priority
 Last Chance
 
 Default Behavior
-la partie se joue selon un mot de lettres defini, et la victoire revient au dernier joueur n'ayant pas atteint la condition de defaite
+la partie se joue selon un mot de lettres défini, et la victoire revient au dernier joueur n’ayant pas atteint la condition de défaite
 
 Advanced Behavior
-peut etre combinee a Time, Round ou Difference pour modifier le moment ou la maniere dont la victoire est evaluee
+peut être combinée à Time, Round ou Difference pour modifier le moment ou la manière dont la victoire est évaluée
 
 Code Impact
 score par lettres
-elimination
-evaluation de victoire
-etat des joueurs
+élimination
+évaluation de victoire
+état des joueurs
 
 UX Notes
-doit apparaitre comme une regle de victoire principale
-le mot choisi doit etre facile a configurer et clairement visible
+doit apparaître comme une règle de victoire principale
+le mot choisi doit être facile à configurer et clairement visible
 
 Open Questions
-faut-il limiter certains mots de lettres a des presets ou disciplines particulieres
+faut-il limiter certains mots de lettres à des presets ou disciplines particulières

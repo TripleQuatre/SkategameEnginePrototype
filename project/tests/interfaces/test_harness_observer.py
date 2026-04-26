@@ -43,7 +43,10 @@ def test_tk_harness_observer_reads_setup_view_state(
     assert visible_state.status_text == "Configure the game to begin."
     assert visible_state.button_states["setup.start_game_button"] == "normal"
     assert visible_state.texts["setup.preset_combo"] == "classic_skate"
+    assert visible_state.texts["setup.sport_combo"] == "inline"
     assert visible_state.texts["setup.word_entry"] == "SKATE"
+    assert visible_state.texts["setup.order_preview_label"].startswith("Order preview:")
+    assert visible_state.texts["setup.summary_label"].startswith("Setup summary:")
     assert visible_state.dropdown_items == ()
 
 
@@ -53,10 +56,10 @@ def test_tk_harness_observer_reads_match_view_score_and_dropdown(
 ) -> None:
     assert harness_driver.app is not None
 
-    harness_driver.type_text("setup.player_name_entry.1", "Stan")
-    harness_driver.type_text("setup.player_name_entry.2", "Denise")
+    harness_driver.select_option("setup.player_profile_combo.1", "Stan")
+    harness_driver.select_option("setup.player_profile_combo.2", "Denise")
     harness_driver.click("setup.start_game_button")
-    harness_driver.type_text("match.trick_entry", "switch soul")
+    harness_driver.type_text("match.trick_entry", "soul")
 
     visible_state = harness_observer.read_visible_state(harness_driver)
 
@@ -66,7 +69,7 @@ def test_tk_harness_observer_reads_match_view_score_and_dropdown(
     assert visible_state.score_cells["0,0"] == "━━━━"
     assert visible_state.score_cells["1,0"] == "STAN"
     assert visible_state.score_cells["1,2"] == "DENISE"
-    assert "Soul Switch" in visible_state.dropdown_items
+    assert "Soul" in visible_state.dropdown_items
 
 
 def test_tk_harness_observer_reads_history_rows(
@@ -75,8 +78,8 @@ def test_tk_harness_observer_reads_history_rows(
 ) -> None:
     assert harness_driver.app is not None
 
-    harness_driver.type_text("setup.player_name_entry.1", "Stan")
-    harness_driver.type_text("setup.player_name_entry.2", "Denise")
+    harness_driver.select_option("setup.player_profile_combo.1", "Stan")
+    harness_driver.select_option("setup.player_profile_combo.2", "Denise")
     harness_driver.click("setup.start_game_button")
     harness_driver.type_text("match.trick_entry", "soul")
     harness_driver.select_suggestion("match.trick_suggestions_listbox", "Soul")
@@ -100,8 +103,8 @@ def test_tk_harness_observer_reads_setup_details_body(
 ) -> None:
     assert harness_driver.app is not None
 
-    harness_driver.type_text("setup.player_name_entry.1", "Stan")
-    harness_driver.type_text("setup.player_name_entry.2", "Denise")
+    harness_driver.select_option("setup.player_profile_combo.1", "Stan")
+    harness_driver.select_option("setup.player_profile_combo.2", "Denise")
     harness_driver.click("setup.start_game_button")
     harness_driver.click("match.setup_details_button")
 
@@ -110,4 +113,9 @@ def test_tk_harness_observer_reads_setup_details_body(
     assert visible_state.active_view == "setup_details"
     body = visible_state.texts["setup_details.body_label"]
     assert "Preset: classic_skate" in body
+    assert "Sport: inline" in body
+    assert "Profiles: stan, denise" in body
+    assert "Order: choice" in body
+    assert "Base order: Stan, Denise" in body
+    assert "Multiple Attack: disabled" in body
     assert "Dictionary profile: inline_primary_grind" in body

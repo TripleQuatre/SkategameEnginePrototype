@@ -3,7 +3,9 @@ from pathlib import Path
 
 import match.structure.battle_structure as battle_structure_module
 
+from config.fine_rules_config import FineRulesConfig
 from config.match_parameters import MatchParameters
+from config.match_policies import InitialTurnOrderPolicy
 from config.rule_set_config import RuleSetConfig
 from controllers.game_controller import GameController
 from core.events import Event
@@ -193,6 +195,7 @@ def test_cli_format_event_prefers_display_names_over_ids() -> None:
 def test_cli_display_state_shows_active_preset(capsys) -> None:
     match_parameters = MatchParameters(
         player_ids=["p1", "p2"],
+        sport="inline",
         preset_name="classic_skate",
         rule_set=RuleSetConfig(
             letters_word="SKATE",
@@ -208,6 +211,7 @@ def test_cli_display_state_shows_active_preset(capsys) -> None:
     output = capsys.readouterr().out
 
     assert "Preset: classic_skate" in output
+    assert "Sport: inline" in output
 
 
 def test_cli_new_game_preset_flow_selects_preset_before_player_names(
@@ -215,7 +219,7 @@ def test_cli_new_game_preset_flow_selects_preset_before_player_names(
 ) -> None:
     cli = CLIApp()
     prompts: list[str] = []
-    answers = iter(["1", "3", "3", "Stan", "Denise", "Alex"])
+    answers = iter(["1", "3", "3", "6", "2", "1"])
 
     def fake_input(prompt: str = "") -> str:
         prompts.append(prompt)
@@ -229,31 +233,119 @@ def test_cli_new_game_preset_flow_selects_preset_before_player_names(
     preset_prompt = next(
         prompt for prompt in prompts if prompt.startswith("Choose a preset (1-")
     )
-    assert prompts.index(preset_prompt) < prompts.index(
-        "Player 1 name: "
+    first_profile_prompt = next(
+        prompt for prompt in prompts if prompt.startswith("Choose profile 1")
     )
+    assert prompts.index(preset_prompt) < prompts.index(first_profile_prompt)
 
 
-def test_cli_new_game_can_start_without_preset(monkeypatch) -> None:
+def test_cli_new_game_can_start_without_preset(monkeypatch, capsys) -> None:
     cli = CLIApp()
     answers = iter(
-        ["2", "2", "Stan", "Denise", "OUT", "2", "3", "n", "common", "2"]
+        [
+            "2",
+            "2",
+            "6",
+            "2",
+            "choice",
+            "1 2",
+            "OUT",
+            "2",
+            "disabled",
+            "3",
+            "n",
+            "common",
+            "2",
+            "1",
+        ]
     )
 
     monkeypatch.setattr("builtins.input", lambda prompt="": next(answers))
 
     controller = cli._create_new_game_controller()
+    output = capsys.readouterr().out
     match_parameters = controller.match_parameters
 
     assert match_parameters.preset_name is None
     assert match_parameters.structure_name == "one_vs_one"
     assert match_parameters.structure_name == "one_vs_one"
+    assert match_parameters.sport == "inline"
     assert match_parameters.rule_set.letters_word == "OUT"
     assert match_parameters.rule_set.attack_attempts == 2
     assert match_parameters.rule_set.defense_attempts == 3
+    assert match_parameters.fine_rules.multiple_attack_enabled is False
+    assert match_parameters.fine_rules.no_repetition is False
     assert match_parameters.fine_rules.uniqueness_enabled is False
     assert match_parameters.fine_rules.repetition_mode == "common"
     assert match_parameters.fine_rules.repetition_limit == 2
+    assert "Setup summary:" in output
+    assert "- multiple attack: disabled" in output
+    assert "- repetition: common (limit 2)" in output
+
+
+def test_cli_custom_setup_prints_relevance_order_preview(monkeypatch, capsys) -> None:
+    cli = CLIApp()
+    answers = iter(
+        [
+            "2",
+            "3",
+            "6",
+            "2",
+            "1",
+            "relevance",
+            "age",
+            "OUT",
+            "1",
+            "1",
+            "y",
+            "disabled",
+            "1",
+        ]
+    )
+
+    monkeypatch.setattr("builtins.input", lambda prompt="": next(answers))
+
+    controller = cli._create_new_game_controller()
+    output = capsys.readouterr().out
+
+    assert controller.match_parameters.policies.initial_turn_order == InitialTurnOrderPolicy.RELEVANCE
+    assert "Order preview (age): Alex -> Stan -> Denise" in output
+
+
+def test_cli_custom_setup_reprompts_invalid_attack_repetition_synergy(
+    monkeypatch, capsys
+) -> None:
+    cli = CLIApp()
+    answers = iter(
+        [
+            "2",
+            "2",
+            "6",
+            "2",
+            "choice",
+            "1 2",
+            "OUT",
+            "2",
+            "disabled",
+            "1",
+            "y",
+            "common",
+            "3",
+            "4",
+            "1",
+        ]
+    )
+
+    monkeypatch.setattr("builtins.input", lambda prompt="": next(answers))
+
+    controller = cli._create_new_game_controller()
+    output = capsys.readouterr().out
+
+    assert controller.match_parameters.fine_rules.repetition_limit == 4
+    assert (
+        "Attack/Repetition synergy active: repetition limit must be a multiple "
+        "of Attack. Suggested values: 2, 4, 6."
+    ) in output
 
 
 def test_cli_run_recovers_by_restarting_setup_after_undo_to_initial_snapshot(
@@ -293,6 +385,10 @@ def test_cli_display_state_shows_attack_phase_details(capsys) -> None:
                 attack_attempts=2,
                 defense_attempts=3,
             ),
+            fine_rules=FineRulesConfig(
+                repetition_mode="choice",
+                repetition_limit=4,
+            ),
         )
     )
     controller.start_game()
@@ -316,14 +412,18 @@ def test_cli_run_can_resolve_attack_phase_before_defense(
             "1",
             "2",
             "2",
-            "Stan",
-            "Denise",
+            "6",
+            "2",
+            "choice",
+            "1 2",
             "S",
             "2",
+            "disabled",
             "1",
             "y",
             "choice",
-            "3",
+            "4",
+            "2",
             "switch soul",
             "1",
             "y",
@@ -355,12 +455,12 @@ def test_cli_trick_input_requires_selecting_a_suggestion(monkeypatch) -> None:
     controller.start_game()
 
     cli = CLIApp()
-    inputs = iter(["switch soul", "1", "y"])
+    inputs = iter(["soul", "1", "y"])
     monkeypatch.setattr("builtins.input", lambda _prompt="": next(inputs))
 
     trick = cli._ask_validated_trick_input(controller)
 
-    assert trick == "Soul Switch"
+    assert trick == "Soul"
 
 
 def test_cli_choose_official_preset_displays_v8_fine_rules(monkeypatch, capsys) -> None:
@@ -371,7 +471,7 @@ def test_cli_choose_official_preset_displays_v8_fine_rules(monkeypatch, capsys) 
     output = capsys.readouterr().out
 
     assert preset.name == "classic_skate_v8"
-    assert "Uniqueness=on, Repetition=choice, limit=3" in output
+    assert "Uniqueness=on, Repetition=choice, limit=4" in output
 
 
 def test_cli_join_command_can_add_player_between_turns(monkeypatch, capsys) -> None:

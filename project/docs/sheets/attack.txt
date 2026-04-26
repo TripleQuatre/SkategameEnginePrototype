@@ -1,5 +1,3 @@
-DONE
-
 Name
 Attack
 
@@ -13,42 +11,44 @@ Parent Rule
 None
 
 Definition
-paramètre qui définit le nombre de tentatives accordées à l’attaquant pour imposer un trick
+Parameter that defines how many attempts the attacker may use to impose a trick during one attack turn.
 
 Purpose
-définir combien d’essais l’attaquant peut utiliser pour réussir le trick qu’il impose pendant son tour
+Define how many attack tries the attacker may spend on the trick engaged during the current attack turn.
 
 Options
-Value (option) : définit le nombre de tentatives accordées à l’attaquant
-- Default Value : 1, valeur traditionnellement appliquée par défaut
-- Other Value : 3, autre valeur courante
-- Choice : permet d’entrer librement une valeur, dans une limite de 10 maximum
+Value (option): defines the number of attack attempts granted to the attacker.
+- Default Value: 1, standard default value
+- Other common values: 2 or 3
+- Choice: allows free numeric input, within the product limit
 
 Activation Conditions
-aucune
+None
 
 Dependencies
-tour d’attaque actif
+active attack turn
 
 Interactions
 Multiple Attack
+Repetition
 Advantage
 Clash
 
 Default Behavior
-l’attaquant dispose d’un nombre fixe de tentatives défini avant la partie
+The attacker receives a fixed number of attempts defined before the match.
 
 Advanced Behavior
-si la valeur est supérieure à 1, certaines règles avancées comme Multiple Attack peuvent devenir pertinentes
+If Attack is greater than 1, advanced behaviors such as Multiple Attack may become available.
+If Attack is greater than 1 and Multiple Attack remains Disabled with No Repetition Off, Attack may also create a compatibility constraint with Repetition.
 
 Code Impact
-résolution des tentatives d’attaque
-flow de tour
-validation d’action
+attack-attempt resolution
+turn flow
+action validation
 
 UX Notes
-doit être présenté comme un paramètre simple
-les valeurs recommandées peuvent être affichées comme raccourcis sans masquer qu’il s’agit d’un seul choix de valeur
+Must be presented as a simple numeric parameter.
+Recommended values may be shown as shortcuts, but they still represent one single numeric choice.
 
 Open Questions
-il faudra préciser plus tard si certaines disciplines limitent davantage les valeurs disponibles
+Some advanced rule combinations may restrict which Attack / Repetition pairs are valid.

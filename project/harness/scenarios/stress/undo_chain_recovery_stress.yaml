@@ -28,19 +28,23 @@ steps:
       text_equals:
         setup.preset_combo: duel_long_open_v9_3
 
-  - name: enter first player
-    action: type
-    target: setup.player_name_entry.1
+  - name: select first player profile
+    action: select_option
+    target: setup.player_profile_combo.1
     value: Stan
     expect:
       view: setup
+      text_equals:
+        setup.player_name_entry.1: Stan
 
-  - name: enter second player
-    action: type
-    target: setup.player_name_entry.2
+  - name: select second player profile
+    action: select_option
+    target: setup.player_profile_combo.2
     value: Denise
     expect:
       view: setup
+      text_equals:
+        setup.player_name_entry.2: Denise
 
   - name: start game
     action: click
@@ -99,14 +103,14 @@ steps:
       button_states:
         match.add_player_button: normal
 
-  - name: search switch soul again
+  - name: search soul again after undo
     action: type
     target: match.trick_entry
-    value: switch soul
+    value: soul
     expect:
       view: match
       dropdown_contains:
-        - Soul Switch
+        - Soul
 
   - name: undo back to setup
     action: click

@@ -10,6 +10,7 @@ def clear_turn_runtime(state: GameState) -> None:
     state.defender_indices = []
     state.current_defender_position = 0
     state.defense_attempts_left = 0
+    state.failed_attack_turn_trick_keys = []
 
 
 def set_turn_open(state: GameState) -> None:
@@ -48,6 +49,7 @@ def begin_attack_phase(
     state.defender_indices = []
     state.current_defender_position = 0
     state.defense_attempts_left = 0
+    state.failed_attack_turn_trick_keys = []
 
 
 def promote_attack_to_defense(

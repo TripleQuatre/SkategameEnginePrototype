@@ -2,6 +2,7 @@ from datetime import datetime
 from pathlib import Path
 
 from application.game_setup_service import GameSetupService
+from config.match_policies import InitialTurnOrderPolicy
 from controllers.game_controller import GameController
 from core.events import Event
 from core.exceptions import InvalidActionError, InvalidStateError
@@ -76,14 +77,59 @@ class CLIApp:
                         f"({state.attack_attempts_left} attempt(s) left)"
                     )
 
-                    success = self._ask_attack_action(controller, attacker.name)
+                    if controller.current_attack_trick_requires_change():
+                        print("Current trick reached the repetition limit for this turn.")
+                        trick = self._ask_validated_trick_input(
+                            controller,
+                            cancel_on_decline=False,
+                        )
+                        if trick is None:
+                            print()
+                            break
+                        try:
+                            controller.change_attack_trick(trick)
+                            print(f"Attack trick changed to '{trick}'.")
+                        except InvalidActionError as error:
+                            print(f"\nAction invalide: {error}\n")
+                            continue
+                        continue
 
-                    if success is None:
+                    if controller.can_change_attack_trick():
+                        should_change = self._ask_yes_no_with_commands(
+                            controller,
+                            "Change trick for the next attack attempt? (y/n): ",
+                        )
+                        if should_change is None:
+                            print()
+                            break
+                        if should_change:
+                            trick = self._ask_validated_trick_input(
+                                controller,
+                                cancel_on_decline=False,
+                            )
+                            if trick is None:
+                                print()
+                                break
+                            try:
+                                controller.change_attack_trick(trick)
+                                print(f"Attack trick changed to '{trick}'.")
+                            except InvalidActionError as error:
+                                print(f"\nAction invalide: {error}\n")
+                                continue
+                            continue
+
+                    attack_decision = self._ask_attack_action(controller, attacker.name)
+
+                    if attack_decision is None:
                         print()
                         break
 
                     events_before = len(state.history.events)
-                    resolution_status = controller.resolve_attack(success)
+                    success, switch_normal_verified = attack_decision
+                    resolution_status = controller.resolve_attack(
+                        success,
+                        switch_normal_verified=switch_normal_verified,
+                    )
                     self._display_new_events(controller, events_before)
 
                     if resolution_status == AttackResolutionStatus.ATTACK_CONTINUES:
@@ -158,6 +204,8 @@ class CLIApp:
 
     def _create_preset_game_controller(self) -> GameController:
         preset = self._choose_official_preset()
+        sport = self._get_locked_sport()
+        print(f"Sport: {sport} (locked for now)")
 
         if preset.structure_name == "one_vs_one":
             player_count = 2
@@ -165,40 +213,190 @@ class CLIApp:
         else:
             player_count = self._ask_player_count(min_players=3)
 
-        player_ids = [
-            self._ask_non_empty_input(f"Player {index} name: ")
-            for index in range(1, player_count + 1)
-        ]
+        player_profile_ids = self._ask_player_profiles(player_count)
+        player_names = self.setup_service.resolve_local_profile_names(player_profile_ids)
+        self._print_setup_summary(
+            mode_label="preset",
+            sport=sport,
+            player_names=player_names,
+            order_mode=self._describe_preset_order_mode(preset),
+            letters_word=preset.rule_set.letters_word,
+            attack_attempts=preset.rule_set.attack_attempts,
+            defense_attempts=preset.rule_set.defense_attempts,
+            multiple_attack_label=self._format_multiple_attack_label(
+                preset.fine_rules.multiple_attack_enabled,
+                preset.fine_rules.no_repetition,
+                preset.rule_set.attack_attempts,
+            ),
+            switch_mode=preset.fine_rules.switch_mode,
+            repetition_label=self._format_repetition_label(
+                preset.fine_rules.repetition_mode,
+                preset.fine_rules.repetition_limit,
+            ),
+        )
 
-        return self.setup_service.create_started_controller_from_preset(
+        return self.setup_service.create_started_controller_from_preset_profiles(
             preset.name,
-            player_ids,
+            player_profile_ids,
         )
 
     def _create_custom_game_controller(self) -> GameController:
+        sport = self._get_locked_sport()
+        print(f"Sport: {sport} (locked for now)")
         player_count = self._ask_player_count(min_players=2)
-        player_ids = [
-            self._ask_non_empty_input(f"Player {index} name: ")
-            for index in range(1, player_count + 1)
-        ]
+        player_profile_ids = self._ask_player_profiles(player_count)
+        player_ids = self.setup_service.resolve_local_profile_names(player_profile_ids)
+        order_mode = self._ask_order_mode(player_count)
+        explicit_player_order = None
+        relevance_criterion = None
+        if order_mode == "choice":
+            explicit_player_order = self._ask_explicit_player_order(player_ids)
+        elif order_mode == "relevance":
+            relevance_criterion = self._ask_relevance_criterion()
+        preview_order = self.setup_service.preview_order(
+            order_mode=order_mode,
+            player_ids=player_ids,
+            player_profile_ids=player_profile_ids,
+            relevance_criterion=relevance_criterion,
+            explicit_player_order=explicit_player_order,
+        )
+        self._print_order_preview(order_mode, preview_order, relevance_criterion)
+        policies = self.setup_service.build_order_policies(
+            order_mode=order_mode,
+            player_ids=player_ids,
+            player_profile_ids=player_profile_ids,
+            relevance_criterion=relevance_criterion,
+            explicit_player_order=explicit_player_order,
+        )
         word = self._ask_letters_word()
         attack_attempts = self._ask_attack_attempts()
+        multiple_attack_enabled = False
+        no_repetition = False
+        if attack_attempts > 1:
+            (
+                multiple_attack_enabled,
+                no_repetition,
+            ) = self._ask_multiple_attack_options()
         defense_attempts = self._ask_defense_attempts()
         uniqueness_enabled = self._ask_uniqueness_enabled()
         repetition_mode = self._ask_repetition_mode()
         repetition_limit = 3
         if repetition_mode != "disabled":
-            repetition_limit = self._ask_repetition_limit()
-        return self.setup_service.create_started_controller_from_custom_setup(
-            player_ids=player_ids,
+            repetition_limit = self._ask_repetition_limit(
+                attack_attempts=attack_attempts,
+                repetition_mode=repetition_mode,
+                multiple_attack_enabled=multiple_attack_enabled,
+                no_repetition=no_repetition,
+            )
+        switch_mode = self._ask_switch_mode(sport)
+        self._print_setup_summary(
+            mode_label="custom",
+            sport=sport,
+            player_names=player_ids,
+            order_mode=order_mode,
             letters_word=word,
             attack_attempts=attack_attempts,
             defense_attempts=defense_attempts,
+            multiple_attack_label=self._format_multiple_attack_label(
+                multiple_attack_enabled,
+                no_repetition,
+                attack_attempts,
+            ),
+            switch_mode=switch_mode,
+            repetition_label=self._format_repetition_label(
+                repetition_mode,
+                repetition_limit,
+            ),
+        )
+        return self.setup_service.create_started_controller_from_custom_setup_profiles(
+            player_profile_ids=player_profile_ids,
+            sport=sport,
+            letters_word=word,
+            attack_attempts=attack_attempts,
+            defense_attempts=defense_attempts,
+            policies=policies,
             elimination_enabled=True,
             uniqueness_enabled=uniqueness_enabled,
+            multiple_attack_enabled=multiple_attack_enabled,
+            no_repetition=no_repetition,
+            switch_mode=switch_mode,
             repetition_mode=repetition_mode,
             repetition_limit=repetition_limit,
         )
+
+    def _describe_preset_order_mode(self, preset) -> str:
+        if preset.policies.initial_turn_order == InitialTurnOrderPolicy.RANDOMIZED:
+            return "random"
+        if preset.policies.initial_turn_order == InitialTurnOrderPolicy.RELEVANCE:
+            return "relevance"
+        return "choice"
+
+    def _format_multiple_attack_label(
+        self,
+        multiple_attack_enabled: bool,
+        no_repetition: bool,
+        attack_attempts: int,
+    ) -> str:
+        if attack_attempts <= 1:
+            return "n/a"
+        if multiple_attack_enabled:
+            return "enabled"
+        if no_repetition:
+            return "no repetition"
+        return "disabled"
+
+    def _format_repetition_label(self, repetition_mode: str, repetition_limit: int) -> str:
+        if repetition_mode == "disabled":
+            return "disabled"
+        return f"{repetition_mode} (limit {repetition_limit})"
+
+    def _print_setup_summary(
+        self,
+        *,
+        mode_label: str,
+        sport: str,
+        player_names: list[str],
+        order_mode: str,
+        letters_word: str,
+        attack_attempts: int,
+        defense_attempts: int,
+        multiple_attack_label: str,
+        switch_mode: str,
+        repetition_label: str,
+    ) -> None:
+        print("Setup summary:")
+        print(f"- mode: {mode_label}")
+        print(f"- sport: {sport}")
+        print(f"- players: {', '.join(player_names)}")
+        print(f"- order: {order_mode}")
+        print(f"- word: {letters_word}")
+        print(f"- attack attempts: {attack_attempts}")
+        print(f"- defense attempts: {defense_attempts}")
+        print(f"- multiple attack: {multiple_attack_label}")
+        print(f"- switch: {switch_mode}")
+        print(f"- repetition: {repetition_label}")
+
+    def _ask_switch_mode(self, sport: str) -> str:
+        if sport != "inline":
+            return "disabled"
+
+        print("Switch mode options:")
+        print("1. disabled")
+        print("2. enabled")
+        print("3. normal")
+        print("4. verified")
+
+        while True:
+            value = input("Choose Switch mode (1-4): ").strip()
+            if value == "1":
+                return "disabled"
+            if value == "2":
+                return "enabled"
+            if value == "3":
+                return "normal"
+            if value == "4":
+                return "verified"
+            print("Invalid choice.")
 
     def _load_saved_game_controller(self) -> GameController | None:
         filepath = self._choose_save_file()
@@ -368,6 +566,7 @@ class CLIApp:
         letters_word = self._get_letters_word()
         if preset_name:
             print(f"Preset: {preset_name}")
+        print(f"Sport: {self.controller.match_parameters.sport if self.controller is not None else 'inline'}")
 
         print("Score:")
         for player in state.players:
@@ -391,6 +590,8 @@ class CLIApp:
                 f"Current trick: {state.current_trick} "
                 f"({state.attack_attempts_left} attack attempt(s) left)"
             )
+            if self.controller is not None and self.controller.can_change_attack_trick():
+                print("Trick change is available before the next attack attempt.")
             return
 
         if (
@@ -432,6 +633,11 @@ class CLIApp:
 
         if name == EventName.ATTACK_FAILED_ATTEMPT:
             attacker_name = payload.get("attacker_name", payload["attacker_id"])
+            if payload.get("switch_normal_verification") == "failed":
+                return (
+                    f"{attacker_name} landed '{trick_label}' but failed the normal "
+                    f"verification ({payload['attempts_left']} attack attempt(s) left)."
+                )
             return (
                 f"{attacker_name} missed '{trick_label}' "
                 f"({payload['attempts_left']} attack attempt(s) left)."
@@ -439,7 +645,20 @@ class CLIApp:
 
         if name == EventName.ATTACK_SUCCEEDED:
             attacker_name = payload.get("attacker_name", payload["attacker_id"])
+            if payload.get("switch_normal_verification") == "verified":
+                return (
+                    f"{attacker_name} landed '{trick_label}' and verified the normal version "
+                    "to set the trick."
+                )
             return f"{attacker_name} landed '{trick_label}' to set the trick."
+
+        if name == EventName.ATTACK_TRICK_CHANGED:
+            attacker_name = payload.get("attacker_name", payload["attacker_id"])
+            previous_label = payload.get("previous_trick_label", payload.get("previous_trick"))
+            return (
+                f"{attacker_name} changed trick from '{previous_label}' "
+                f"to '{trick_label}'."
+            )
 
         if name == EventName.DEFENSE_FAILED_ATTEMPT:
             player_name = payload.get("player_name", payload["player_id"])
@@ -585,7 +804,12 @@ class CLIApp:
 
             print("Invalid choice.")
 
-    def _ask_validated_trick_input(self, controller: GameController) -> str | None:
+    def _ask_validated_trick_input(
+        self,
+        controller: GameController,
+        *,
+        cancel_on_decline: bool = True,
+    ) -> str | None:
         query = ""
 
         while True:
@@ -623,11 +847,12 @@ class CLIApp:
             if confirm:
                 return trick
 
-            print("Turn failed. Next player.\n")
-            try:
-                controller.cancel_turn(trick)
-            except InvalidActionError as error:
-                print(f"Action invalide: {error}\n")
+            if cancel_on_decline:
+                print("Turn failed. Next player.\n")
+                try:
+                    controller.cancel_turn(trick)
+                except InvalidActionError as error:
+                    print(f"Action invalide: {error}\n")
             return None
 
     def _select_trick_suggestion(
@@ -682,7 +907,29 @@ class CLIApp:
 
     def _ask_attack_action(
         self, controller: GameController, attacker_name: str
-    ) -> bool | None:
+    ) -> tuple[bool, bool | None] | None:
+        if controller.current_attack_requires_switch_normal_verification():
+            while True:
+                value = self._read_input_with_commands(
+                    controller,
+                    (
+                        f"Switch verified flow for {attacker_name}: "
+                        "1=missed, 2=normal verified, 3=normal not verified: "
+                    ),
+                )
+
+                if value is None:
+                    return None
+
+                if value == "1":
+                    return (False, None)
+                if value == "2":
+                    return (True, True)
+                if value == "3":
+                    return (True, False)
+
+                print("Type 1, 2 or 3.")
+
         while True:
             value = self._read_input_with_commands(
                 controller,
@@ -695,10 +942,10 @@ class CLIApp:
             command = value.lower()
 
             if command in {"y", "yes"}:
-                return True
+                return (True, None)
 
             if command in {"n", "no"}:
-                return False
+                return (False, None)
 
             print("Type y or n.")
 
@@ -757,6 +1004,106 @@ class CLIApp:
                     return player_count
             print(f"Player count must be at least {min_players}.")
 
+    def _ask_player_profiles(self, player_count: int) -> list[str]:
+        profiles = self.setup_service.list_local_profiles()
+        selected_profile_ids: list[str] = []
+
+        for index in range(1, player_count + 1):
+            while True:
+                print(f"Available local profiles for player {index}:")
+                for option_index, profile in enumerate(profiles, start=1):
+                    selected_marker = " [selected]" if profile.profile_id in selected_profile_ids else ""
+                    print(
+                        f"{option_index}. {profile.display_name} "
+                        f"(age={profile.age}, experience={profile.experience_time}, rank={profile.local_rank})"
+                        f"{selected_marker}"
+                    )
+
+                value = input(f"Choose profile {index} (1-{len(profiles)}): ").strip()
+                if not value.isdigit():
+                    print("Invalid choice.")
+                    continue
+
+                selected_index = int(value)
+                if not 1 <= selected_index <= len(profiles):
+                    print("Invalid choice.")
+                    continue
+
+                selected_profile = profiles[selected_index - 1]
+                if selected_profile.profile_id in selected_profile_ids:
+                    print("This profile is already selected.")
+                    continue
+
+                selected_profile_ids.append(selected_profile.profile_id)
+                break
+
+        return selected_profile_ids
+
+    def _ask_order_mode(self, player_count: int) -> str:
+        default_mode = "choice" if player_count == 2 else "random"
+        print(
+            f"Order mode options: choice, random, relevance "
+            f"(default: {default_mode})"
+        )
+        while True:
+            value = input("Order mode: ").strip().lower()
+            if not value:
+                return default_mode
+            if value in {"choice", "random", "relevance"}:
+                return value
+            print("Order mode must be choice, random or relevance.")
+
+    def _ask_relevance_criterion(self) -> str:
+        print("Relevance criteria: alphabetical, age, experience_time, local_rank")
+        while True:
+            value = input("Relevance criterion: ").strip().lower()
+            if value in {"alphabetical", "age", "experience_time", "local_rank"}:
+                return value
+            print(
+                "Relevance criterion must be alphabetical, age, experience_time or local_rank."
+            )
+
+    def _ask_explicit_player_order(self, player_ids: list[str]) -> list[str]:
+        print("Current player order:")
+        for index, player_id in enumerate(player_ids, start=1):
+            print(f"{index}. {player_id}")
+
+        expected = " ".join(str(index) for index in range(1, len(player_ids) + 1))
+        while True:
+            value = input(
+                f"Order choice as numbers separated by spaces (example: {expected}): "
+            ).strip()
+            parts = value.split()
+            if len(parts) != len(player_ids) or not all(part.isdigit() for part in parts):
+                print("Invalid order. Provide each player index exactly once.")
+                continue
+
+            indices = [int(part) for part in parts]
+            if sorted(indices) != list(range(1, len(player_ids) + 1)):
+                print("Invalid order. Provide each player index exactly once.")
+                continue
+
+            return [player_ids[index - 1] for index in indices]
+
+    def _print_order_preview(
+        self,
+        order_mode: str,
+        preview_order: list[str],
+        relevance_criterion: str | None,
+    ) -> None:
+        if order_mode == "random":
+            print("Order preview: randomized at game start.")
+            return
+
+        if order_mode == "relevance" and relevance_criterion is not None:
+            print(
+                f"Order preview ({relevance_criterion}): "
+                f"{' -> '.join(preview_order)}"
+            )
+            return
+
+        print(f"Order preview: {' -> '.join(preview_order)}")
+
     def _choose_official_preset(self):
         preset_names = self.setup_service.list_preset_names()
         print("Available presets:")
@@ -791,6 +1138,9 @@ class CLIApp:
                 return value
             print("Word must contain between 1 and 10 characters.")
 
+    def _get_locked_sport(self) -> str:
+        return "inline"
+
     def _ask_defense_attempts(self) -> int:
         while True:
             value = input("Defense attempts (1-3): ").strip()
@@ -808,6 +1158,22 @@ class CLIApp:
                 if 1 <= attempts <= 3:
                     return attempts
             print("Attack attempts must be between 1 and 3.")
+
+    def _ask_multiple_attack_options(self) -> tuple[bool, bool]:
+        print(
+            "Multiple Attack options: Disabled | No Repetition | Enabled "
+            "(default: Disabled)"
+        )
+
+        while True:
+            value = input("Multiple Attack mode: ").strip().lower()
+            if value in {"", "disabled"}:
+                return False, False
+            if value in {"enabled", "on"}:
+                return True, False
+            if value in {"no repetition", "no_repetition", "norepetition"}:
+                return False, True
+            print("Multiple Attack mode must be Disabled, No Repetition or Enabled.")
 
     def _ask_uniqueness_enabled(self) -> bool:
         while True:
@@ -829,16 +1195,47 @@ class CLIApp:
                 return value
             print("Type choice, common or disabled.")
 
-    def _ask_repetition_limit(self) -> int:
+    def _ask_repetition_limit(
+        self,
+        *,
+        attack_attempts: int,
+        repetition_mode: str,
+        multiple_attack_enabled: bool = False,
+        no_repetition: bool = False,
+    ) -> int:
         while True:
             value = input("Repetition limit (1-9, default 3): ").strip()
             if value == "":
-                return 3
-            if value.isdigit():
+                limit = 3
+            elif value.isdigit():
                 limit = int(value)
-                if 1 <= limit <= 9:
-                    return limit
-            print("Repetition limit must be between 1 and 9.")
+                if not 1 <= limit <= 9:
+                    print("Repetition limit must be between 1 and 9.")
+                    continue
+            else:
+                print("Repetition limit must be between 1 and 9.")
+                continue
+
+            if self.setup_service.is_attack_repetition_synergy_compatible(
+                attack_attempts=attack_attempts,
+                repetition_mode=repetition_mode,
+                repetition_limit=limit,
+                multiple_attack_enabled=multiple_attack_enabled,
+                no_repetition=no_repetition,
+            ):
+                return limit
+
+            feedback = self.setup_service.get_attack_repetition_synergy_feedback(
+                attack_attempts=attack_attempts,
+                repetition_mode=repetition_mode,
+                repetition_limit=limit,
+                multiple_attack_enabled=multiple_attack_enabled,
+                no_repetition=no_repetition,
+                max_limit=9,
+            )
+            if feedback is not None:
+                print(feedback)
+            continue
 
     def _ask_yes_no(self, prompt: str) -> bool:
         while True:

@@ -79,6 +79,7 @@ def test_v7_release_smoke_can_run_custom_multi_attempt_attack_flow() -> None:
         letters_word="OUT",
         attack_attempts=2,
         defense_attempts=1,
+        repetition_limit=4,
     )
 
     controller.start_turn("kickflip")

@@ -11,24 +11,25 @@ Parent Rule
 None
 
 Definition
-regle specifique qui definit dans quelles conditions les tricks realises en switch sont autorises au cours de la partie
+Specific rule that defines in which conditions switch tricks are allowed during the match.
 
 Purpose
-encadrer l'autorisation des tricks en switch selon le niveau d'exigence choisi pour la discipline ou la partie
+Control whether switch tricks are forbidden, freely allowed, or subject to prior validation conditions.
 
 Options
-Enabled (option) : tous les switch sont autorises
-Normal (option) : pour lancer un switch, l'attaquant doit avoir deja valide lui-meme la figure dans son sens normal au cours de la partie, variations incluses
-Verified (option) : pour lancer un switch, l'attaquant doit d'abord valider la figure dans son sens normal puis reussir sa version switch dans le cadre du meme enchainement d'imposition ; la version normale n'est pas comptee comme validee separement pour l'instant
-Disabled (option) : aucun switch n'est autorise
+Enabled (option): all switch tricks are allowed.
+Normal (option): to impose a switch trick, the same trick must already have been validated in its normal form during the match by any player.
+Verified (option): any player may attempt a switch trick at any time, but when the attacker validates the switch they must also prove the normal version through a separate normal verification confirmation. This proof does not count as a launch attempt and is not stored as its own validated trick in history.
+Disabled (option): no switch trick is allowed.
 
 Activation Conditions
-la discipline ou la pratique doit reconnaitre le switch comme variation pertinente
+The active sport or discipline must treat switch as a meaningful variation.
 
 Dependencies
 Attack
-historique des tricks valides
-equivalence entre figure normale et figure switch
+history of validated tricks
+equivalence between normal and switch forms
+active sport
 
 Interactions
 Uniqueness
@@ -37,19 +38,26 @@ Tolerance
 Out
 
 Default Behavior
-les switch sont autorises ou non selon l'option choisie
+Switch authorization depends entirely on the selected option.
 
 Advanced Behavior
-les options Normal et Verified ajoutent une condition prealable de validation du trick en sens normal
+Normal adds a match-level prerequisite on the normal version of the trick.
+Verified adds a second confirmation linked to attack validation:
+- Normal verified: the switch validation stands.
+- Normal not verified: the switch attempt is invalidated.
+The normal proof does not consume an additional attack attempt by itself; only the switch attempt is counted.
+This rule should only be exposed in sports where switch is relevant.
 
 Code Impact
-validation d'action
-historique des tricks valides
-arbitrage d'autorisation des tricks
+action validation
+history of validated tricks
+authorization checks for switch tricks
 
 UX Notes
-ne doit apparaitre que dans les disciplines ou la notion de switch a un sens clair
-la difference entre Normal et Verified doit etre expliquee simplement
+Must only appear when the active sport makes switch relevant.
+The difference between Normal and Verified must be explained simply in the interface.
+If Switch is disabled, switch tricks should not appear in suggestions.
+If Switch is normal, only switch tricks whose normal form has already been validated in the match should appear in suggestions.
 
 Open Questions
-note d'intention : envisager plus tard que la version normale realisee dans Verified puisse etre comptee comme validee
+Later, the product may refine how the verified normal proof is rendered in history beyond the initial attack-column marker.

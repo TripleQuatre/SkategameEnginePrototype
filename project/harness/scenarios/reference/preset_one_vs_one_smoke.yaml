@@ -25,19 +25,23 @@ steps:
         setup.preset_combo: classic_skate
         setup.word_entry: SKATE
 
-  - name: enter first player
-    action: type
-    target: setup.player_name_entry.1
+  - name: select first player profile
+    action: select_option
+    target: setup.player_profile_combo.1
     value: Stan
     expect:
       view: setup
+      text_equals:
+        setup.player_name_entry.1: Stan
 
-  - name: enter second player
-    action: type
-    target: setup.player_name_entry.2
+  - name: select second player profile
+    action: select_option
+    target: setup.player_profile_combo.2
     value: Denise
     expect:
       view: setup
+      text_equals:
+        setup.player_name_entry.2: Denise
 
   - name: start preset game
     action: click
@@ -56,27 +60,27 @@ steps:
         match.confirm_trick_button: disabled
         match.add_player_button: normal
 
-  - name: search switch soul
+  - name: search soul
     action: type
     target: match.trick_entry
-    value: switch soul
+    value: soul
     expect:
       view: match
       status_text_contains: Select a valid suggestion
       dropdown_contains:
-        - Soul Switch
+        - Soul
       button_states:
         match.confirm_trick_button: disabled
 
-  - name: select soul switch
+  - name: select soul
     action: select_suggestion
     target: match.trick_suggestions_listbox
-    value: Soul Switch
+    value: Soul
     expect:
       view: match
       status_text_equals: Valid trick selected.
       text_equals:
-        match.trick_entry: Soul Switch
+        match.trick_entry: Soul
       button_states:
         match.confirm_trick_button: normal
 
@@ -85,10 +89,10 @@ steps:
     target: match.confirm_trick_button
     expect:
       view: match
-      status_text_equals: Trick 'Soul Switch' confirmed.
+      status_text_equals: Trick 'Soul' confirmed.
       text_equals:
         match.phase_title_label: Stan attacks
-        match.trick_label: "Trick: Soul Switch"
+        match.trick_label: "Trick: Soul"
       button_states:
         match.failure_button: normal
         match.add_player_button: disabled

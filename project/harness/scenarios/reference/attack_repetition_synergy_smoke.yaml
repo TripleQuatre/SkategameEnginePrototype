@@ -1,0 +1,97 @@
+metadata:
+  id: attack_repetition_synergy_smoke
+  title: Attack and repetition synergy setup smoke flow
+  tags:
+    - reference
+    - setup
+    - synergy
+
+setup:
+  mode: custom
+  players:
+    - Stan
+    - Denise
+
+steps:
+  - name: launch app
+    action: launch_app
+    expect:
+      view: setup
+
+  - name: switch to custom mode
+    action: click
+    target: setup.mode_custom_radiobutton
+    expect:
+      view: setup
+
+  - name: select first player profile
+    action: select_option
+    target: setup.player_profile_combo.1
+    value: Stan
+    expect:
+      view: setup
+      text_equals:
+        setup.player_name_entry.1: Stan
+
+  - name: select second player profile
+    action: select_option
+    target: setup.player_profile_combo.2
+    value: Denise
+    expect:
+      view: setup
+      text_equals:
+        setup.player_name_entry.2: Denise
+
+  - name: set attack attempts to two
+    action: type
+    target: setup.attack_attempts_spinbox
+    value: "2"
+    expect:
+      view: setup
+
+  - name: set invalid repetition limit
+    action: type
+    target: setup.repetition_limit_spinbox
+    value: "3"
+    expect:
+      view: setup
+      button_states:
+        setup.start_game_button: disabled
+      text_contains:
+        setup.attack_repetition_feedback_label: "Suggested values: 2, 4, 6."
+        setup.summary_label: "multiple attack=disabled"
+
+  - name: enable multiple attack
+    action: click
+    target: setup.multiple_attack_enabled_button
+    expect:
+      view: setup
+      button_states:
+        setup.start_game_button: normal
+      text_contains:
+        setup.multiple_attack_feedback_label: "Enabled: the attacker may change trick from the second attack attempt."
+        setup.summary_label: "multiple attack=enabled"
+
+  - name: disable multiple attack again
+    action: click
+    target: setup.multiple_attack_disabled_button
+    expect:
+      view: setup
+      button_states:
+        setup.start_game_button: disabled
+      text_contains:
+        setup.summary_label: "multiple attack=disabled"
+
+  - name: enable no repetition
+    action: click
+    target: setup.no_repetition_checkbutton
+    expect:
+      view: setup
+      button_states:
+        setup.start_game_button: normal
+      text_contains:
+        setup.multiple_attack_feedback_label: "No Repetition: repeated failures of the same trick count once per attack turn."
+        setup.summary_label: "multiple attack=no repetition"
+
+  - name: shutdown app
+    action: shutdown_app

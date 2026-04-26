@@ -102,7 +102,7 @@ class BoundedRandomScenarioBuilder:
         ]
         if len(player_names) == 3:
             steps.extend(self._set_player_count_steps(3))
-        steps.extend(self._player_name_steps(player_names))
+        steps.extend(self._player_profile_steps(player_names))
         return steps
 
     def _available_scenario_kinds(self) -> list[str]:
@@ -132,7 +132,7 @@ class BoundedRandomScenarioBuilder:
         ]
         if len(player_names) == 3:
             steps.extend(self._set_player_count_steps(3))
-        steps.extend(self._player_name_steps(player_names))
+        steps.extend(self._player_profile_steps(player_names))
         steps.append(
             {
                 "name": f"set word {word}",
@@ -158,14 +158,19 @@ class BoundedRandomScenarioBuilder:
             }
         ]
 
-    def _player_name_steps(self, player_names: list[str]) -> list[dict[str, Any]]:
+    def _player_profile_steps(self, player_names: list[str]) -> list[dict[str, Any]]:
         return [
             {
-                "name": f"enter player {index}",
-                "action": "type",
-                "target": f"setup.player_name_entry.{index}",
+                "name": f"select player profile {index}",
+                "action": "select_option",
+                "target": f"setup.player_profile_combo.{index}",
                 "value": player_name,
-                "expect": {"view": "setup"},
+                "expect": {
+                    "view": "setup",
+                    "text_equals": {
+                        f"setup.player_name_entry.{index}": player_name,
+                    },
+                },
             }
             for index, player_name in enumerate(player_names, start=1)
         ]

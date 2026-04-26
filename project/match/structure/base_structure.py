@@ -3,8 +3,10 @@ from abc import ABC, abstractmethod
 from config.match_policies import (
     AttackerRotationPolicy,
     DefenderOrderPolicy,
+    InitialTurnOrderPolicy,
     MatchPolicies,
 )
+from core.exceptions import InvalidStateError
 from core.state import GameState
 
 
@@ -62,3 +64,37 @@ class BaseStructure(ABC):
                 return candidate_index
 
         return None
+
+    def _build_initial_turn_order(self, state: GameState) -> list[int]:
+        base_turn_order = list(range(len(state.players)))
+        policy = self.policies.initial_turn_order
+
+        if policy == InitialTurnOrderPolicy.FIXED_PLAYER_ORDER:
+            return base_turn_order
+
+        if policy == InitialTurnOrderPolicy.RANDOMIZED:
+            randomized_order = list(base_turn_order)
+            import random
+
+            random.shuffle(randomized_order)
+            return randomized_order
+
+        if policy in {
+            InitialTurnOrderPolicy.EXPLICIT_CHOICE,
+            InitialTurnOrderPolicy.RELEVANCE,
+        }:
+            explicit_player_order = tuple(self.policies.explicit_player_order)
+            player_index_by_id = {
+                player.id: index for index, player in enumerate(state.players)
+            }
+            try:
+                return [
+                    player_index_by_id[player_id]
+                    for player_id in explicit_player_order
+                ]
+            except KeyError as error:
+                raise InvalidStateError(
+                    "Explicit player order references an unknown player."
+                ) from error
+
+        raise InvalidStateError(f"Unsupported initial turn order policy: {policy}")

@@ -17,7 +17,9 @@ def test_match_setup_uses_battle_default_policies() -> None:
 def test_setup_translator_builds_v7_match_config() -> None:
     setup = MatchSetup(
         player_ids=["p1", "p2"],
+        player_profile_ids=["stan", "denise"],
         structure_name="one_vs_one",
+        sport="inline",
         letters_word="SKATE",
         attack_attempts=2,
         defense_attempts=3,
@@ -35,13 +37,17 @@ def test_setup_translator_builds_v7_match_config() -> None:
     assert match_config.victory.victory_type == "last_player_standing"
     assert match_config.victory.elimination_enabled is True
     assert match_config.structure_name == "one_vs_one"
+    assert match_config.sport == "inline"
+    assert match_config.player_profile_ids == ["stan", "denise"]
     assert match_config.preset_name == "classic_skate"
 
 
 def test_setup_translator_can_build_legacy_match_parameters_from_setup() -> None:
     setup = MatchSetup(
         player_ids=["p1", "p2", "p3"],
+        player_profile_ids=["stan", "denise", "alex"],
         structure_name="battle",
+        sport="inline",
         letters_word="OUT",
         attack_attempts=2,
         defense_attempts=3,
@@ -53,15 +59,22 @@ def test_setup_translator_can_build_legacy_match_parameters_from_setup() -> None
 
     assert match_parameters.player_ids == ["p1", "p2", "p3"]
     assert match_parameters.structure_name == "battle"
+    assert match_parameters.sport == "inline"
     assert match_parameters.rule_set.letters_word == "OUT"
     assert match_parameters.rule_set.attack_attempts == 2
     assert match_parameters.rule_set.defense_attempts == 3
     assert match_parameters.rule_set.elimination_enabled is True
+    assert match_parameters.player_profile_ids == ["stan", "denise", "alex"]
     assert match_parameters.preset_name == "battle_standard"
 
 
 def test_setup_translator_preserves_v6_match_parameters_shape() -> None:
-    match_parameters = MatchParameters(player_ids=["p1", "p2"], preset_name="classic_skate")
+    match_parameters = MatchParameters(
+        player_ids=["p1", "p2"],
+        player_profile_ids=["stan", "denise"],
+        sport="inline",
+        preset_name="classic_skate",
+    )
 
     match_config = SetupTranslator().from_match_parameters(match_parameters)
 
@@ -70,6 +83,8 @@ def test_setup_translator_preserves_v6_match_parameters_shape() -> None:
     assert match_config.defense.defense_attempts == 1
     assert match_config.scoring.letters_word == "SKATE"
     assert match_config.victory.elimination_enabled is True
+    assert match_config.sport == "inline"
+    assert match_config.player_profile_ids == ["stan", "denise"]
     assert match_config.preset_name == "classic_skate"
 
 
@@ -89,6 +104,7 @@ def test_preset_registry_can_build_v7_match_config_from_official_preset() -> Non
     assert match_config.defense.defense_attempts == 1
     assert match_config.scoring.letters_word == "SKATE"
     assert match_config.structure_name == "battle"
+    assert match_config.sport == "inline"
     assert match_config.preset_name == "battle_hardcore"
 
 
@@ -102,6 +118,7 @@ def test_preset_registry_can_build_legacy_match_parameters_from_official_preset(
 
     assert match_parameters.player_ids == ["Stan", "Denise"]
     assert match_parameters.structure_name == "one_vs_one"
+    assert match_parameters.sport == "inline"
     assert match_parameters.rule_set.letters_word == "SKATE"
     assert match_parameters.rule_set.attack_attempts == 1
     assert match_parameters.rule_set.defense_attempts == 3
@@ -111,9 +128,11 @@ def test_preset_registry_can_build_legacy_match_parameters_from_official_preset(
 def test_match_config_structure_name_comes_from_structure_config() -> None:
     match_config = MatchConfig(
         structure=StructureConfig(structure_name="battle"),
+        sport="inline",
     )
 
     assert match_config.structure_name == "battle"
+    assert match_config.sport == "inline"
 
 
 def test_preset_registry_exposes_v9_3_reference_presets() -> None:
@@ -139,12 +158,12 @@ def test_preset_registry_v9_3_reference_presets_cover_new_parameter_edges() -> N
     assert duel_short_strict.rule_set.defense_attempts == 1
     assert duel_short_strict.fine_rules.uniqueness_enabled is True
     assert duel_short_strict.fine_rules.repetition_mode == "choice"
-    assert duel_short_strict.fine_rules.repetition_limit == 1
+    assert duel_short_strict.fine_rules.repetition_limit == 3
 
     assert battle_balanced.rule_set.attack_attempts == 3
     assert battle_balanced.rule_set.defense_attempts == 2
     assert battle_balanced.fine_rules.repetition_mode == "common"
-    assert battle_balanced.fine_rules.repetition_limit == 2
+    assert battle_balanced.fine_rules.repetition_limit == 3
 
     assert battle_long_open.rule_set.letters_word == "SKATEBOARD"
     assert battle_long_open.fine_rules.uniqueness_enabled is False

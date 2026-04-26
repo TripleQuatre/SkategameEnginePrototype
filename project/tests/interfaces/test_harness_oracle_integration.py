@@ -34,10 +34,10 @@ def test_gui_oracle_engine_validates_real_match_view_state(
     observer = TkGUIHarnessObserver()
     oracle = GUIOracleEngine()
 
-    harness_driver.type_text("setup.player_name_entry.1", "Stan")
-    harness_driver.type_text("setup.player_name_entry.2", "Denise")
+    harness_driver.select_option("setup.player_profile_combo.1", "Stan")
+    harness_driver.select_option("setup.player_profile_combo.2", "Denise")
     harness_driver.click("setup.start_game_button")
-    harness_driver.type_text("match.trick_entry", "switch soul")
+    harness_driver.type_text("match.trick_entry", "soul")
 
     visible_state = observer.read_visible_state(harness_driver)
 
@@ -61,7 +61,7 @@ def test_gui_oracle_engine_validates_real_match_view_state(
                     "1,0": "STAN",
                     "1,2": "DENISE",
                 },
-                "dropdown_contains": ["Soul Switch"],
+                "dropdown_contains": ["Soul"],
             },
         },
         visible_state=visible_state,
@@ -74,8 +74,8 @@ def test_gui_oracle_engine_validates_real_setup_details_state(
     observer = TkGUIHarnessObserver()
     oracle = GUIOracleEngine()
 
-    harness_driver.type_text("setup.player_name_entry.1", "Stan")
-    harness_driver.type_text("setup.player_name_entry.2", "Denise")
+    harness_driver.select_option("setup.player_profile_combo.1", "Stan")
+    harness_driver.select_option("setup.player_profile_combo.2", "Denise")
     harness_driver.click("setup.start_game_button")
     harness_driver.click("match.setup_details_button")
 
@@ -104,8 +104,8 @@ def test_gui_oracle_engine_accepts_real_consultation_state_without_explicit_expe
     oracle = GUIOracleEngine()
 
     harness_driver.select_option("setup.preset_combo", "duel_short_strict_v9_3")
-    harness_driver.type_text("setup.player_name_entry.1", "Stan")
-    harness_driver.type_text("setup.player_name_entry.2", "Denise")
+    harness_driver.select_option("setup.player_profile_combo.1", "Stan")
+    harness_driver.select_option("setup.player_profile_combo.2", "Denise")
     harness_driver.click("setup.start_game_button")
     harness_driver.type_text("match.trick_entry", "soul")
     harness_driver.select_suggestion("match.trick_suggestions_listbox", "Soul")

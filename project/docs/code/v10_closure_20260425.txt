@@ -1,0 +1,44 @@
+V10 Closure - 2026-04-25
+
+Delivered Scope
+V10 is now complete.
+The version delivers:
+- local player profiles stored in a dedicated local directory
+- profile selection in GUI and CLI setup flows
+- visible sport setup value locked to inline
+- Order with choice, random, and relevance modes
+- Relevance criteria based on local profile data
+- Attack / Repetition compatibility feedback and validation
+- Multiple Attack with linked No Repetition behavior
+- Switch setup and runtime support for inline sport
+- harness coverage extended to the V10 rule surface
+
+Important Product Notes
+- local profiles remain temporary product data, not real user accounts
+- sport is visible and persisted, but still locked to inline in this version
+- Relevance remains an option of Order, not a standalone rule
+- Switch is available for inline sport and covered by a dedicated harness smoke scenario
+
+Validation Summary
+Automated validation completed successfully:
+- python -m pytest project/tests -q
+- result: 415 passed, 1 warning
+
+Reference harness validation also completed successfully:
+- python -m harness.cli --reference-suite --saves-dir local_tmp/v10_reference_suite
+- result: 9 reference scenarios passed
+
+Stabilization Notes
+- GUI setup refresh performance was fixed during V10 stabilization
+- harness smoke scenarios were realigned with the new Switch default behavior
+- CLI custom setup tests were updated for the new Switch prompt
+
+Remaining Non-goals
+The following are still intentionally outside V10:
+- real user accounts
+- profile creation/editing UI
+- multi-sport runtime support beyond inline
+- broad harness refactor
+
+Outcome
+V10 is closed as a stable version and provides a clean base for the next rule-focused iteration.

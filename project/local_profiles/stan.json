@@ -1,0 +1,11 @@
+{
+  "profile_id": "stan",
+  "display_name": "Stan",
+  "age": 27,
+  "experience_time": 7,
+  "local_rank": 3,
+  "primary_sport": "inline",
+  "metadata": {
+    "stance": "regular"
+  }
+}

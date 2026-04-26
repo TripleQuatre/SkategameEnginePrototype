@@ -28,19 +28,23 @@ steps:
       text_equals:
         setup.preset_combo: classic_skate_v8
 
-  - name: enter first player
-    action: type
-    target: setup.player_name_entry.1
+  - name: select first player profile
+    action: select_option
+    target: setup.player_profile_combo.1
     value: Stan
     expect:
       view: setup
+      text_equals:
+        setup.player_name_entry.1: Stan
 
-  - name: enter second player
-    action: type
-    target: setup.player_name_entry.2
+  - name: select second player profile
+    action: select_option
+    target: setup.player_profile_combo.2
     value: Denise
     expect:
       view: setup
+      text_equals:
+        setup.player_name_entry.2: Denise
 
   - name: start game
     action: click

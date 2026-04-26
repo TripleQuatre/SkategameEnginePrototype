@@ -1,0 +1,11 @@
+{
+  "profile_id": "denise",
+  "display_name": "Denise",
+  "age": 29,
+  "experience_time": 9,
+  "local_rank": 2,
+  "primary_sport": "inline",
+  "metadata": {
+    "stance": "regular"
+  }
+}

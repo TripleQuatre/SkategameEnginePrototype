@@ -11,18 +11,31 @@ Parent Rule
 Attack
 
 Definition
-règle avancée qui définit si l’attaquant peut changer de trick au cours de ses différentes tentatives pendant un même tour
+Advanced attack rule that defines how an attacker may reuse or change tricks across multiple attack attempts during the same attack turn.
 
 Purpose
-préciser si plusieurs tentatives d’attaque permettent de rejouer le même trick ou d’en tenter un autre
+Clarify what happens when Attack is greater than 1:
+- whether the attacker must keep the same trick across all attack attempts
+- whether the attacker may switch to another trick from the second attack attempt onward
+- how Repetition is counted across several attack attempts made during the same attack turn
 
 Options
-Disabled (option) : par défaut, le lanceur ne peut pas changer de figure au cours des essais suivant le premier
-No Repetition (option) : par défault, les essais effectués pendant un même tour d’attaque n’affectent pas la règle Repetition comme des répétitions distinctes
-Enabled (option) : le lanceur peut changer de figure au cours de ses différentes tentatives d’attaque
+Disabled (main mode, default):
+the attacker must keep the same trick during the whole attack turn.
+Repetition is counted normally, launch by launch.
+
+No Repetition (linked modifier, on/off):
+this modifier changes only how Repetition is counted during one attack turn.
+When enabled, all failed attempts made on the same trick during the same attack turn count as one single repetition.
+This modifier may be enabled even if Multiple Attack is Disabled.
+
+Enabled (main mode):
+from the second attack attempt onward, the attacker may choose another trick to impose.
+Repetition is still counted normally unless No Repetition is also enabled.
 
 Activation Conditions
-Attack doit être supérieur à 1
+Attack must be greater than 1.
+If Attack is 1 or lower, this rule must not appear in the UI and has no gameplay effect.
 
 Dependencies
 Attack
@@ -34,19 +47,53 @@ Repetition
 Uniqueness
 
 Default Behavior
-le lanceur ne peut pas changer de trick pendant son tour d’attaque
+Multiple Attack = Disabled
+No Repetition = Off
 
-Advanced Behavior
-l’option No Repetition modifie la manière dont les essais d’un même tour sont comptabilisés pour Repetition
+Behavior Details
+Disabled + No Repetition Off:
+the attacker keeps the same trick during the whole attack turn.
+Each failed launch counts normally for Repetition.
+
+Disabled + No Repetition On:
+the attacker keeps the same trick during the whole attack turn.
+Several failed launches on that trick during the same attack turn count as one repetition.
+
+Enabled + No Repetition Off:
+from the second attack attempt onward, the attacker may switch to another trick.
+Each failed launch counts normally for Repetition.
+
+Enabled + No Repetition On:
+from the second attack attempt onward, the attacker may switch to another trick.
+For each trick, several failed launches during the same attack turn count as one repetition.
+
+Example
+Repetition = 4
+Multiple Attack = Disabled
+No Repetition = Off
+If the attacker tries and fails Makio 4 times, Makio consumes 4 repetitions.
+
+Repetition = 4
+Multiple Attack = Disabled
+No Repetition = On
+If the attacker tries and fails Makio 4 times during the same attack turn, Makio consumes 1 repetition.
 
 Code Impact
-résolution des tentatives d’attaque
-historique des tricks tentés
-contrôle de répétition
+attack-turn resolution
+tracking of engaged trick across attack attempts
+tracking of trick changes between attack attempts
+repetition counting rules
+history of failed attack attempts
 
 UX Notes
-ne doit apparaître que si Attack est supérieur à 1
+This rule must appear as one single UI block only when Attack > 1.
+The UI should present:
+- a main mode with Disabled / Enabled
+- a linked No Repetition toggle
+
+Product Notes
+Conceptually, Multiple Attack and No Repetition are not exactly the same behavior.
+However, they must stay linked in product/UI because they both belong to the same advanced attack block.
 
 Open Questions
-il faudra préciser plus tard comment traiter les variantes proches d’un même trick dans un même tour
-Pour No Repetition, il faudrait suggerer de caller le nombre d’attack avec le nombre de répétition de tel sorte qu’un attaquant n’arrive jamais à court de Repetition avant d’avoir utiliser toutes ses tentatives d’attaque
+Need to define precisely how No Repetition interacts with edge cases involving trick variants judged identical or different by Repetition.

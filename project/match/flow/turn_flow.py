@@ -117,7 +117,10 @@ class TurnFlow:
             self._promote_attack_to_defense(state)
 
     def resolve_attack(
-        self, state: GameState, success: bool
+        self,
+        state: GameState,
+        success: bool,
+        switch_normal_verified: bool | None = None,
     ) -> AttackResolutionStatus:
         self.action_validator.validate_resolve_attack(state)
 
@@ -125,8 +128,15 @@ class TurnFlow:
         outcome = self.attack_flow.resolve_attack(
             state,
             success=success,
+            switch_normal_verified=switch_normal_verified,
             attacker_id=attacker.id,
             attacker_name=attacker.name,
+            on_attack_failed_attempt=lambda: self.special_rules.record_failed_attack_trick(
+                state,
+                attacker_id=attacker.id,
+                trick=state.current_trick,
+                trick_data=state.current_trick_data,
+            ),
             on_attack_succeeded=lambda: self._promote_attack_to_defense(state),
             on_attack_failed=lambda: self.turn_cycle.fail_current_turn(
                 state,
@@ -134,7 +144,11 @@ class TurnFlow:
                 attacker_name=attacker.name,
                 trick=state.current_trick,
                 trick_data=state.current_trick_data,
-                count_for_repetition=True,
+            ),
+            switch_normal_verification_required=(
+                self.special_rules.current_attack_requires_switch_normal_verification(
+                    state
+                )
             ),
         )
         if outcome.status == ExchangeStatus.ATTACK_CONTINUES:
@@ -191,6 +205,42 @@ class TurnFlow:
             attacker_name=attacker.name,
             trick=trick,
             trick_data=None,
+        )
+
+    def change_attack_trick(self, state: GameState, trick: str) -> None:
+        self.action_validator.validate_change_attack_trick(
+            state,
+            trick,
+            attack_attempts=self.match_config.attack_attempts,
+        )
+        attacker = state.players[state.attacker_index]
+        self.attack_flow.change_attack_trick(
+            state,
+            trick=trick,
+            attacker_id=attacker.id,
+            attacker_name=attacker.name,
+        )
+
+    def can_change_attack_trick(self, state: GameState) -> bool:
+        return self.special_rules.can_change_attack_trick(
+            state,
+            attack_attempts=self.match_config.attack_attempts,
+        )
+
+    def current_attack_trick_requires_change(self, state: GameState) -> bool:
+        attacker = state.players[state.attacker_index]
+        return self.special_rules.current_attack_trick_requires_change(
+            state,
+            attacker_id=attacker.id,
+            attack_attempts=self.match_config.attack_attempts,
+        )
+
+    def current_attack_requires_switch_normal_verification(
+        self,
+        state: GameState,
+    ) -> bool:
+        return self.special_rules.current_attack_requires_switch_normal_verification(
+            state
         )
 
     def _promote_attack_to_defense(self, state: GameState) -> None:

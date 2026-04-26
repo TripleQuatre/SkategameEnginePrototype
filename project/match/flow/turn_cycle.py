@@ -30,14 +30,24 @@ class TurnCycle:
         if state.current_trick_data is None:
             return
 
-        current_trick_key = state.current_trick_data["canonical_key"]
+        attacker = state.players[state.attacker_index]
+        record = self.special_rules.build_consumed_trick_record(
+            state,
+            attacker_id=attacker.id,
+            attacker_name=attacker.name,
+        )
+        if record is None:
+            return
+
+        current_trick_key = record["canonical_key"]
         if any(
             trick_data.get("canonical_key") == current_trick_key
+            and trick_data.get("validated_by_attacker_id") == attacker.id
             for trick_data in state.validated_trick_data
         ):
             return
 
-        state.validated_trick_data.append(dict(state.current_trick_data))
+        state.validated_trick_data.append(record)
 
     def finish_game_runtime(self, state: GameState) -> None:
         mark_game_finished(state)
@@ -74,16 +84,7 @@ class TurnCycle:
         attacker_name: str,
         trick: str | None,
         trick_data: dict[str, object] | None = None,
-        count_for_repetition: bool = False,
     ) -> None:
-        if count_for_repetition and trick is not None:
-            self.special_rules.record_failed_attack_trick(
-                state,
-                attacker_id=attacker_id,
-                trick=trick,
-                trick_data=trick_data,
-            )
-
         mark_turn_finished(state)
         self.advance_to_next_attacker(state, log_turn_end=False)
 

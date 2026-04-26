@@ -12,7 +12,9 @@ from config.victory_config import VictoryConfig
 @dataclass(frozen=True)
 class MatchConfig:
     player_ids: list[str] = field(default_factory=list)
+    player_profile_ids: list[str] = field(default_factory=list)
     structure: StructureConfig = field(default_factory=StructureConfig)
+    sport: str = "inline"
     attack: AttackConfig = field(default_factory=AttackConfig)
     defense: DefenseConfig = field(default_factory=DefenseConfig)
     scoring: ScoringConfig = field(default_factory=ScoringConfig)
