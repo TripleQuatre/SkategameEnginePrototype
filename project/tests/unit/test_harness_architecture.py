@@ -19,11 +19,15 @@ class _DummyScenarioSource:
 
 
 class _DummyDriver:
+    def __init__(self) -> None:
+        self.launch_calls = 0
+        self.shutdown_calls = 0
+
     def launch(self) -> None:
-        return None
+        self.launch_calls += 1
 
     def shutdown(self) -> None:
-        return None
+        self.shutdown_calls += 1
 
     def click(self, target: str) -> None:
         return None
@@ -102,9 +106,10 @@ def _make_case_dir(test_name: str) -> Path:
 
 def test_harness_runner_architecture_executes_empty_scenario() -> None:
     case_dir = _make_case_dir("runner_empty")
+    driver = _DummyDriver()
     runner = GUIHarnessRunner(
         scenario_source=_DummyScenarioSource(),
-        driver=_DummyDriver(),
+        driver=driver,
         observer=_DummyObserver(),
         oracle_engine=_DummyOracleEngine(),
         reporter=_DummyReporter(),
@@ -117,6 +122,7 @@ def test_harness_runner_architecture_executes_empty_scenario() -> None:
     assert report.success is True
     assert report.debug_payload["status"] == "ok"
     assert report.debug_payload["limits"]["max_steps"] == 200
+    assert driver.shutdown_calls == 1
 
 
 def test_harness_runner_architecture_fails_when_observer_crashes() -> None:
@@ -133,9 +139,10 @@ def test_harness_runner_architecture_fails_when_observer_crashes() -> None:
             }
 
     case_dir = _make_case_dir("runner_observer_failure")
+    driver = _DummyDriver()
     runner = GUIHarnessRunner(
         scenario_source=_StepScenarioSource(),
-        driver=_DummyDriver(),
+        driver=driver,
         observer=_FailingObserver(),
         oracle_engine=_DummyOracleEngine(),
         reporter=_DummyReporter(),
@@ -147,3 +154,35 @@ def test_harness_runner_architecture_fails_when_observer_crashes() -> None:
     assert report.scenario_id == "observer_failure"
     assert report.success is False
     assert report.debug_payload["error"] == "observer exploded"
+    assert driver.shutdown_calls == 1
+
+
+def test_harness_runner_architecture_shuts_down_driver_after_successful_launch() -> None:
+    class _LaunchScenarioSource:
+        def load(self, scenario_path: Path) -> dict[str, object]:
+            return {
+                "metadata": {"id": "launch_then_shutdown"},
+                "steps": [
+                    {
+                        "name": "launch app",
+                        "action": "launch_app",
+                    }
+                ],
+            }
+
+    case_dir = _make_case_dir("runner_launch_shutdown")
+    driver = _DummyDriver()
+    runner = GUIHarnessRunner(
+        scenario_source=_LaunchScenarioSource(),
+        driver=driver,
+        observer=_DummyObserver(),
+        oracle_engine=_DummyOracleEngine(),
+        reporter=_DummyReporter(),
+        run_config=GUIHarnessRunConfig(),
+    )
+
+    report = runner.run(case_dir / "dummy.yaml")
+
+    assert report.success is True
+    assert driver.launch_calls == 1
+    assert driver.shutdown_calls == 1

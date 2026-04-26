@@ -44,6 +44,7 @@ def test_regression_scenarios_exist() -> None:
 
     assert scenario_names == {
         "attack_repetition_synergy_blocks_invalid_setup_regression.yaml",
+        "choice_order_roster_addition_regression.yaml",
         "consultation_undo_restores_engaged_turn_regression.yaml",
         "deep_undo_restores_trick_input_regression.yaml",
         "load_restores_engaged_turn_controls_regression.yaml",

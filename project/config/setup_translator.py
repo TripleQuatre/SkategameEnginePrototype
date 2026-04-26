@@ -15,6 +15,7 @@ class SetupTranslator:
         return MatchParameters(
             player_ids=list(setup.player_ids),
             player_profile_ids=list(setup.player_profile_ids),
+            player_display_names=list(setup.player_display_names),
             structure_name=setup.structure_name,
             sport=setup.sport,
             policies=setup.policies,
@@ -39,6 +40,7 @@ class SetupTranslator:
         return MatchConfig(
             player_ids=list(setup.player_ids),
             player_profile_ids=list(setup.player_profile_ids),
+            player_display_names=list(setup.player_display_names),
             structure=StructureConfig(
                 structure_name=setup.structure_name,
                 policies=setup.policies,
@@ -76,6 +78,7 @@ class SetupTranslator:
         return MatchParameters(
             player_ids=list(match_config.player_ids),
             player_profile_ids=list(match_config.player_profile_ids),
+            player_display_names=list(match_config.player_display_names),
             structure_name=match_config.structure_name,
             sport=match_config.sport,
             policies=match_config.policies,

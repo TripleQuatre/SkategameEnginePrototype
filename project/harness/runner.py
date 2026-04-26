@@ -44,6 +44,7 @@ class GUIHarnessRunner:
         executed_steps: list[dict[str, Any]] = []
         started_at = time.monotonic()
         previous_visible_state: GUIVisibleState | None = None
+        report: GUIHarnessReport | None = None
 
         try:
             if len(steps) > self.run_config.limits.max_steps:
@@ -120,34 +121,37 @@ class GUIHarnessRunner:
                 success=False,
                 debug_payload=debug_payload,
             )
+        else:
+            report = self.reporter.finalize(
+                scenario=scenario,
+                executed_steps=executed_steps,
+                success=True,
+                debug_payload={
+                    "status": "ok",
+                    "scenario": self._reporter_scenario_summary(
+                        scenario,
+                        scenario_path=scenario_path,
+                    ),
+                    "scenario_path": scenario_path.as_posix() if scenario_path else None,
+                    "limits": {
+                        "max_steps": self.run_config.limits.max_steps,
+                        "timeout_seconds": self.run_config.limits.timeout_seconds,
+                    },
+                    "seed": (scenario.get("metadata") or {}).get("seed"),
+                    "sequence": [
+                        self._step_sequence_payload(executed_step)
+                        for executed_step in executed_steps
+                    ],
+                },
+            )
+        finally:
             try:
                 self.driver.shutdown()
             except Exception:
                 pass
-            return report
 
-        return self.reporter.finalize(
-            scenario=scenario,
-            executed_steps=executed_steps,
-            success=True,
-            debug_payload={
-                "status": "ok",
-                "scenario": self._reporter_scenario_summary(
-                    scenario,
-                    scenario_path=scenario_path,
-                ),
-                "scenario_path": scenario_path.as_posix() if scenario_path else None,
-                "limits": {
-                    "max_steps": self.run_config.limits.max_steps,
-                    "timeout_seconds": self.run_config.limits.timeout_seconds,
-                },
-                "seed": (scenario.get("metadata") or {}).get("seed"),
-                "sequence": [
-                    self._step_sequence_payload(executed_step)
-                    for executed_step in executed_steps
-                ],
-            },
-        )
+        assert report is not None
+        return report
 
     def _reporter_scenario_summary(
         self,

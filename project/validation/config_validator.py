@@ -29,6 +29,20 @@ class ConfigValidator:
         if player_count < 2:
             raise InvalidStateError("At least two players are required.")
 
+        display_names = list(match_config.player_display_names or [])
+        if display_names and len(display_names) != player_count:
+            raise InvalidStateError(
+                "player_display_names must match the number of configured players."
+            )
+
+        if len(set(match_config.player_ids)) != player_count:
+            raise InvalidStateError("Configured player ids must be unique.")
+
+        if len(match_config.player_profile_ids) not in {0, player_count}:
+            raise InvalidStateError(
+                "player_profile_ids must be empty or aligned with configured players."
+            )
+
         if not structure_name:
             raise InvalidStateError("A structure name is required.")
 

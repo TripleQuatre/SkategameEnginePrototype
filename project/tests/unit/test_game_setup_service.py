@@ -39,8 +39,9 @@ def test_game_setup_service_can_start_preset_controller_from_profiles() -> None:
         ["stan", "denise", "alex"],
     )
 
-    assert controller.match_parameters.player_ids == ["Stan", "Denise", "Alex"]
+    assert controller.match_parameters.player_ids == ["stan", "denise", "alex"]
     assert controller.match_parameters.player_profile_ids == ["stan", "denise", "alex"]
+    assert controller.match_parameters.player_display_names == ["Stan", "Denise", "Alex"]
     assert controller.match_parameters.preset_name == "battle_standard"
 
 
@@ -75,8 +76,9 @@ def test_game_setup_service_can_start_custom_controller_from_profiles() -> None:
         repetition_limit=4,
     )
 
-    assert controller.match_parameters.player_ids == ["Stan", "Denise"]
+    assert controller.match_parameters.player_ids == ["stan", "denise"]
     assert controller.match_parameters.player_profile_ids == ["stan", "denise"]
+    assert controller.match_parameters.player_display_names == ["Stan", "Denise"]
     assert controller.match_parameters.preset_name is None
 
 
@@ -125,8 +127,8 @@ def test_game_setup_service_can_start_custom_controller_with_choice_order() -> N
     service = GameSetupService()
     policies = service.build_order_policies(
         order_mode="choice",
-        player_ids=["Stan", "Denise"],
-        explicit_player_order=["Denise", "Stan"],
+        player_ids=["stan", "denise"],
+        explicit_player_order=["denise", "stan"],
     )
 
     controller = service.create_started_controller_from_custom_setup_profiles(

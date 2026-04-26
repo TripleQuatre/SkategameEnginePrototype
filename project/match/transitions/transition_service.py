@@ -137,8 +137,13 @@ class MatchTransitionService:
 
         state = GameState(
             players=[
-                Player(id=player_id, name=player_id)
-                for player_id in match_config.player_ids
+                Player(
+                    id=player_id,
+                    name=match_config.player_display_names[index]
+                    if index < len(match_config.player_display_names)
+                    else player_id,
+                )
+                for index, player_id in enumerate(match_config.player_ids)
             ]
         )
 
@@ -176,6 +181,9 @@ class MatchTransitionService:
         match_config: MatchConfig | MatchParameters,
         action_validator: ActionValidator,
         player_id: str,
+        *,
+        player_name: str | None = None,
+        player_profile_id: str | None = None,
     ) -> TransitionApplication:
         match_config = self._coerce_match_config(match_config)
         action_validator.validate_add_player_between_turns(state, player_id)
@@ -184,6 +192,8 @@ class MatchTransitionService:
             state,
             match_config,
             player_id,
+            player_name=player_name,
+            player_profile_id=player_profile_id,
         )
         return self._build_transition_application(
             state,
@@ -198,12 +208,17 @@ class MatchTransitionService:
         action_validator: ActionValidator,
         state_validator: StateValidator,
         player_id: str,
+        *,
+        player_name: str | None = None,
+        player_profile_id: str | None = None,
     ) -> TransitionApplication:
         transition = self.add_player_between_turns(
             state,
             match_config,
             action_validator,
             player_id,
+            player_name=player_name,
+            player_profile_id=player_profile_id,
         )
         self.apply_transition(state, transition, state_validator)
         return transition

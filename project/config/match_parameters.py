@@ -15,7 +15,8 @@ from config.victory_config import VictoryConfig
 @dataclass(init=False)
 class MatchParameters:
     player_ids: list[str]
-    player_profile_ids: list[str] = field(default_factory=list)
+    player_profile_ids: list[str | None] = field(default_factory=list)
+    player_display_names: list[str] = field(default_factory=list)
     structure_name: str
     sport: str = "inline"
     rule_set: RuleSetConfig = field(default_factory=RuleSetConfig)
@@ -26,7 +27,8 @@ class MatchParameters:
     def __init__(
         self,
         player_ids: list[str],
-        player_profile_ids: list[str] | None = None,
+        player_profile_ids: list[str | None] | None = None,
+        player_display_names: list[str] | None = None,
         structure_name: str = "one_vs_one",
         sport: str = "inline",
         rule_set: RuleSetConfig | None = None,
@@ -36,6 +38,7 @@ class MatchParameters:
     ) -> None:
         self.player_ids = list(player_ids)
         self.player_profile_ids = list(player_profile_ids or [])
+        self.player_display_names = list(player_display_names or player_ids)
         self.structure_name = structure_name
         self.sport = sport
         self.rule_set = rule_set if rule_set is not None else RuleSetConfig()
@@ -56,6 +59,7 @@ class MatchParameters:
         return MatchConfig(
             player_ids=list(self.player_ids),
             player_profile_ids=list(self.player_profile_ids),
+            player_display_names=list(self.player_display_names),
             structure=StructureConfig(
                 structure_name=self.structure_name,
                 policies=self.policies,

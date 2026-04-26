@@ -144,3 +144,26 @@ def test_game_session_undo_after_join_then_remove_restores_previous_structures()
     assert context is not None
     assert context.structure_name == "one_vs_one"
     assert context.preset_name == "classic_skate"
+
+
+def test_game_session_preserves_profile_identity_and_display_names_across_transitions() -> None:
+    session = GameSession(
+        MatchParameters(
+            player_ids=["stan", "denise"],
+            player_profile_ids=["stan", "denise"],
+            player_display_names=["Stan", "Denise"],
+        )
+    )
+
+    session.start_game()
+    session.add_player_between_turns("alex", player_name="Alex")
+    session.remove_player_between_turns("denise")
+
+    match_parameters = session.match_parameters
+    state = session.get_state()
+
+    assert match_parameters.player_ids == ["stan", "alex"]
+    assert match_parameters.player_profile_ids == ["stan", None]
+    assert match_parameters.player_display_names == ["Stan", "Alex"]
+    assert [player.id for player in state.players] == ["stan", "alex"]
+    assert [player.name for player in state.players] == ["Stan", "Alex"]

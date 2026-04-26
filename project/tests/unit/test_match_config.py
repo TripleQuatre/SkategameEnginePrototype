@@ -18,6 +18,7 @@ def test_setup_translator_builds_v7_match_config() -> None:
     setup = MatchSetup(
         player_ids=["p1", "p2"],
         player_profile_ids=["stan", "denise"],
+        player_display_names=["Stan", "Denise"],
         structure_name="one_vs_one",
         sport="inline",
         letters_word="SKATE",
@@ -39,6 +40,7 @@ def test_setup_translator_builds_v7_match_config() -> None:
     assert match_config.structure_name == "one_vs_one"
     assert match_config.sport == "inline"
     assert match_config.player_profile_ids == ["stan", "denise"]
+    assert match_config.player_display_names == ["Stan", "Denise"]
     assert match_config.preset_name == "classic_skate"
 
 
@@ -46,6 +48,7 @@ def test_setup_translator_can_build_legacy_match_parameters_from_setup() -> None
     setup = MatchSetup(
         player_ids=["p1", "p2", "p3"],
         player_profile_ids=["stan", "denise", "alex"],
+        player_display_names=["Stan", "Denise", "Alex"],
         structure_name="battle",
         sport="inline",
         letters_word="OUT",
@@ -65,6 +68,7 @@ def test_setup_translator_can_build_legacy_match_parameters_from_setup() -> None
     assert match_parameters.rule_set.defense_attempts == 3
     assert match_parameters.rule_set.elimination_enabled is True
     assert match_parameters.player_profile_ids == ["stan", "denise", "alex"]
+    assert match_parameters.player_display_names == ["Stan", "Denise", "Alex"]
     assert match_parameters.preset_name == "battle_standard"
 
 
@@ -72,6 +76,7 @@ def test_setup_translator_preserves_v6_match_parameters_shape() -> None:
     match_parameters = MatchParameters(
         player_ids=["p1", "p2"],
         player_profile_ids=["stan", "denise"],
+        player_display_names=["Stan", "Denise"],
         sport="inline",
         preset_name="classic_skate",
     )
@@ -85,6 +90,7 @@ def test_setup_translator_preserves_v6_match_parameters_shape() -> None:
     assert match_config.victory.elimination_enabled is True
     assert match_config.sport == "inline"
     assert match_config.player_profile_ids == ["stan", "denise"]
+    assert match_config.player_display_names == ["Stan", "Denise"]
     assert match_config.preset_name == "classic_skate"
 
 

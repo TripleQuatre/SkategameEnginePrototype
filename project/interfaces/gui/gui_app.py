@@ -31,10 +31,6 @@ class GUIApp:
             profile.display_name: profile.profile_id
             for profile in self.available_local_profiles
         }
-        self.display_name_by_profile_id = {
-            profile.profile_id: profile.display_name
-            for profile in self.available_local_profiles
-        }
         self.local_profile_display_names = [
             profile.display_name for profile in self.available_local_profiles
         ]
@@ -302,7 +298,10 @@ class GUIApp:
             return
 
         try:
-            player_profile_ids = self._collect_selected_player_profile_ids()
+            selected_profile_ids = self._collect_selected_player_profile_ids()
+            player_ids, player_profile_ids, player_names = (
+                self.setup_service.build_profile_player_slots(selected_profile_ids)
+            )
         except ValueError:
             self.order_preview_label.config(
                 text="Order preview: select valid local profiles."
@@ -310,7 +309,6 @@ class GUIApp:
             self._refresh_setup_summary()
             return
 
-        player_ids = self.setup_service.resolve_local_profile_names(player_profile_ids)
         order_mode = self._get_effective_order_mode()
 
         if self.setup_mode_var.get() == "preset":
@@ -320,7 +318,9 @@ class GUIApp:
                 if preset.policies.relevance_criterion is not None
                 else self.relevance_criterion_var.get()
             )
-            explicit_player_order = list(preset.policies.explicit_player_order or player_ids)
+            explicit_player_order = list(
+                preset.policies.explicit_player_order or player_ids
+            )
         else:
             relevance_criterion = self.relevance_criterion_var.get()
             explicit_player_order = list(player_ids)
@@ -330,6 +330,7 @@ class GUIApp:
                 order_mode=order_mode,
                 player_ids=player_ids,
                 player_profile_ids=player_profile_ids,
+                player_display_names=player_names,
                 relevance_criterion=relevance_criterion,
                 explicit_player_order=explicit_player_order,
             )
@@ -340,12 +341,12 @@ class GUIApp:
             self._refresh_setup_summary()
             return
 
-        if order_mode == "random":
-            preview_text = "Order preview: randomized at game start."
-        else:
-            preview_text = f"Order preview: {' -> '.join(preview)}"
-
-        self.order_preview_label.config(text=preview_text)
+        self.order_preview_label.config(
+            text=self.setup_service.build_order_preview_text(
+                order_mode=order_mode,
+                preview_names=preview,
+            )
+        )
         self._refresh_setup_summary()
 
     def _refresh_setup_summary(self) -> None:
@@ -353,36 +354,31 @@ class GUIApp:
             return
 
         mode_label = "preset" if self.setup_mode_var.get() == "preset" else "custom"
-        player_count = max(2, self.player_count_var.get())
         order_mode = self._get_effective_order_mode()
         attack_attempts = int(self.custom_attack_attempts_var.get())
         defense_attempts = int(self.custom_defense_attempts_var.get())
-
-        if attack_attempts <= 1:
-            multiple_attack_label = "n/a"
-        elif self.custom_multiple_attack_enabled_var.get():
-            multiple_attack_label = "enabled"
-        elif self.custom_no_repetition_var.get():
-            multiple_attack_label = "no repetition"
-        else:
-            multiple_attack_label = "disabled"
-
-        repetition_mode = self.custom_repetition_mode_var.get()
-        if repetition_mode == "disabled":
-            repetition_label = "disabled"
-        else:
-            repetition_label = (
-                f"{repetition_mode} ({int(self.custom_repetition_limit_var.get())})"
-            )
-        switch_mode = self.custom_switch_mode_var.get()
-
+        selected_names = [
+            profile_var.get().strip()
+            for profile_var in self.player_profile_vars
+            if profile_var.get().strip()
+        ]
+        if len(selected_names) != len(self.player_profile_vars):
+            selected_names = [f"{max(2, self.player_count_var.get())} players"]
         self.setup_summary_label.config(
-            text=(
-                "Setup summary: "
-                f"{mode_label} | sport={self.sport_var.get()} | players={player_count} | "
-                f"order={order_mode} | attack={attack_attempts} | defense={defense_attempts} | "
-                f"multiple attack={multiple_attack_label} | switch={switch_mode} | "
-                f"repetition={repetition_label}"
+            text=self.setup_service.build_setup_summary_text(
+                mode_label=mode_label,
+                sport=self.sport_var.get(),
+                player_names=selected_names,
+                order_mode=order_mode,
+                attack_attempts=attack_attempts,
+                defense_attempts=defense_attempts,
+                multiple_attack_enabled=bool(
+                    self.custom_multiple_attack_enabled_var.get()
+                ),
+                no_repetition=bool(self.custom_no_repetition_var.get()),
+                switch_mode=self.custom_switch_mode_var.get(),
+                repetition_mode=self.custom_repetition_mode_var.get(),
+                repetition_limit=int(self.custom_repetition_limit_var.get()),
             )
         )
 
@@ -1772,15 +1768,17 @@ class GUIApp:
 
     def _start_game(self) -> None:
         try:
-            player_profile_ids = self._collect_selected_player_profile_ids()
+            selected_profile_ids = self._collect_selected_player_profile_ids()
             if self.setup_mode_var.get() == "preset":
                 self.controller = self.setup_service.create_started_controller_from_preset_profiles(
                     self.preset_var.get(),
-                    player_profile_ids,
+                    selected_profile_ids,
                 )
             else:
-                player_ids = self.setup_service.resolve_local_profile_names(
-                    player_profile_ids
+                player_ids, player_profile_ids, player_display_names = (
+                    self.setup_service.build_profile_player_slots(
+                        selected_profile_ids
+                    )
                 )
                 order_mode = self.order_mode_var.get()
                 explicit_player_order = (
@@ -1794,7 +1792,12 @@ class GUIApp:
                     explicit_player_order=explicit_player_order,
                 )
                 self.controller = self.setup_service.create_started_controller_from_custom_setup_profiles(
-                    player_profile_ids=player_profile_ids,
+                    player_profile_ids=[
+                        profile_id
+                        for profile_id in player_profile_ids
+                        if profile_id is not None
+                    ],
+                    player_display_names=player_display_names,
                     sport=self.sport_var.get(),
                     letters_word=self.custom_word_var.get(),
                     attack_attempts=int(self.custom_attack_attempts_var.get()),
@@ -1956,12 +1959,25 @@ class GUIApp:
         try:
             state_before = self.controller.get_state()
             events_before = len(state_before.history.events)
-            self.controller.add_player_between_turns(player_name)
+            player_id, player_display_name = self.setup_service.resolve_player_identity_input(
+                player_name,
+                prefer_profile_identity=bool(
+                    self.controller.match_parameters.player_profile_ids
+                ),
+            )
+            known_profile_ids = set(self.setup_service.list_local_profile_ids())
+            self.controller.add_player_between_turns(
+                player_id,
+                player_name=player_display_name,
+                player_profile_id=(
+                    player_id if player_id in known_profile_ids else None
+                ),
+            )
             self.status_var.set(
                 self._format_new_events(self.controller.get_state(), events_before)
-                or f"{player_name} joined the game."
+                or f"{player_display_name} joined the game."
             )
-        except InvalidActionError as error:
+        except (InvalidActionError, ValueError) as error:
             self.status_var.set(f"Invalid action: {error}")
 
         self._refresh_game_view()
@@ -1983,7 +1999,8 @@ class GUIApp:
         try:
             state_before = self.controller.get_state()
             events_before = len(state_before.history.events)
-            self.controller.remove_player_between_turns(player_name)
+            resolved_player_id = self._resolve_player_id_from_input(player_name)
+            self.controller.remove_player_between_turns(resolved_player_id)
             self.status_var.set(
                 self._format_new_events(self.controller.get_state(), events_before)
                 or f"{player_name} left the game."
@@ -2416,29 +2433,42 @@ class GUIApp:
         dictionary_definition = self.controller.dictionary_definition
 
         preset_label = match_parameters.preset_name or "custom"
-        players_label = ", ".join(match_parameters.player_ids)
-        profiles_label = ", ".join(match_parameters.player_profile_ids)
-        if policies.initial_turn_order == InitialTurnOrderPolicy.RANDOMIZED:
-            order_label = "random"
-        elif policies.initial_turn_order == InitialTurnOrderPolicy.RELEVANCE:
+        players_label = ", ".join(match_parameters.player_display_names)
+        profiles_label = ", ".join(
+            profile_id
+            for profile_id in match_parameters.player_profile_ids
+            if profile_id is not None
+        )
+        order_label = self.setup_service.describe_order_mode_from_policies(policies)
+        if policies.initial_turn_order == InitialTurnOrderPolicy.RELEVANCE:
             criterion = (
                 policies.relevance_criterion.value
                 if policies.relevance_criterion is not None
                 else RelevanceCriterion.ALPHABETICAL.value
             )
             order_label = f"relevance ({criterion})"
+        if policies.explicit_player_order:
+            base_order_label = ", ".join(
+                self.setup_service.preview_order(
+                    order_mode="choice",
+                    player_ids=match_parameters.player_ids,
+                    player_profile_ids=match_parameters.player_profile_ids,
+                    player_display_names=match_parameters.player_display_names,
+                    explicit_player_order=list(policies.explicit_player_order),
+                )
+            )
         else:
-            order_label = "choice"
-        base_order_label = ", ".join(policies.explicit_player_order or tuple(match_parameters.player_ids))
+            base_order_label = ", ".join(match_parameters.player_display_names)
         uniqueness_label = "enabled" if fine_rules.uniqueness_enabled else "disabled"
-        repetition_label = fine_rules.repetition_mode
-        if repetition_label != "disabled":
-            repetition_label = f"{repetition_label} (limit {fine_rules.repetition_limit})"
-        multiple_attack_label = (
-            "enabled" if fine_rules.multiple_attack_enabled else "disabled"
+        repetition_label = self.setup_service.format_repetition_label(
+            fine_rules.repetition_mode,
+            fine_rules.repetition_limit,
         )
-        if fine_rules.no_repetition:
-            multiple_attack_label = f"{multiple_attack_label} + no repetition"
+        multiple_attack_label = self.setup_service.format_multiple_attack_label(
+            multiple_attack_enabled=fine_rules.multiple_attack_enabled,
+            no_repetition=fine_rules.no_repetition,
+            attack_attempts=rule_set.attack_attempts,
+        )
         switch_label = fine_rules.switch_mode
 
         body = "\n".join(
@@ -2522,6 +2552,14 @@ class GUIApp:
             if player.id == player_id:
                 return player.name
         return player_id
+
+    def _resolve_player_id_from_input(self, value: str) -> str:
+        assert self.controller is not None
+        normalized = value.strip().casefold()
+        for player in self.controller.get_state().players:
+            if player.id.casefold() == normalized or player.name.casefold() == normalized:
+                return player.id
+        return value
 
     def _format_event(self, state: GameState, event: Event) -> str:
         name = event.name

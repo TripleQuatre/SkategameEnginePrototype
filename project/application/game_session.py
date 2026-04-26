@@ -105,13 +105,21 @@ class GameSession:
     def cancel_turn(self, trick: str) -> None:
         self._run_state_change(lambda: self.game_flow.cancel_turn(self.state, trick))
 
-    def add_player_between_turns(self, player_id: str) -> None:
+    def add_player_between_turns(
+        self,
+        player_id: str,
+        *,
+        player_name: str | None = None,
+        player_profile_id: str | None = None,
+    ) -> None:
         self._execute_roster_transition(
             lambda: self.transition_service.add_player_between_turns(
                 self.state,
                 self.match_config,
                 self.game_flow.action_validator,
                 player_id,
+                player_name=player_name,
+                player_profile_id=player_profile_id,
             )
         )
 

@@ -2,7 +2,6 @@ from datetime import datetime
 from pathlib import Path
 
 from application.game_setup_service import GameSetupService
-from config.match_policies import InitialTurnOrderPolicy
 from controllers.game_controller import GameController
 from core.events import Event
 from core.exceptions import InvalidActionError, InvalidStateError
@@ -213,23 +212,26 @@ class CLIApp:
         else:
             player_count = self._ask_player_count(min_players=3)
 
-        player_profile_ids = self._ask_player_profiles(player_count)
-        player_names = self.setup_service.resolve_local_profile_names(player_profile_ids)
+        player_ids, _, player_names = self.setup_service.build_profile_player_slots(
+            self._ask_player_profiles(player_count)
+        )
         self._print_setup_summary(
             mode_label="preset",
             sport=sport,
             player_names=player_names,
-            order_mode=self._describe_preset_order_mode(preset),
+            order_mode=self.setup_service.describe_order_mode_from_policies(
+                preset.policies
+            ),
             letters_word=preset.rule_set.letters_word,
             attack_attempts=preset.rule_set.attack_attempts,
             defense_attempts=preset.rule_set.defense_attempts,
-            multiple_attack_label=self._format_multiple_attack_label(
-                preset.fine_rules.multiple_attack_enabled,
-                preset.fine_rules.no_repetition,
-                preset.rule_set.attack_attempts,
+            multiple_attack_label=self.setup_service.format_multiple_attack_label(
+                multiple_attack_enabled=preset.fine_rules.multiple_attack_enabled,
+                no_repetition=preset.fine_rules.no_repetition,
+                attack_attempts=preset.rule_set.attack_attempts,
             ),
             switch_mode=preset.fine_rules.switch_mode,
-            repetition_label=self._format_repetition_label(
+            repetition_label=self.setup_service.format_repetition_label(
                 preset.fine_rules.repetition_mode,
                 preset.fine_rules.repetition_limit,
             ),
@@ -237,26 +239,33 @@ class CLIApp:
 
         return self.setup_service.create_started_controller_from_preset_profiles(
             preset.name,
-            player_profile_ids,
+            player_ids,
         )
 
     def _create_custom_game_controller(self) -> GameController:
         sport = self._get_locked_sport()
         print(f"Sport: {sport} (locked for now)")
         player_count = self._ask_player_count(min_players=2)
-        player_profile_ids = self._ask_player_profiles(player_count)
-        player_ids = self.setup_service.resolve_local_profile_names(player_profile_ids)
+        player_ids, player_profile_ids, player_names = (
+            self.setup_service.build_profile_player_slots(
+                self._ask_player_profiles(player_count)
+            )
+        )
         order_mode = self._ask_order_mode(player_count)
         explicit_player_order = None
         relevance_criterion = None
         if order_mode == "choice":
-            explicit_player_order = self._ask_explicit_player_order(player_ids)
+            explicit_player_order = self._ask_explicit_player_order(
+                player_ids,
+                player_names,
+            )
         elif order_mode == "relevance":
             relevance_criterion = self._ask_relevance_criterion()
         preview_order = self.setup_service.preview_order(
             order_mode=order_mode,
             player_ids=player_ids,
             player_profile_ids=player_profile_ids,
+            player_display_names=player_names,
             relevance_criterion=relevance_criterion,
             explicit_player_order=explicit_player_order,
         )
@@ -292,24 +301,25 @@ class CLIApp:
         self._print_setup_summary(
             mode_label="custom",
             sport=sport,
-            player_names=player_ids,
+            player_names=player_names,
             order_mode=order_mode,
             letters_word=word,
             attack_attempts=attack_attempts,
             defense_attempts=defense_attempts,
-            multiple_attack_label=self._format_multiple_attack_label(
-                multiple_attack_enabled,
-                no_repetition,
-                attack_attempts,
+            multiple_attack_label=self.setup_service.format_multiple_attack_label(
+                multiple_attack_enabled=multiple_attack_enabled,
+                no_repetition=no_repetition,
+                attack_attempts=attack_attempts,
             ),
             switch_mode=switch_mode,
-            repetition_label=self._format_repetition_label(
+            repetition_label=self.setup_service.format_repetition_label(
                 repetition_mode,
                 repetition_limit,
             ),
         )
         return self.setup_service.create_started_controller_from_custom_setup_profiles(
             player_profile_ids=player_profile_ids,
+            player_display_names=player_names,
             sport=sport,
             letters_word=word,
             attack_attempts=attack_attempts,
@@ -323,32 +333,6 @@ class CLIApp:
             repetition_mode=repetition_mode,
             repetition_limit=repetition_limit,
         )
-
-    def _describe_preset_order_mode(self, preset) -> str:
-        if preset.policies.initial_turn_order == InitialTurnOrderPolicy.RANDOMIZED:
-            return "random"
-        if preset.policies.initial_turn_order == InitialTurnOrderPolicy.RELEVANCE:
-            return "relevance"
-        return "choice"
-
-    def _format_multiple_attack_label(
-        self,
-        multiple_attack_enabled: bool,
-        no_repetition: bool,
-        attack_attempts: int,
-    ) -> str:
-        if attack_attempts <= 1:
-            return "n/a"
-        if multiple_attack_enabled:
-            return "enabled"
-        if no_repetition:
-            return "no repetition"
-        return "disabled"
-
-    def _format_repetition_label(self, repetition_mode: str, repetition_limit: int) -> str:
-        if repetition_mode == "disabled":
-            return "disabled"
-        return f"{repetition_mode} (limit {repetition_limit})"
 
     def _print_setup_summary(
         self,
@@ -515,10 +499,21 @@ class CLIApp:
             try:
                 state_before = controller.get_state()
                 events_before = len(state_before.history.events)
-                controller.add_player_between_turns(player_name)
+                player_id, player_display_name = (
+                    self.setup_service.resolve_player_identity_input(
+                        player_name,
+                        prefer_profile_identity=bool(
+                            controller.match_parameters.player_profile_ids
+                        ),
+                    )
+                )
+                controller.add_player_between_turns(
+                    player_id,
+                    player_name=player_display_name,
+                )
                 self._display_new_events(controller, events_before)
                 print()
-            except InvalidActionError as error:
+            except (InvalidActionError, ValueError) as error:
                 print(f"Action invalide: {error}\n")
             return None
 
@@ -528,7 +523,9 @@ class CLIApp:
             try:
                 state_before = controller.get_state()
                 events_before = len(state_before.history.events)
-                controller.remove_player_between_turns(player_name)
+                controller.remove_player_between_turns(
+                    self._resolve_player_id_from_input(controller, player_name)
+                )
                 self._display_new_events(controller, events_before)
                 print()
             except InvalidActionError as error:
@@ -560,6 +557,17 @@ class CLIApp:
                 return None
 
             return value
+
+    def _resolve_player_id_from_input(
+        self,
+        controller: GameController,
+        value: str,
+    ) -> str:
+        normalized = value.strip().casefold()
+        for player in controller.get_state().players:
+            if player.id.casefold() == normalized or player.name.casefold() == normalized:
+                return player.id
+        return value
 
     def _display_state(self, state: GameState) -> None:
         preset_name = self._get_active_preset_name(state)
@@ -1063,10 +1071,14 @@ class CLIApp:
                 "Relevance criterion must be alphabetical, age, experience_time or local_rank."
             )
 
-    def _ask_explicit_player_order(self, player_ids: list[str]) -> list[str]:
+    def _ask_explicit_player_order(
+        self,
+        player_ids: list[str],
+        player_names: list[str],
+    ) -> list[str]:
         print("Current player order:")
-        for index, player_id in enumerate(player_ids, start=1):
-            print(f"{index}. {player_id}")
+        for index, player_name in enumerate(player_names, start=1):
+            print(f"{index}. {player_name}")
 
         expected = " ".join(str(index) for index in range(1, len(player_ids) + 1))
         while True:
@@ -1091,10 +1103,6 @@ class CLIApp:
         preview_order: list[str],
         relevance_criterion: str | None,
     ) -> None:
-        if order_mode == "random":
-            print("Order preview: randomized at game start.")
-            return
-
         if order_mode == "relevance" and relevance_criterion is not None:
             print(
                 f"Order preview ({relevance_criterion}): "
@@ -1102,7 +1110,12 @@ class CLIApp:
             )
             return
 
-        print(f"Order preview: {' -> '.join(preview_order)}")
+        print(
+            self.setup_service.build_order_preview_text(
+                order_mode=order_mode,
+                preview_names=preview_order,
+            )
+        )
 
     def _choose_official_preset(self):
         preset_names = self.setup_service.list_preset_names()

@@ -7,7 +7,8 @@ from config.setup_defaults import build_default_policies_for_structure
 @dataclass(init=False)
 class MatchSetup:
     player_ids: list[str]
-    player_profile_ids: list[str]
+    player_profile_ids: list[str | None]
+    player_display_names: list[str]
     structure_name: str
     sport: str = "inline"
     policies: MatchPolicies | None = None
@@ -26,7 +27,8 @@ class MatchSetup:
     def __init__(
         self,
         player_ids: list[str],
-        player_profile_ids: list[str] | None = None,
+        player_profile_ids: list[str | None] | None = None,
+        player_display_names: list[str] | None = None,
         structure_name: str = "one_vs_one",
         sport: str = "inline",
         policies: MatchPolicies | None = None,
@@ -44,6 +46,7 @@ class MatchSetup:
     ) -> None:
         self.player_ids = list(player_ids)
         self.player_profile_ids = list(player_profile_ids or [])
+        self.player_display_names = list(player_display_names or player_ids)
         self.structure_name = structure_name
         self.sport = sport
         self.policies = policies

@@ -63,8 +63,17 @@ class GameController:
     def undo(self) -> bool:
         return self.session.undo()
 
-    def add_player_between_turns(self, player_id: str) -> None:
-        self.session.add_player_between_turns(player_id)
+    def add_player_between_turns(
+        self,
+        player_id: str,
+        player_name: str | None = None,
+        player_profile_id: str | None = None,
+    ) -> None:
+        self.session.add_player_between_turns(
+            player_id,
+            player_name=player_name,
+            player_profile_id=player_profile_id,
+        )
 
     def remove_player_between_turns(self, player_id: str) -> None:
         self.session.remove_player_between_turns(player_id)

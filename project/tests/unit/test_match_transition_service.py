@@ -1,5 +1,5 @@
 from config.match_parameters import MatchParameters
-from config.match_policies import MatchPolicies
+from config.match_policies import InitialTurnOrderPolicy, MatchPolicies
 from core.player import Player
 from core.state import GameState
 from core.types import EventName, Phase, TurnPhase
@@ -79,6 +79,54 @@ def test_match_transition_service_can_add_player_and_rebuild_runtime() -> None:
     assert transition.attacker_name == "Stan"
     assert transition.event.payload["preset_invalidated"] is True
     assert transition.game_flow.structure is transition.structure
+
+
+def test_match_transition_service_add_player_keeps_explicit_order_coherent() -> None:
+    service = MatchTransitionService(
+        config_validator=ConfigValidator(),
+    )
+    action_validator = ActionValidator(TrickRules())
+    match_parameters = MatchParameters(
+        player_ids=["p3", "p1", "p2"],
+        player_display_names=["Alex", "Stan", "Denise"],
+        structure_name="battle",
+        policies=MatchPolicies(
+            initial_turn_order=InitialTurnOrderPolicy.EXPLICIT_CHOICE,
+            explicit_player_order=("p3", "p1", "p2"),
+        ),
+    )
+    state = GameState(
+        players=[
+            Player(id="p3", name="Alex"),
+            Player(id="p1", name="Stan"),
+            Player(id="p2", name="Denise"),
+        ],
+        phase=Phase.TURN,
+        turn_phase=TurnPhase.TURN_OPEN,
+        turn_order=[0, 1, 2],
+        attacker_index=0,
+    )
+
+    transition = service.add_player_between_turns(
+        state,
+        match_parameters,
+        action_validator,
+        "p4",
+        player_name="Frank",
+    )
+
+    assert transition.match_config.policies.explicit_player_order == (
+        "p3",
+        "p1",
+        "p2",
+        "p4",
+    )
+    assert transition.match_config.player_display_names == [
+        "Alex",
+        "Stan",
+        "Denise",
+        "Frank",
+    ]
 
 
 def test_match_transition_service_can_remove_player_and_rebuild_runtime() -> None:

@@ -697,9 +697,9 @@ def test_gui_can_add_player_between_turns(gui_app: GUIApp, monkeypatch) -> None:
     assert gui_app.controller is not None
     assert gui_app.controller.structure_name == "battle"
     assert [player.id for player in gui_app.controller.get_state().players] == [
-        "Stan",
-        "Denise",
-        "Alex",
+        "stan",
+        "denise",
+        "alex",
     ]
     assert (
         gui_app.status_var.get()
@@ -726,8 +726,8 @@ def test_gui_can_remove_player_between_turns(gui_app: GUIApp, monkeypatch) -> No
     assert gui_app.controller is not None
     assert gui_app.controller.structure_name == "one_vs_one"
     assert [player.id for player in gui_app.controller.get_state().players] == [
-        "Stan",
-        "Alex",
+        "stan",
+        "alex",
     ]
     assert (
         gui_app.status_var.get()
@@ -751,8 +751,8 @@ def test_gui_rejects_duplicate_player_join_between_turns(
 
     assert gui_app.controller is not None
     assert [player.id for player in gui_app.controller.get_state().players] == [
-        "Stan",
-        "Denise",
+        "stan",
+        "denise",
     ]
     assert gui_app.status_var.get().startswith("Invalid action:")
 
@@ -777,9 +777,9 @@ def test_gui_rejects_unknown_player_removal_between_turns(
 
     assert gui_app.controller is not None
     assert [player.id for player in gui_app.controller.get_state().players] == [
-        "Stan",
-        "Denise",
-        "Alex",
+        "stan",
+        "denise",
+        "alex",
     ]
     assert gui_app.status_var.get().startswith("Invalid action:")
 
